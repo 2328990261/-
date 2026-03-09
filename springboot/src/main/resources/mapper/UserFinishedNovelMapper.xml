@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wangrui.springboot.mapper.UserFinishedNovelMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="UserFinishedNovelResultMap" type="com.wangrui.springboot.pojo.UserFinishedNovel">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="novelId" column="novel_id"/>
+        <result property="finishedTime" column="finished_time"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <!-- 获取用户完读记录列表 -->
+    <select id="selectByUserId" parameterType="java.lang.Integer" resultMap="UserFinishedNovelResultMap">
+        SELECT id, user_id, novel_id, finished_time, created_at
+        FROM user_finished_novel
+        WHERE user_id = #{userId}
+        ORDER BY finished_time DESC
+    </select>
+
+    <!-- 检查用户是否已完读指定小说 -->
+    <select id="selectByUserIdAndNovelId" parameterType="java.util.Map" resultMap="UserFinishedNovelResultMap">
+        SELECT id, user_id, novel_id, finished_time, created_at
+        FROM user_finished_novel
+        WHERE user_id = #{userId} AND novel_id = #{novelId}
+    </select>
+
+    <!-- 保存用户完读记录 -->
+    <insert id="insert" parameterType="com.wangrui.springboot.pojo.UserFinishedNovel">
+        INSERT INTO user_finished_novel (user_id, novel_id, finished_time, created_at)
+        VALUES (#{userId}, #{novelId}, NOW(), NOW())
+    </insert>
+
+    <!-- 删除用户完读记录 -->
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM user_finished_novel
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 删除用户指定小说的完读记录 -->
+    <delete id="deleteByUserIdAndNovelId" parameterType="java.util.Map">
+        DELETE FROM user_finished_novel
+        WHERE user_id = #{userId} AND novel_id = #{novelId}
+    </delete>
+
+</mapper>

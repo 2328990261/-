@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wangrui.springboot.mapper.UserCommentMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="UserCommentResultMap" type="com.wangrui.springboot.pojo.UserComment">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="novelId" column="novel_id"/>
+        <result property="content" column="content"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 含用户名的结果映射（联表 user） -->
+    <resultMap id="UserCommentWithUsernameResultMap" type="com.wangrui.springboot.pojo.UserComment">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="novelId" column="novel_id"/>
+        <result property="content" column="content"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="username" column="username"/>
+    </resultMap>
+
+    <!-- 获取用户评论列表 -->
+    <select id="selectByUserId" parameterType="java.lang.Integer" resultMap="UserCommentWithUsernameResultMap">
+        SELECT c.id, c.user_id, c.novel_id, c.content, c.created_at, c.updated_at, u.username
+        FROM user_comment c
+        LEFT JOIN user u ON c.user_id = u.id
+        WHERE c.user_id = #{userId}
+        ORDER BY c.created_at DESC
+    </select>
+
+    <!-- 获取小说的评论列表（含评论者用户名） -->
+    <select id="selectByNovelId" parameterType="java.lang.Integer" resultMap="UserCommentWithUsernameResultMap">
+        SELECT c.id, c.user_id, c.novel_id, c.content, c.created_at, c.updated_at, u.username
+        FROM user_comment c
+        LEFT JOIN user u ON c.user_id = u.id
+        WHERE c.novel_id = #{novelId}
+        ORDER BY c.created_at DESC
+    </select>
+
+    <!-- 获取指定评论 -->
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="UserCommentResultMap">
+        SELECT id, user_id, novel_id, content, created_at, updated_at
+        FROM user_comment
+        WHERE id = #{id}
+    </select>
+
+    <!-- 保存用户评论 -->
+    <insert id="insert" parameterType="com.wangrui.springboot.pojo.UserComment">
+        INSERT INTO user_comment (user_id, novel_id, content, created_at, updated_at)
+        VALUES (#{userId}, #{novelId}, #{content}, NOW(), NOW())
+    </insert>
+
+    <!-- 更新用户评论 -->
+    <update id="update" parameterType="com.wangrui.springboot.pojo.UserComment">
+        UPDATE user_comment
+        SET content = #{content}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除用户评论 -->
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM user_comment
+        WHERE id = #{id}
+    </delete>
+
+</mapper>

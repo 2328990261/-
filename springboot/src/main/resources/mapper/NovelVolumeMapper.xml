@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wangrui.springboot.mapper.NovelVolumeMapper">
+
+    <!-- 把resultType改成实体类全类名，不要用别名 -->
+    <select id="selectVolumeByMainBookId" parameterType="Integer" resultType="com.wangrui.springboot.pojo.NovelBookVolume">
+        SELECT id, main_book_id, volume_name, content, create_time
+        FROM novel_book_volume
+        WHERE main_book_id = #{mainBookId}
+    </select>
+
+    <!-- 新增：根据分卷ID查单条分卷（含content） -->
+    <select id="selectVolumeById" parameterType="Integer" resultType="com.wangrui.springboot.pojo.NovelBookVolume">
+        SELECT id, main_book_id, volume_name, content, create_time
+        FROM novel_book_volume
+        WHERE id = #{volumeId}
+    </select>
+
+    <!-- 新增：插入新分卷（书籍上架时添加章节内容） -->
+    <insert id="insertVolume" parameterType="com.wangrui.springboot.pojo.NovelBookVolume" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO novel_book_volume (main_book_id, volume_name, content, create_time)
+        VALUES (#{mainBookId}, #{volumeName}, #{content}, #{createTime})
+    </insert>
+</mapper>

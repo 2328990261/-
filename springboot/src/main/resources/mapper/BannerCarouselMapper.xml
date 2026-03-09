@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wangrui.springboot.mapper.BannerCarouselMapper">
+    
+    <resultMap id="BannerCarouselResultMap" type="com.wangrui.springboot.pojo.BannerCarousel">
+        <id column="id" property="id"/>
+        <result column="novel_id" property="novelId"/>
+        <result column="title" property="title"/>
+        <result column="image_url" property="imageUrl"/>
+        <result column="link_url" property="linkUrl"/>
+        <result column="sort_order" property="sortOrder"/>
+        <result column="status" property="status"/>
+        <result column="start_time" property="startTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="click_count" property="clickCount"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+    
+    <!-- 查询当前有效的轮播图（前台展示用） -->
+    <select id="selectActiveBanners" resultType="map">
+        SELECT 
+            bc.id,
+            bc.novel_id,
+            COALESCE(bc.title, nbm.book_main_name, '轮播图') AS title,
+            COALESCE(bc.image_url, nbm.cover) AS cover,
+            bc.link_url,
+            bc.sort_order,
+            bc.click_count,
+            nbm.book_main_name,
+            nbm.author
+        FROM banner_carousel bc
+        LEFT JOIN novel_book_main nbm ON bc.novel_id = nbm.id
+        WHERE bc.status = 1
+          AND (bc.start_time IS NULL OR bc.start_time &lt;= NOW())
+          AND (bc.end_time IS NULL OR bc.end_time &gt;= NOW())
+          AND (nbm.status = 1 OR bc.novel_id IS NULL)
+        ORDER BY bc.sort_order ASC, bc.id DESC
+        LIMIT 10
+    </select>
+    
+    <!-- 查询所有轮播图（后台管理用） -->
+    <select id="selectAll" resultMap="BannerCarouselResultMap">
+        SELECT * FROM banner_carousel
+        ORDER BY sort_order ASC, id DESC
+    </select>
+    
+    <!-- 根据ID查询 -->
+    <select id="selectById" resultMap="BannerCarouselResultMap">
+        SELECT * FROM banner_carousel WHERE id = #{id}
+    </select>
+    
+    <!-- 新增轮播图 -->
+    <insert id="insert" parameterType="com.wangrui.springboot.pojo.BannerCarousel" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO banner_carousel (
+            <if test="novelId != null">novel_id,</if>
+            <if test="title != null">title,</if>
+            <if test="imageUrl != null">image_url,</if>
+            <if test="linkUrl != null">link_url,</if>
+            sort_order, status
+            <if test="startTime != null">, start_time</if>
+            <if test="endTime != null">, end_time</if>
+        ) VALUES (
+            <if test="novelId != null">#{novelId},</if>
+            <if test="title != null">#{title},</if>
+            <if test="imageUrl != null">#{imageUrl},</if>
+            <if test="linkUrl != null">#{linkUrl},</if>
+            #{sortOrder}, #{status}
+            <if test="startTime != null">, #{startTime}</if>
+            <if test="endTime != null">, #{endTime}</if>
+        )
+    </insert>
+    
+    <!-- 更新轮播图 -->
+    <update id="update" parameterType="com.wangrui.springboot.pojo.BannerCarousel">
+        UPDATE banner_carousel 
+        <set>
+            <if test="novelId != null">novel_id = #{novelId},</if>
+            <if test="title != null">title = #{title},</if>
+            <if test="imageUrl != null">image_url = #{imageUrl},</if>
+            <if test="linkUrl != null">link_url = #{linkUrl},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime}</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 删除轮播图 -->
+    <delete id="deleteById">
+        DELETE FROM banner_carousel WHERE id = #{id}
+    </delete>
+    
+    <!-- 更新点击次数 -->
+    <update id="updateClickCount">
+        UPDATE banner_carousel 
+        SET click_count = click_count + 1 
+        WHERE id = #{id}
+    </update>
+    
+</mapper>

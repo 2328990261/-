@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wangrui.springboot.mapper.TagMapper">
+    <resultMap id="TagResultMap" type="com.wangrui.springboot.pojo.Tag">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="recommend_weight" property="recommendWeight"/>
+        <result column="sort_order" property="sortOrder"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="TagResultMap">
+        SELECT id, name, recommend_weight, sort_order, created_at FROM tag
+    </select>
+
+    <select id="selectAllOrderBySort" resultMap="TagResultMap">
+        SELECT id, name, recommend_weight, sort_order, created_at FROM tag ORDER BY sort_order ASC, id ASC
+    </select>
+
+    <select id="selectById" resultMap="TagResultMap">
+        SELECT id, name, recommend_weight, sort_order, created_at FROM tag WHERE id = #{id}
+    </select>
+
+    <select id="selectByName" resultMap="TagResultMap">
+        SELECT id, name, recommend_weight, sort_order, created_at FROM tag WHERE name = #{name}
+    </select>
+
+    <insert id="insert" parameterType="com.wangrui.springboot.pojo.Tag" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tag (name, recommend_weight, sort_order) VALUES (#{name}, #{recommendWeight}, #{sortOrder})
+    </insert>
+
+    <update id="update" parameterType="com.wangrui.springboot.pojo.Tag">
+        UPDATE tag SET name = #{name}, recommend_weight = #{recommendWeight}, sort_order = #{sortOrder} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM tag WHERE id = #{id}
+    </delete>
+</mapper>

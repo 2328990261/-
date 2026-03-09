@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wangrui.springboot.mapper.UserReadingHistoryMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="UserReadingHistoryResultMap" type="com.wangrui.springboot.pojo.UserReadingHistory">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="novelId" column="novel_id"/>
+        <result property="chapterId" column="chapter_id"/>
+        <result property="readDuration" column="read_duration"/>
+        <result property="readProgress" column="read_progress"/>
+        <result property="lastReadTime" column="last_read_time"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <!-- 获取用户阅读历史列表 -->
+    <select id="selectByUserId" parameterType="java.lang.Integer" resultMap="UserReadingHistoryResultMap">
+        SELECT id, user_id, novel_id, chapter_id, read_duration, read_progress, last_read_time, created_at
+        FROM user_reading_history
+        WHERE user_id = #{userId}
+        ORDER BY last_read_time DESC
+    </select>
+
+    <!-- 获取用户指定小说的阅读历史 -->
+    <select id="selectByUserIdAndNovelId" parameterType="java.util.Map" resultMap="UserReadingHistoryResultMap">
+        SELECT id, user_id, novel_id, chapter_id, read_duration, read_progress, last_read_time, created_at
+        FROM user_reading_history
+        WHERE user_id = #{userId} AND novel_id = #{novelId}
+    </select>
+
+    <!-- 保存用户阅读历史 -->
+    <insert id="insert" parameterType="com.wangrui.springboot.pojo.UserReadingHistory">
+        INSERT INTO user_reading_history (user_id, novel_id, chapter_id, read_duration, read_progress, last_read_time, created_at)
+        VALUES (#{userId}, #{novelId}, #{chapterId}, #{readDuration}, #{readProgress}, NOW(), NOW())
+    </insert>
+
+    <!-- 更新用户阅读历史 -->
+    <update id="update" parameterType="com.wangrui.springboot.pojo.UserReadingHistory">
+        UPDATE user_reading_history
+        SET chapter_id = #{chapterId},
+            read_duration = read_duration + #{readDuration},
+            read_progress = #{readProgress},
+            last_read_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除用户阅读历史 -->
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM user_reading_history
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 删除用户指定小说的阅读历史 -->
+    <delete id="deleteByUserIdAndNovelId" parameterType="java.util.Map">
+        DELETE FROM user_reading_history
+        WHERE user_id = #{userId} AND novel_id = #{novelId}
+    </delete>
+
+    <!-- 统计用户阅读总时长（秒） -->
+    <select id="selectTotalReadDurationByUserId" resultType="java.lang.Long">
+        SELECT COALESCE(SUM(read_duration), 0) FROM user_reading_history WHERE user_id = #{userId}
+    </select>
+
+</mapper>

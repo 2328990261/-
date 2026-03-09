@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace必须和你的Mapper接口全路径一致 -->
+<mapper namespace="com.wangrui.springboot.mapper.NovelBookMainMapper">
+
+
+
+    <!-- 定义resultMap（必须放在所有select标签之前） -->
+    <resultMap id="NovelBookResultMap" type="com.wangrui.springboot.pojo.NovelBook">
+        <id column="id" property="id"/>
+        <result column="book_main_name" property="bookMainName"/>
+        <result column="author" property="author"/>
+        <result column="label" property="label"/>
+        <result column="cover" property="cover"/>
+        <result column="read_count" property="readCount"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <!-- 1. 查询所有上架小说（前台） -->
+    <select id="selectAllNovels" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count, status, create_time
+        FROM novel_book_main WHERE status = 1
+    </select>
+
+    <!-- 按多个标签查询小说（仅上架） -->
+    <!-- 按多个标签查询小说（仅上架） -->
+    <select id="selectNovelsByLabels" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count, status, create_time
+        FROM novel_book_main
+        WHERE status = 1
+        <if test="labels != null and labels.size() > 0">
+            <foreach collection="labels" item="label" open="AND (" separator=" AND " close=")">
+                (
+                    label = #{label}
+                    OR label LIKE CONCAT(#{label}, ',%')
+                    OR label LIKE CONCAT('%,', #{label}, ',%')
+                    OR label LIKE CONCAT('%,', #{label})
+                )
+            </foreach>
+        </if>
+        ORDER BY read_count DESC
+    </select>
+
+    <!-- 2. 按标签查询小说（仅上架） -->
+    <select id="selectNovelsByDaily" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count, status, create_time
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '日常' OR label LIKE '日常,%')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByFantasy" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count, status, create_time
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '奇幻' OR label LIKE '奇幻,%')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsBySchool" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count, status, create_time
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '校园' OR label LIKE '校园,%')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByAdventure" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count, status, create_time
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '冒险' OR label LIKE '冒险,%')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByIsekai" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count, status, create_time
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '异世界' OR label LIKE '异世界,%')
+        ORDER BY read_count DESC
+    </select>
+
+    <!-- 第2行标签 -->
+    <select id="selectNovelsByRelax" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count, status, create_time
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '轻松' OR label LIKE '%,轻松,%' OR label LIKE '%,轻松')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByFunny" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '搞笑' OR label LIKE '%,搞笑,%' OR label LIKE '%,搞笑')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByHealing" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '治愈' OR label LIKE '%,治愈,%' OR label LIKE '%,治愈')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByDepressing" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '致郁' OR label LIKE '%,致郁,%' OR label LIKE '%,致郁')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsBySweet" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '甜宠' OR label LIKE '%,甜宠,%' OR label LIKE '%,甜宠')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByHotblood" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '热血' OR label LIKE '%,热血,%' OR label LIKE '%,热血')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByLove" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '恋爱' OR label LIKE '%,恋爱,%' OR label LIKE '%,恋爱')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByGrowth" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '成长' OR label LIKE '%,成长,%' OR label LIKE '%,成长')
+        ORDER BY read_count DESC
+    </select>
+
+    <!-- 第3行标签 -->
+    <select id="selectNovelsByIntellect" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '智斗' OR label LIKE '%,智斗,%' OR label LIKE '%,智斗')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsBySuspense" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '悬疑' OR label LIKE '%,悬疑,%' OR label LIKE '%,悬疑')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByDeduction" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '推理' OR label LIKE '%,推理,%' OR label LIKE '%,推理')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByPsychological" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '心理惊悚' OR label LIKE '%,心理惊悚,%' OR label LIKE '%,心理惊悚')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByBattle" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '战斗' OR label LIKE '%,战斗,%' OR label LIKE '%,战斗')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByCompetition" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '竞技' OR label LIKE '%,竞技,%' OR label LIKE '%,竞技')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByConstruction" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '基建' OR label LIKE '%,基建,%' OR label LIKE '%,基建')
+        ORDER BY read_count DESC
+    </select>
+
+    <!-- 第4行标签 -->
+    <select id="selectNovelsByPalace" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '宫廷' OR label LIKE '%,宫廷,%' OR label LIKE '%,宫廷')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByVirtualGame" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '虚拟网游' OR label LIKE '%,虚拟网游,%' OR label LIKE '%,虚拟网游')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByRealistic" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '现实题材' OR label LIKE '%,现实题材,%' OR label LIKE '%,现实题材')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByFarming" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '种田文' OR label LIKE '%,种田文,%' OR label LIKE '%,种田文')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByReincarnation" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '转生' OR label LIKE '%,转生,%' OR label LIKE '%,转生')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByTransmigration" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '穿越' OR label LIKE '%,穿越,%' OR label LIKE '%,穿越')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByMagic" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '魔法' OR label LIKE '%,魔法,%' OR label LIKE '%,魔法')
+        ORDER BY read_count DESC
+    </select>
+
+    <!-- 第5行标签 -->
+    <select id="selectNovelsByAllAges" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '全年龄' OR label LIKE '%,全年龄,%' OR label LIKE '%,全年龄')
+        ORDER BY read_count DESC
+    </select>
+
+    <select id="selectNovelsByLightYuri" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count
+        FROM novel_book_main
+        WHERE status = 1 AND (label = '轻百' OR label LIKE '%,轻百,%' OR label LIKE '%,轻百')
+        ORDER BY read_count DESC
+    </select>
+
+    <!-- 3. 轮播图核心：按阅读量取Top5热门小说（关键！使用resultMap映射） -->
+    <!-- 轮播图：5个标签各取阅读量最高的1本（日常→奇幻→校园→异世界→冒险） -->
+    <!-- 根据ID查询单本小说（返回含 status） -->
+    <select id="selectNovelById" parameterType="Integer" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count, status, create_time
+        FROM novel_book_main
+        WHERE id = #{id}
+    </select>
+
+    <!-- 按阅读量排序查询所有上架小说 -->
+    <select id="selectAllNovelsOrderByReadCount" parameterType="String" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count, status, create_time
+        FROM novel_book_main
+        WHERE status = 1
+        ORDER BY read_count
+        <choose>
+            <when test="sortType == 'ASC' or sortType == 'asc'">ASC</when>
+            <otherwise>DESC</otherwise>
+        </choose>
+    </select>
+
+    <!-- 模糊查询（仅上架） -->
+    <select id="selectNovelsByKeyword" parameterType="String" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count, status, create_time
+        FROM novel_book_main
+        WHERE status = 1 AND (book_main_name LIKE CONCAT('%', #{keyword}, '%') OR author LIKE CONCAT('%', #{keyword}, '%'))
+        ORDER BY read_count DESC
+    </select>
+
+    <!-- 分页查询（仅上架，前台用） -->
+    <select id="selectNovelsByPage" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count, status, create_time
+        FROM novel_book_main
+        WHERE status = 1
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 查询上架小说总数量 -->
+    <select id="selectNovelTotalCount" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM novel_book_main WHERE status = 1
+    </select>
+
+    <!-- 后台：分页查询（可选 status：null=全部 0=下架 1=上架） -->
+    <select id="selectNovelsByPageAdmin" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count, status, create_time
+        FROM novel_book_main
+        <where>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 后台：总数（可选 status） -->
+    <select id="selectNovelTotalCountAdmin" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM novel_book_main
+        <where>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <!-- 后台：分页查询（支持标签和关键词筛选） -->
+    <select id="selectNovelsByPageAdminWithFilter" resultMap="NovelBookResultMap">
+        SELECT id, book_main_name, author, label, cover, read_count, status, create_time
+        FROM novel_book_main
+        <where>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="tag != null and tag != ''">
+                AND (
+                    label = #{tag}
+                    OR label LIKE CONCAT(#{tag}, ',%')
+                )
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    book_main_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR author LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 后台：总数（支持标签和关键词筛选） -->
+    <select id="selectNovelTotalCountAdminWithFilter" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM novel_book_main
+        <where>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="tag != null and tag != ''">
+                AND (
+                    label = #{tag}
+                    OR label LIKE CONCAT(#{tag}, ',%')
+                )
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    book_main_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR author LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+    </select>
+
+    <!-- 新增：更新小说阅读量（点击小说时+1） -->
+    <update id="updateReadCount" parameterType="Integer">
+        UPDATE novel_book_main
+        SET read_count = read_count + 1
+        WHERE id = #{id}
+    </update>
+
+    <!-- 插入新小说（书籍上架） -->
+    <insert id="insertNovel" parameterType="com.wangrui.springboot.pojo.NovelBook" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO novel_book_main (book_main_name, author, label, cover, read_count, status, create_time)
+        VALUES (#{bookMainName}, #{author}, #{label}, #{cover}, #{readCount}, #{status}, #{createTime})
+    </insert>
+
+    <!-- 后台：更新小说信息 -->
+    <update id="updateNovel" parameterType="com.wangrui.springboot.pojo.NovelBook">
+        UPDATE novel_book_main
+        SET book_main_name = #{bookMainName}, author = #{author}, label = #{label}, cover = #{cover}, status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 后台：上下架 -->
+    <update id="updateNovelStatus">
+        UPDATE novel_book_main SET status = #{status} WHERE id = #{id}
+    </update>
+
+    <update id="increaseReadCount">
+        UPDATE novel_book_main
+        SET read_count = read_count + 1
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectSumReadCount" resultType="long">
+        SELECT COALESCE(SUM(read_count), 0) FROM novel_book_main
+    </select>
+</mapper>

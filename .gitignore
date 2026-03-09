@@ -1,0 +1,28 @@
+# 依赖
+node_modules/
+
+# 构建/编译
+dist/
+target/
+*.class
+*.jar
+*.war
+
+# 上传目录（用户文件一般不纳入版本控制）
+uploads/
+
+# 环境与本地配置（含敏感信息）
+.env
+.env.local
+application-local.yml
+*.local
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# 系统与日志
+.DS_Store
+Thumbs.db
+*.log

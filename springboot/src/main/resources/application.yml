@@ -1,0 +1,31 @@
+spring:
+  # 数据库配置（保持你的信息）
+  datasource:
+    url: jdbc:mysql://localhost:3306/novel_db
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  # 文件上传大小限制配置
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+# 服务器端口（保持你的8081）
+server:
+  port: 8081
+
+# 封面上传目录（相对项目根或绝对路径，开发可用 classpath 下 static）
+upload:
+  covers-dir: ${user.dir}/uploads/covers
+
+mybatis:
+  # Mapper XML文件路径
+  mapper-locations: classpath:mapper/*.xml, classpath:com/wangrui/springboot/mapper/*.xml
+  # 实体类别名包
+  type-aliases-package: com.wangrui.springboot.pojo
+  configuration:
+    # 驼峰命名自动转换
+    map-underscore-to-camel-case: true
+    # 打印SQL日志
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

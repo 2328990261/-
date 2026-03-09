@@ -1,0 +1,109 @@
+package com.wangrui.springboot.controller;
+
+import com.wangrui.springboot.pojo.NovelBook;
+import com.wangrui.springboot.pojo.NovelBookVolume;
+import com.wangrui.springboot.mapper.NovelBookMainMapper;
+import com.wangrui.springboot.mapper.NovelVolumeMapper;
+import com.wangrui.springboot.util.Result;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+
+@RestController
+@RequestMapping("/api/admin")
+@CrossOrigin
+public class BookUploadController {
+    @Autowired
+    private NovelBookMainMapper novelBookMainMapper;
+    @Autowired
+    private NovelVolumeMapper novelVolumeMapper;
+
+    @PostMapping("/createMainBook")
+    public Result createMainBook(@RequestBody Map<String, String> params) {
+        try {
+            NovelBook novelBook = new NovelBook();
+            novelBook.setBookMainName(params.get("bookName"));
+            novelBook.setAuthor(params.get("author"));
+            novelBook.setLabel(params.get("label"));
+            novelBook.setCover(params.get("cover"));
+            novelBook.setReadCount(0);
+            novelBook.setCreateTime(new Date());
+            novelBookMainMapper.insertNovel(novelBook);
+            return Result.success(novelBook.getId());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("创建失败");
+        }
+    }
+
+    @PostMapping("/uploadVolumes")
+    public Result uploadVolumes(@RequestParam("files") MultipartFile[] files, @RequestParam("mainBookId") Integer mainBookId) {
+        try {
+            int total = 0;
+            for (MultipartFile file : files) {
+                if (file.isEmpty()) continue;
+                Map<String, byte[]> contents = extractEpubContents(file.getInputStream());
+                String volumeName = file.getOriginalFilename().replace(".epub", "");
+                StringBuilder fullContent = new StringBuilder();
+                for (String contentFile : extractContentFiles(contents)) {
+                    byte[] data = contents.get(contentFile);
+                    if (data != null) {
+                        String content = cleanHtmlContent(new String(data, StandardCharsets.UTF_8));
+                        if (!content.trim().isEmpty()) fullContent.append(content).append("\n\n");
+                    }
+                }
+                if (fullContent.length() > 0) {
+                    NovelBookVolume volume = new NovelBookVolume();
+                    volume.setMainBookId(mainBookId);
+                    volume.setVolumeName(volumeName);
+                    volume.setContent(fullContent.toString().trim());
+                    volume.setCreateTime(new Date());
+                    novelVolumeMapper.insertVolume(volume);
+                    total++;
+                }
+            }
+            return Result.success("成功上传 " + total + " 个分卷");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("上传失败");
+        }
+    }
+
+    private Map<String, byte[]> extractEpubContents(InputStream inputStream) throws Exception {
+        Map<String, byte[]> contents = new HashMap<>();
+        try (ZipArchiveInputStream zipInput = new ZipArchiveInputStream(inputStream, "UTF-8")) {
+            ZipArchiveEntry entry;
+            while ((entry = zipInput.getNextZipEntry()) != null) {
+                if (!entry.isDirectory()) {
+                    ByteArrayOutputStream output = new ByteArrayOutputStream();
+                    byte[] buffer = new byte[8192];
+                    int len;
+                    while ((len = zipInput.read(buffer)) != -1) output.write(buffer, 0, len);
+                    contents.put(entry.getName(), output.toByteArray());
+                }
+            }
+        }
+        return contents;
+    }
+
+    private List<String> extractContentFiles(Map<String, byte[]> contents) {
+        List<String> files = new ArrayList<>();
+        for (String key : contents.keySet()) {
+            if (key.endsWith(".html") || key.endsWith(".xhtml") || key.endsWith(".htm")) files.add(key);
+        }
+        Collections.sort(files);
+        return files;
+    }
+
+    private String cleanHtmlContent(String html) {
+        String text = html.replaceAll("<script[^>]*>.*?</script>", "").replaceAll("<style[^>]*>.*?</style>", "").replaceAll("<[^>]+>", "");
+        text = text.replace("&nbsp;", " ").replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").replace("&quot;", "\"");
+        return text.replaceAll("\\s+", " ").trim();
+    }
+}
