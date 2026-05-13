@@ -15,8 +15,9 @@
             class="banner-img"
           >
         </div>
+        <!-- ←【留白处】在这里填写轮播图标题文字 -->
         <div class="banner-title">
-          {{ item.title || '默认标题' }}
+          {{ item.title || '' }}
         </div>
       </el-carousel-item>
     </el-carousel>

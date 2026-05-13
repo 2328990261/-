@@ -4,6 +4,7 @@ import com.wangrui.springboot.pojo.UserComment;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 public interface UserCommentMapper {
     // 获取用户评论列表
@@ -23,4 +24,7 @@ public interface UserCommentMapper {
 
     // 删除用户评论
     int deleteById(@Param("id") Integer id);
+
+    /** 每本小说的评论条数（全站聚合） */
+    List<Map<String, Object>> selectCommentCountByNovel();
 }

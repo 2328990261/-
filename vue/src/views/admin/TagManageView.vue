@@ -10,7 +10,6 @@
           <tr>
             <th>ID</th>
             <th>标签名</th>
-            <th>推荐权重</th>
             <th>排序</th>
             <th>操作</th>
           </tr>
@@ -19,7 +18,6 @@
           <tr v-for="tag in tags" :key="tag.id">
             <td>{{ tag.id }}</td>
             <td>{{ tag.name }}</td>
-            <td>{{ tag.recommendWeight }}</td>
             <td>{{ tag.sortOrder }}</td>
             <td>
               <button class="btn-sm" @click="openEdit(tag)">编辑</button>
@@ -33,7 +31,6 @@
       <div class="modal">
         <h3>{{ editId ? '编辑标签' : '新增标签' }}</h3>
         <div class="form-item"><label>标签名</label><input v-model="form.name" placeholder="如：奇幻" /></div>
-        <div class="form-item"><label>推荐权重（0~1）</label><input v-model.number="form.recommendWeight" type="number" min="0" max="1" step="0.05" /></div>
         <div class="form-item"><label>排序（数字越小越靠前）</label><input v-model.number="form.sortOrder" type="number" /></div>
         <div class="modal-actions">
           <button class="btn-ok" @click="submit">{{ editId ? '保存' : '添加' }}</button>
@@ -46,9 +43,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import adminHttp from '@/utils/adminHttp'
 
-const API = 'http://localhost:8081/api/admin'
 const tags = ref([])
 const showModal = ref(false)
 const editId = ref(null)
@@ -56,7 +52,7 @@ const form = ref({ name: '', recommendWeight: 0.1, sortOrder: 0 })
 
 const loadTags = async () => {
   try {
-    const res = await axios.get(`${API}/tags`)
+    const res = await adminHttp.get('/admin/tags')
     if (res.data?.code === 200 && res.data?.data) {
       tags.value = res.data.data || []
     }
@@ -84,24 +80,24 @@ const submit = async () => {
   }
   try {
     if (editId.value) {
-      await axios.put(`${API}/tags/${editId.value}`, form.value)
+      await adminHttp.put(`/admin/tags/${editId.value}`, form.value)
     } else {
-      await axios.post(`${API}/tags`, form.value)
+      await adminHttp.post('/admin/tags', form.value)
     }
     showModal.value = false
     loadTags()
   } catch (e) {
-    alert(e.response?.data?.msg || '操作失败')
+    alert(e?.message || e?.msg || '操作失败')
   }
 }
 
 const doDelete = async (tag) => {
   if (!confirm(`确定删除标签「${tag.name}」？`)) return
   try {
-    await axios.delete(`${API}/tags/${tag.id}`)
+    await adminHttp.delete(`/admin/tags/${tag.id}`)
     loadTags()
   } catch (e) {
-    alert(e.response?.data?.msg || '删除失败')
+    alert(e?.message || e?.msg || '删除失败')
   }
 }
 

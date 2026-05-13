@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wangrui.springboot.mapper.UserRecommendProfileMapper">
+
+    <resultMap id="ProfileResultMap" type="com.wangrui.springboot.pojo.UserRecommendProfile">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="cf_enabled" property="cfEnabled"/>
+        <result column="explain_enabled" property="explainEnabled"/>
+        <result column="mmr_enabled" property="mmrEnabled"/>
+
+        <result column="w_collection" property="wCollection"/>
+        <result column="w_finished" property="wFinished"/>
+        <result column="w_read_progress" property="wReadProgress"/>
+        <result column="w_read_duration" property="wReadDuration"/>
+        <result column="w_comment" property="wComment"/>
+
+        <result column="cold_start_collection_threshold" property="coldStartCollectionThreshold"/>
+        <result column="recent_read_limit" property="recentReadLimit"/>
+        <result column="topk_similar_per_seed" property="topkSimilarPerSeed"/>
+        <result column="candidate_limit" property="candidateLimit"/>
+        <result column="recommend_limit" property="recommendLimit"/>
+
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="selectByUserId" resultMap="ProfileResultMap">
+        SELECT id, user_id, cf_enabled, explain_enabled, mmr_enabled,
+               w_collection, w_finished, w_read_progress, w_read_duration, w_comment,
+               cold_start_collection_threshold, recent_read_limit, topk_similar_per_seed, candidate_limit, recommend_limit,
+               updated_at
+        FROM user_recommend_profile
+        WHERE user_id = #{userId}
+    </select>
+
+    <insert id="insert" parameterType="com.wangrui.springboot.pojo.UserRecommendProfile">
+        INSERT INTO user_recommend_profile (
+            user_id, cf_enabled, explain_enabled, mmr_enabled,
+            w_collection, w_finished, w_read_progress, w_read_duration, w_comment,
+            cold_start_collection_threshold, recent_read_limit, topk_similar_per_seed, candidate_limit, recommend_limit
+        ) VALUES (
+            #{userId}, #{cfEnabled}, #{explainEnabled}, #{mmrEnabled},
+            #{wCollection}, #{wFinished}, #{wReadProgress}, #{wReadDuration}, #{wComment},
+            #{coldStartCollectionThreshold}, #{recentReadLimit}, #{topkSimilarPerSeed}, #{candidateLimit}, #{recommendLimit}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.wangrui.springboot.pojo.UserRecommendProfile">
+        UPDATE user_recommend_profile
+        SET cf_enabled = #{cfEnabled},
+            explain_enabled = #{explainEnabled},
+            mmr_enabled = #{mmrEnabled},
+            w_collection = #{wCollection},
+            w_finished = #{wFinished},
+            w_read_progress = #{wReadProgress},
+            w_read_duration = #{wReadDuration},
+            w_comment = #{wComment},
+            cold_start_collection_threshold = #{coldStartCollectionThreshold},
+            recent_read_limit = #{recentReadLimit},
+            topk_similar_per_seed = #{topkSimilarPerSeed},
+            candidate_limit = #{candidateLimit},
+            recommend_limit = #{recommendLimit}
+        WHERE user_id = #{userId}
+    </update>
+
+</mapper>
+

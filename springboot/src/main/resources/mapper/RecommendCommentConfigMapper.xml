@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wangrui.springboot.mapper.RecommendCommentConfigMapper">
+
+    <resultMap id="ConfigResultMap" type="com.wangrui.springboot.pojo.RecommendCommentConfig">
+        <id column="id" property="id"/>
+        <result column="enabled" property="enabled"/>
+        <result column="comment_weight" property="commentWeight"/>
+        <result column="comment_count_cap" property="commentCountCap"/>
+        <result column="read_history_enabled" property="readHistoryEnabled"/>
+        <result column="read_history_weight" property="readHistoryWeight"/>
+        <result column="read_history_recent_limit" property="readHistoryRecentLimit"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="ConfigResultMap">
+        SELECT id, enabled, comment_weight, comment_count_cap,
+               read_history_enabled, read_history_weight, read_history_recent_limit, updated_at
+        FROM recommend_comment_config
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.wangrui.springboot.pojo.RecommendCommentConfig">
+        INSERT INTO recommend_comment_config (id, enabled, comment_weight, comment_count_cap,
+            read_history_enabled, read_history_weight, read_history_recent_limit)
+        VALUES (#{id}, #{enabled}, #{commentWeight}, #{commentCountCap},
+            #{readHistoryEnabled}, #{readHistoryWeight}, #{readHistoryRecentLimit})
+    </insert>
+
+    <update id="update" parameterType="com.wangrui.springboot.pojo.RecommendCommentConfig">
+        UPDATE recommend_comment_config
+        SET enabled = #{enabled},
+            comment_weight = #{commentWeight},
+            comment_count_cap = #{commentCountCap},
+            read_history_enabled = #{readHistoryEnabled},
+            read_history_weight = #{readHistoryWeight},
+            read_history_recent_limit = #{readHistoryRecentLimit}
+        WHERE id = #{id}
+    </update>
+</mapper>

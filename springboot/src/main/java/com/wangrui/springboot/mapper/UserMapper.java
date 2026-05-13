@@ -34,4 +34,7 @@ public interface UserMapper {
     int selectUserCount(@Param("keyword") String keyword, @Param("status") Integer status);
     void updateStatus(@Param("id") Integer id, @Param("status") Integer status);
     int selectCollectionCount();
+
+    /** 全站收藏的小说 id（含不同用户重复收藏同一书，重复计数以放大热度） */
+    List<Integer> selectAllCollectionNovelIds();
 }

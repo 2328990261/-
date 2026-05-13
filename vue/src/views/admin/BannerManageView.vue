@@ -22,7 +22,7 @@
             <td>{{ banner.sortOrder }}</td>
             <td>
               <img 
-                :src="`http://localhost:8081/novel/cover/${encodeURIComponent(banner.imageUrl || banner.cover)}`" 
+                :src="novelCover(banner.imageUrl || banner.cover)" 
                 class="banner-preview"
                 @error="handleImageError"
               />
@@ -135,7 +135,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import adminHttp from '@/utils/adminHttp'
+import { backendUrl } from '@/config/env'
+
+const novelCover = (name) => (name ? `${backendUrl('/novel/cover')}/${encodeURIComponent(name)}` : '')
 
 const bannerList = ref([])
 const showDialog = ref(false)
@@ -158,8 +161,8 @@ const formData = ref({
 // 加载轮播图列表
 const loadBanners = async () => {
   try {
-    const res = await axios.get('http://localhost:8081/api/admin/banner/list')
-    if (res.data.code === 200) {
+    const res = await adminHttp.get('/admin/banner/list')
+    if (res.data?.code === 200) {
       bannerList.value = res.data.data || []
     }
   } catch (error) {
@@ -230,7 +233,7 @@ const editBanner = (banner) => {
   
   // 如果有自定义图片，显示预览
   if (banner.imageUrl) {
-    imagePreview.value = `http://localhost:8081/novel/cover/${encodeURIComponent(banner.imageUrl)}`
+    imagePreview.value = novelCover(banner.imageUrl)
   } else {
     imagePreview.value = ''
   }
@@ -271,20 +274,12 @@ const submitForm = async () => {
       const uploadFormData = new FormData()
       uploadFormData.append('file', uploadedFile.value)
 
-      const uploadRes = await axios.post(
-        'http://localhost:8081/api/admin/banner/upload-image',
-        uploadFormData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }
-      )
+      const uploadRes = await adminHttp.post('/admin/banner/upload-image', uploadFormData)
 
-      if (uploadRes.data.code === 200) {
+      if (uploadRes.data?.code === 200) {
         imageUrl = uploadRes.data.data
       } else {
-        alert('图片上传失败：' + uploadRes.data.msg)
+        alert('图片上传失败：' + (uploadRes.data?.msg || ''))
         return
       }
     }
@@ -318,28 +313,24 @@ const submitForm = async () => {
       data.endTime = formData.value.endTime
     }
 
-    const url = isEdit.value 
-      ? 'http://localhost:8081/api/admin/banner/update'
-      : 'http://localhost:8081/api/admin/banner/add'
-    
-    const method = isEdit.value ? 'put' : 'post'
-    
-    const res = await axios({
-      method,
-      url,
-      data
-    })
+    const url = isEdit.value ? '/admin/banner/update' : '/admin/banner/add'
 
-    if (res.data.code === 200) {
+    const method = isEdit.value ? 'put' : 'post'
+
+    const res = method === 'put'
+      ? await adminHttp.put(url, data)
+      : await adminHttp.post(url, data)
+
+    if (res.data?.code === 200) {
       alert(isEdit.value ? '更新成功' : '新增成功')
       closeDialog()
       loadBanners()
     } else {
-      alert(res.data.msg || '操作失败')
+      alert(res.data?.msg || '操作失败')
     }
   } catch (error) {
     console.error('提交失败:', error)
-    alert('操作失败：' + (error.response?.data?.msg || error.message))
+    alert('操作失败：' + (e?.msg || e?.message || ''))
   }
 }
 
@@ -350,12 +341,12 @@ const deleteBanner = async (id) => {
   }
 
   try {
-    const res = await axios.delete(`http://localhost:8081/api/admin/banner/${id}`)
-    if (res.data.code === 200) {
+    const res = await adminHttp.delete(`/admin/banner/${id}`)
+    if (res.data?.code === 200) {
       alert('删除成功')
       loadBanners()
     } else {
-      alert(res.data.msg || '删除失败')
+      alert(res.data?.msg || '删除失败')
     }
   } catch (error) {
     console.error('删除失败:', error)

@@ -1,0 +1,91 @@
+@startuml 推荐模块架构图_简洁模板版
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam packageStyle rectangle
+skinparam {
+  NodeSep 55
+  RankSep 55
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+
+title 图4-x 推荐模块架构图（论文展示版）
+top to bottom direction
+
+actor "普通用户" as U
+actor "管理员" as A
+
+package "前端展示层" as L1 {
+  rectangle "首页/推荐页\n展示推荐列表" as FE_REC
+  rectangle "行为上报入口\n阅读/收藏/评论/不感兴趣" as FE_BEH
+  rectangle "推荐设置入口\n用户偏好设置 + 后台参数调整" as FE_CFG
+  FE_REC -[hidden]r- FE_BEH
+  FE_BEH -[hidden]r- FE_CFG
+}
+
+package "业务接入层" as L2 {
+  rectangle "推荐请求处理" as C_REC
+  rectangle "用户行为处理" as C_BEH
+  rectangle "推荐参数处理" as C_PRO
+  C_REC -[hidden]r- C_BEH
+  C_BEH -[hidden]r- C_PRO
+}
+
+package "推荐引擎层" as L3 {
+  rectangle "候选召回\n基于标签的内容匹配" as E1
+  rectangle "融合打分\n协同信号 + 热度补偿" as E2
+  rectangle "重排输出\nMMR、多样性、去重、条数控制" as E3
+  E1 -[hidden]r- E2
+  E2 -[hidden]r- E3
+}
+
+package "数据与配置层" as L4 {
+  rectangle "内容库\nnovel_book_main\n(标签、作者、阅读量)" as D_BOOK
+  rectangle "行为库\ncollection / reading_history /\nfinished / comment / dislike" as D_BEH
+  rectangle "配置库\n推荐主参数 / 行为权重 /\n用户画像参数 / 标签权重" as D_CFG
+  D_BOOK -[hidden]r- D_BEH
+  D_BEH -[hidden]r- D_CFG
+}
+
+' 角色进入
+U --> FE_REC
+U --> FE_BEH
+A --> FE_CFG
+
+' 主链路（单向，避免绕线）
+FE_REC --> C_REC
+C_REC --> E1
+E1 --> E2
+E2 --> E3
+E3 --> FE_REC : 推荐结果
+
+' 行为与配置链路（垂直）
+FE_BEH --> C_BEH
+C_BEH --> D_BEH
+FE_CFG --> C_PRO
+C_PRO --> D_CFG
+
+' 引擎读取数据（短虚线，减少交叉）
+E1 ..> D_BOOK
+E2 ..> D_BEH
+E2 ..> D_CFG
+
+' 分层锚点
+FE_REC -[hidden]d-- C_REC
+C_REC -[hidden]d-- E1
+E1 -[hidden]d-- D_BOOK
+
+note bottom of L3
+主策略：标签召回 -> 融合打分 -> 重排输出；
+冷启动：行为不足时使用热门内容兜底，保证推荐可返回。
+end note
+
+@enduml

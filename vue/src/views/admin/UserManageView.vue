@@ -49,9 +49,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import adminHttp from '@/utils/adminHttp'
 
-const API = 'http://localhost:8081/api/admin'
 const list = ref([])
 const total = ref(0)
 const page = ref(1)
@@ -61,7 +60,7 @@ const filterStatus = ref(null)
 
 const loadList = async () => {
   try {
-    const res = await axios.get(`${API}/users`, { params: { page: page.value, pageSize, keyword: keyword.value || undefined, status: filterStatus.value } })
+    const res = await adminHttp.get('/admin/users', { params: { page: page.value, pageSize, keyword: keyword.value || undefined, status: filterStatus.value } })
     if (res.data?.code === 200 && res.data?.data) {
       list.value = res.data.data.list || []
       total.value = res.data.data.total || 0
@@ -73,10 +72,10 @@ const loadList = async () => {
 
 const setStatus = async (id, status) => {
   try {
-    await axios.put(`${API}/users/${id}/status`, { status })
+    await adminHttp.put(`/admin/users/${id}/status`, { status })
     loadList()
   } catch (e) {
-    alert(e.response?.data?.msg || '操作失败')
+    alert(e?.message || e?.msg || '操作失败')
   }
 }
 

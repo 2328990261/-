@@ -1,0 +1,75 @@
+@startuml 轻小说推荐系统_系统结构图_分层样式
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+
+title 轻小说推荐系统系统结构图（B/S + 前后端分离）
+
+top to bottom direction
+
+package "用户层" as L_USER {
+  rectangle "浏览器\n(B/S 客户端)" as PC
+  rectangle "普通用户" as R1
+  rectangle "管理员" as R2
+  PC -[hidden]right- R1
+  R1 -[hidden]right- R2
+}
+
+package "前端UI" as L_FE {
+  rectangle "Element Plus\n组件库" as EP
+  rectangle "Vue 3 单页应用\nviews / components" as VUE_APP
+  EP -[hidden]right- VUE_APP
+}
+
+package "交互层" as L_IX {
+  rectangle "Vue 3" as F1
+  rectangle "Vue Router" as F2
+  rectangle "Pinia" as F3
+  rectangle "Axios" as F4
+  rectangle "Vite" as F5
+  F1 -[hidden]right- F2
+  F2 -[hidden]right- F3
+  F3 -[hidden]right- F4
+  F4 -[hidden]right- F5
+}
+
+package "后端处理 (Spring Boot)" as L_BE {
+  rectangle "安全控制区\nJWT 生成与校验、登录鉴权" as Z1
+  rectangle "业务处理区\nController / Service" as Z2
+  rectangle "数据连接区\nMyBatis Mapper + XML" as Z3
+  Z1 -[hidden]right- Z2
+  Z2 -[hidden]right- Z3
+  rectangle "工具集成区：本地文件上传(封面/轮播/EPUB) | 统一响应 Result 与实体 POJO | JwtUtil、BCrypt 等工具类" as ZTOOL
+  Z2 -[hidden]down- ZTOOL
+}
+
+package "数据层" as L_DB {
+  rectangle "持久化存储：MySQL\n数据库 novel_db" as MYSQL
+  rectangle "说明：JWT 无状态\n令牌由前端保存" as JWTN
+  MYSQL -[hidden]right- JWTN
+}
+
+package "运维工具层" as L_OPS {
+  rectangle "开发工具\nIDEA、VSCode" as O1
+  rectangle "Maven" as O2
+  rectangle "Postman" as O3
+  rectangle "SpringDoc\n(Swagger UI)" as O4
+  O1 -[hidden]right- O2
+  O2 -[hidden]right- O3
+  O3 -[hidden]right- O4
+}
+
+L_USER -[hidden]down- L_FE
+L_FE -[hidden]down- L_IX
+L_IX -[hidden]down- L_BE
+L_BE -[hidden]down- L_DB
+L_DB -[hidden]down- L_OPS
+
+@enduml

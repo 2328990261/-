@@ -65,4 +65,9 @@
         SELECT COALESCE(SUM(read_duration), 0) FROM user_reading_history WHERE user_id = #{userId}
     </select>
 
+    <select id="selectAllForSiteHeat" resultMap="UserReadingHistoryResultMap">
+        SELECT id, user_id, novel_id, chapter_id, read_duration, read_progress, last_read_time, created_at
+        FROM user_reading_history
+    </select>
+
 </mapper>

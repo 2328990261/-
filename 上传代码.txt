@@ -1,0 +1,2 @@
+后端：mvn clean package -DskipTests
+前端：npm run build

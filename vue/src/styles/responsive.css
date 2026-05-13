@@ -1,0 +1,36 @@
+/* 全站响应式基线（含前台与 /admin） */
+:root {
+  --page-gutter: 20px;
+  --navbar-height: 60px;
+  --content-max: 1200px;
+}
+
+@media (max-width: 991px) {
+  :root {
+    --page-gutter: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --page-gutter: 12px;
+  }
+}
+
+html {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/* 触摸设备上可点区域不要太挤 */
+@media (max-width: 991px) and (pointer: coarse) {
+  button,
+  .nav-link,
+  [role='button'] {
+    min-height: 40px;
+  }
+}

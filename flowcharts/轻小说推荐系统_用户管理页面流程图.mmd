@@ -1,0 +1,48 @@
+%% 轻小说推荐系统 — 用户管理页面流程图
+%% 去掉外层「横排容器」子图，避免 Mermaid 把「开始」挤到右侧；由「用户管理页面」直接分叉到四列。
+%% https://mermaid.live
+
+%%{init: {"flowchart": {"nodeSpacing": 28, "rankSpacing": 40, "padding": 12}}}%%
+flowchart TB
+  A([开始]) --> B[用户管理页面]
+
+  subgraph C1["查询与筛选"]
+    direction TB
+    c1a[输入关键词或状态] --> c1b[点击查询] --> c1c[GET 分页列表]
+  end
+
+  subgraph C2["编辑用户"]
+    direction TB
+    c2a[点击编辑] --> c2b[弹窗填写资料与角色] --> c2c[点击保存]
+    c2c --> c2d{校验}
+    c2d -->|否| c2e[提示错误]
+    c2d -->|是| c2f[PUT 更新用户<br/>可选 BCrypt 密码]
+  end
+
+  subgraph C3["禁用 / 启用"]
+    direction TB
+    c3a[点击禁用或启用] --> c3b[PUT 更新 status]
+  end
+
+  subgraph C4["分页浏览"]
+    direction TB
+    c4a[上一页 / 下一页] --> c4b[GET 当前页]
+  end
+
+  B --> c1a
+  B --> c2a
+  B --> c3a
+  B --> c4a
+
+  c1c --> Z[刷新并展示用户列表]
+  c2e --> Z
+  c2f --> Z
+  c3b --> Z
+  c4b --> Z
+  Z --> H([结束])
+
+  style A fill:#fff,stroke:#000,color:#000
+  style H fill:#fff,stroke:#000,color:#000
+  style c2d fill:#fff,stroke:#000,color:#000
+
+%% 若 init 首行导致无法渲染，删除 %%{init:...}%% 即可。

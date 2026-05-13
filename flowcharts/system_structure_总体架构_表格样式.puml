@@ -1,0 +1,37 @@
+@startsalt
+{+
+轻小说推荐系统系统结构图（B/S + 前后端分离）
+{T
++用户层|{^
+<b>浏览器</b> (B/S)
+.
+普通用户、管理员
+}
++前端UI|{^
+Element Plus 组件库
+.
+Vue 3 单页应用 (views / components)
+}
++交互层|{^
+Vue 3、Vue Router、Pinia、Axios、Vite
+}
++后端处理 (Spring Boot)|{^
+<b>安全控制区</b>：JWT 生成与校验、登录鉴权
+.
+<b>业务处理区</b>：Controller / Service
+.
+<b>数据连接区</b>：MyBatis Mapper + XML
+.
+<b>工具集成区</b>：本地文件上传 (封面/轮播/EPUB)、统一响应 Result、POJO、JwtUtil/BCrypt 等
+}
++数据层|{^
+MySQL 持久化 (novel_db)
+.
+JWT 无状态，令牌前端保存
+}
++运维工具层|{^
+IDEA、VSCode、Maven、Postman、SpringDoc (Swagger UI)
+}
+}
+}
+@end

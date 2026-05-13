@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wangrui.springboot.mapper.RecommendCFMapper">
+
+    <!--
+      interactions: 用户-小说隐式互动集合（去重后的 user_id, novel_id）
+      互动定义：收藏/完读/评论/阅读历史
+    -->
+    <sql id="Interactions">
+        (
+            SELECT DISTINCT user_id, novel_id FROM user_collection
+            UNION
+            SELECT DISTINCT user_id, novel_id FROM user_finished_novel
+            UNION
+            SELECT DISTINCT user_id, novel_id FROM user_comment
+            UNION
+            SELECT DISTINCT user_id, novel_id FROM user_reading_history
+        )
+    </sql>
+
+    <select id="selectItemUserCount" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT t.user_id)
+        FROM
+        <include refid="Interactions"/> t
+        WHERE t.novel_id = #{novelId}
+    </select>
+
+    <select id="selectCooccurItems" resultType="java.util.HashMap">
+        SELECT
+            other.novel_id AS novelId,
+            COUNT(DISTINCT other.user_id) AS coCount,
+            (SELECT COUNT(DISTINCT user_id) FROM <include refid="Interactions"/> x WHERE x.novel_id = #{seedNovelId}) AS cntI,
+            (SELECT COUNT(DISTINCT user_id) FROM <include refid="Interactions"/> y WHERE y.novel_id = other.novel_id) AS cntJ
+        FROM <include refid="Interactions"/> seed
+        JOIN <include refid="Interactions"/> other
+          ON seed.user_id = other.user_id
+        WHERE seed.novel_id = #{seedNovelId}
+          AND other.novel_id &lt;&gt; #{seedNovelId}
+        GROUP BY other.novel_id
+        ORDER BY coCount DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectTopNovelIdsByInteractionCount" resultType="java.util.HashMap">
+        SELECT t.novel_id AS novelId, COUNT(DISTINCT t.user_id) AS cnt
+        FROM
+        <include refid="Interactions"/>
+        t
+        GROUP BY t.novel_id
+        ORDER BY cnt DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>
+

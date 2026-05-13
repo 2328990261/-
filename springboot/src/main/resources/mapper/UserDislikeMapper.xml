@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wangrui.springboot.mapper.UserDislikeMapper">
+
+    <insert id="insertNovel">
+        INSERT IGNORE INTO user_dislike_novel (user_id, novel_id)
+        VALUES (#{userId}, #{novelId})
+    </insert>
+
+    <insert id="insertAuthor">
+        INSERT IGNORE INTO user_dislike_author (user_id, author_name)
+        VALUES (#{userId}, #{authorName})
+    </insert>
+
+    <insert id="insertTag">
+        INSERT IGNORE INTO user_dislike_tag (user_id, tag_name)
+        VALUES (#{userId}, #{tagName})
+    </insert>
+
+    <select id="selectNovelIdsByUserId" resultType="java.lang.Integer">
+        SELECT novel_id FROM user_dislike_novel WHERE user_id = #{userId}
+    </select>
+
+    <select id="selectAuthorsByUserId" resultType="java.lang.String">
+        SELECT author_name FROM user_dislike_author WHERE user_id = #{userId}
+    </select>
+
+    <select id="selectTagsByUserId" resultType="java.lang.String">
+        SELECT tag_name FROM user_dislike_tag WHERE user_id = #{userId}
+    </select>
+
+</mapper>

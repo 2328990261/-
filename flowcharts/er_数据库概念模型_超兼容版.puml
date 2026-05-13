@@ -1,0 +1,45 @@
+@startuml
+left to right direction
+skinparam shadowing false
+skinparam linetype ortho
+
+title 数据库E-R模型图（超兼容版）
+
+rectangle "用户(User)" as U
+rectangle "小说主表(NovelBookMain)" as N
+rectangle "分卷(Volume)" as V
+rectangle "收藏(Collection)" as C1
+rectangle "评论(Comment)" as C2
+rectangle "阅读历史(ReadingHistory)" as C3
+rectangle "完读记录(FinishedNovel)" as C4
+rectangle "标签(Tag)" as T
+rectangle "轮播图(BannerCarousel)" as B
+rectangle "用户偏好标签(PreferenceTag)" as P
+rectangle "推荐行为权重配置(RecommendCommentConfig)" as RC
+
+U -[hidden]right- C1
+C1 -[hidden]right- N
+C1 -[hidden]down- C2
+C2 -[hidden]down- C3
+C3 -[hidden]down- C4
+T -[hidden]up- N
+B -[hidden]down- N
+P -[hidden]down- U
+RC -[hidden]right- C2
+
+U --> C1 : 1
+C1 --> N : n
+U --> C2 : 1
+C2 --> N : n
+U --> C3 : 1
+C3 --> N : n
+U --> C4 : 1
+C4 --> N : n
+N --> V : 1..n
+T ..> N
+B ..> N
+P ..> U
+RC ..> C2
+RC ..> C3
+
+@enduml

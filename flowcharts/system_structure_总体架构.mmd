@@ -1,0 +1,47 @@
+%% https://mermaid.live 打开 → 粘贴 → Actions → PNG/SVG
+%% Word 建议插入 PNG，避免 SVG 出现「无法显示该图片」
+
+flowchart TB
+  subgraph L1["用户层"]
+    u1["浏览器（B/S）"]
+    u2["普通用户、管理员"]
+  end
+
+  subgraph L2["前端UI"]
+    direction LR
+    f1["Element Plus 组件库"]
+    f2["Vue 3 单页应用（views / components）"]
+  end
+
+  subgraph L3["交互层"]
+    i1["Vue 3、Vue Router、Pinia、Axios、Vite"]
+  end
+
+  subgraph L4["后端处理（Spring Boot）"]
+    direction TB
+    subgraph L4r1[" "]
+      direction LR
+      z1["安全控制区\nJWT、登录鉴权"]
+      z2["业务处理区\nController/Service"]
+      z3["数据连接区\nMyBatis"]
+    end
+    tz["工具集成区"]
+    subgraph L4r2[" "]
+      direction LR
+      t1["本地文件\n封面/轮播/EPUB"]
+      t2["Result/POJO"]
+      t3["JwtUtil/BCrypt"]
+      t4["VO 等"]
+    end
+  end
+
+  subgraph L5["数据层"]
+    d1["MySQL（novel_db）"]
+    d2["JWT 无状态，令牌前端保存"]
+  end
+
+  subgraph L6["运维工具层"]
+    o1["IDEA、VSCode、Maven、Postman、SpringDoc"]
+  end
+
+  L1 --> L2 --> L3 --> L4 --> L5 --> L6

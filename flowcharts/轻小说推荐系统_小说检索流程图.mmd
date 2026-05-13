@@ -1,0 +1,25 @@
+%% 轻小说推荐系统 — 4.2.4（1）小说检索设计（书库 LibraryView）
+%% 对应正文：默认列表、关键词、标签筛选、加载更多后进入作品
+%% https://mermaid.live
+
+flowchart TD
+  S([开始]) --> Ra[读者进入书库页面<br/>或从首页相关入口进入浏览]
+  Ra --> Rb{检索方式}
+  Rb -->|默认| Rc[请求已上架列表<br/>可按阅读量等排序]
+  Rb -->|标签| Rd[多选题材或标签请求接口]
+  Rb -->|关键词| Re[搜索书名或作者<br/>可写入本地搜索历史]
+  Rc --> Rf[以卡片列表展示封面、书名、作者等]
+  Rd --> Rf
+  Re --> Rf
+
+  Rf --> Rg{是否加载更多}
+  Rg -->|是| Rh[增加本页展示数量后重新请求]
+  Rh --> Rf
+  Rg -->|否| Ri[点击某部作品]
+
+  Ri --> E([结束<br/>进入详情页])
+
+  style S fill:#fff,stroke:#000,color:#000
+  style E fill:#fff,stroke:#000,color:#000
+  style Rb fill:#fff,stroke:#000,color:#000
+  style Rg fill:#fff,stroke:#000,color:#000

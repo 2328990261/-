@@ -1,0 +1,81 @@
+@startuml 推荐模块架构图
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam packageStyle rectangle
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+
+title 图4-x 推荐模块架构图
+left to right direction
+
+actor "普通用户" as U
+actor "管理员" as A
+
+rectangle "前端展示层" as FE {
+  rectangle "首页/推荐页\n推荐列表展示" as FE_REC
+  rectangle "用户行为入口\n阅读/收藏/评论/不感兴趣" as FE_BEHAV
+  rectangle "推荐配置页面\n(用户画像/标签权重)" as FE_PROFILE
+  rectangle "后台推荐配置页面\n(主参数/行为权重)" as FE_ADMIN_CFG
+}
+
+rectangle "推荐服务层\n(RecommendController)" as RS {
+  rectangle "请求入口\n/api/recommend/books" as API
+  rectangle "候选生成器\n标签匹配主路径" as CAND
+  rectangle "协同过滤子模块\nItem-CF 共现相似" as CF
+  rectangle "得分融合器\nfinalScore = (1-lambda)*normTag + lambda*normCf + popBoost" as FUSION
+  rectangle "重排与约束\nMMR、多样性、去重、纯CF上限" as RERANK
+  rectangle "解释信息生成\n_explain / _score" as EXPLAIN
+}
+
+rectangle "用户画像与行为服务\n(UserRecommendProfileController / UserBehaviorController)" as US {
+  rectangle "行为采集\n收藏/完读/阅读历史/评论" as UB
+  rectangle "标签权重计算\n动态权重 + 覆盖项 + 负反馈惩罚" as UTW
+  rectangle "负反馈管理\n不感兴趣小说/作者/标签" as UDIS
+}
+
+database "数据与配置层\n(MySQL: novel_db)" as DB {
+  rectangle "小说主数据\nnovel_book_main" as T_BOOK
+  rectangle "行为数据\nuser_collection / user_reading_history /\nuser_finished_novel / user_comment" as T_BEH
+  rectangle "推荐配置\nrecommend_main_config /\nrecommend_comment_config" as T_CFG
+  rectangle "用户推荐画像\nuser_recommend_profile /\nuser_tag_weight / user_dislike" as T_PROFILE
+}
+
+U --> FE_REC
+U --> FE_BEHAV
+U --> FE_PROFILE
+A --> FE_ADMIN_CFG
+
+FE_REC --> API
+FE_BEHAV --> UB
+FE_PROFILE --> UTW
+FE_ADMIN_CFG --> T_CFG
+
+API --> CAND
+CAND --> CF
+CAND --> FUSION
+CF --> FUSION
+FUSION --> RERANK
+RERANK --> EXPLAIN
+EXPLAIN --> FE_REC
+
+UB --> T_BEH
+UTW --> T_PROFILE
+UDIS --> T_PROFILE
+UTW --> CAND
+UDIS --> CAND
+
+CAND --> T_BOOK
+CF --> T_BEH
+API --> T_CFG
+API --> T_PROFILE
+
+note bottom of RS
+主链路：标签匹配 -> 协同融合(可选) -> 重排约束 -> 结果解释 -> 前端展示
+冷启动：行为不足时走全局热门/协同兜底，保证推荐列表可返回
+end note
+
+@enduml

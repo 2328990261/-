@@ -47,4 +47,8 @@
         WHERE user_id = #{userId} AND novel_id = #{novelId}
     </delete>
 
+    <select id="selectAllFinishedDistinctNovelIds" resultType="int">
+        SELECT DISTINCT novel_id FROM user_finished_novel
+    </select>
+
 </mapper>

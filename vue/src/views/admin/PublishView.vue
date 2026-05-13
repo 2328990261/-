@@ -102,7 +102,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import axios from 'axios'
+import adminHttp from '@/utils/adminHttp'
 import { getTags } from '@/api/novel'
 const fileInput = ref(null)
 const selectedFiles = ref([])
@@ -193,15 +193,13 @@ function removeLabelTag(tag) {
   if (i > -1) selectedLabelTags.value.splice(i, 1)
 }
 
-const API_BASE = 'http://localhost:8081'
-
 const onCoverChange = async (e) => {
   const file = e.target.files?.[0]
   if (!file) return
   const formData = new FormData()
   formData.append('file', file)
   try {
-    const res = await axios.post(API_BASE + '/api/admin/uploadCover', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+    const res = await adminHttp.post('/admin/uploadCover', formData)
     if (res.data?.code === 200 && res.data?.data) {
       mainBookData.value.cover = res.data.data
     } else {
@@ -242,19 +240,19 @@ const createMainBook = async () => {
   uploading.value = true
 
   try {
-    const response = await axios.post(API_BASE + '/api/admin/createMainBook', {
+    const response = await adminHttp.post('/admin/createMainBook', {
       bookName: mainBookData.value.bookName,
       author: mainBookData.value.author,
       label: mainBookData.value.label,
       cover: mainBookData.value.cover
     })
 
-    if (response.data.code === 200) {
+    if (response.data?.code === 200) {
       mainBookId.value = response.data.data
       alert('主卷创建成功！ID: ' + mainBookId.value)
       step.value = 2
     } else {
-      alert('创建失败：' + response.data.msg)
+      alert('创建失败：' + (response.data?.msg || ''))
     }
   } catch (error) {
     console.error('创建错误：', error)
@@ -282,17 +280,13 @@ const uploadVolumes = async () => {
     
     formDataToSend.append('mainBookId', mainBookId.value)
 
-    const response = await axios.post(API_BASE + '/api/admin/uploadVolumes', formDataToSend, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
+    const response = await adminHttp.post('/admin/uploadVolumes', formDataToSend)
 
-    if (response.data.code === 200) {
+    if (response.data?.code === 200) {
       alert('分卷上传成功！')
       resetForm()
     } else {
-      alert('上传失败：' + response.data.msg)
+      alert('上传失败：' + (response.data?.msg || ''))
     }
   } catch (error) {
     console.error('上传错误：', error)

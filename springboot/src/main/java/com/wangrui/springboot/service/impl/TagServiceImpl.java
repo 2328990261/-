@@ -2,14 +2,13 @@ package com.wangrui.springboot.service.impl;
 
 import com.wangrui.springboot.mapper.TagMapper;
 import com.wangrui.springboot.pojo.Tag;
+import com.wangrui.springboot.service.SiteTagHeatService;
 import com.wangrui.springboot.service.TagService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class TagServiceImpl implements TagService {
@@ -17,6 +16,9 @@ public class TagServiceImpl implements TagService {
 
     @Autowired
     private TagMapper tagMapper;
+
+    @Autowired
+    private SiteTagHeatService siteTagHeatService;
 
     @Override
     public List<Tag> listAll() {
@@ -45,13 +47,6 @@ public class TagServiceImpl implements TagService {
 
     @Override
     public Map<String, Double> getRecommendWeights() {
-        List<Tag> tags = tagMapper.selectAll();
-        Map<String, Double> map = new HashMap<>();
-        for (Tag t : tags) {
-            if (t.getName() != null && t.getRecommendWeight() != null) {
-                map.put(t.getName().trim(), t.getRecommendWeight().doubleValue());
-            }
-        }
-        return map;
+        return siteTagHeatService.getGlobalRecommendWeights();
     }
 }

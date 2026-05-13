@@ -1,0 +1,134 @@
+@startuml
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam linetype ortho
+skinparam packageStyle rectangle
+hide circle
+
+title 图4-x 数据库概念模型（E-R图，简版）
+left to right direction
+
+' ========= 核心实体（按论文 4.3.1 列表）=========
+entity "用户\n(User)" as User {
+  * 用户ID
+  --
+  用户名
+  联系方式
+  管理员标识
+  账号状态
+}
+
+entity "小说主表\n(NovelBookMain)" as Novel {
+  * 小说ID
+  --
+  书名
+  作者
+  标签
+  封面
+  阅读量
+  上下架状态
+}
+
+entity "分卷\n(Volume)" as Vol {
+  * 分卷ID
+  --
+  分卷名称
+  正文内容
+}
+
+entity "标签\n(Tag)" as Tag {
+  * 标签ID
+  --
+  标签名
+  推荐权重
+  排序
+}
+
+entity "收藏\n(Collection)" as Col {
+  * 收藏ID
+  --
+  收藏时间
+}
+
+entity "评论\n(Comment)" as Cmt {
+  * 评论ID
+  --
+  评论内容
+  评论时间
+}
+
+entity "完读记录\n(FinishedNovel)" as Fin {
+  * 记录ID
+  --
+  完读时间
+}
+
+entity "用户偏好标签\n(PreferenceTag)" as Pref {
+  * 记录ID
+  --
+  标签名
+  标签类型
+  排序号
+}
+
+entity "阅读历史\n(ReadingHistory)" as RH {
+  * 记录ID
+  --
+  阅读进度
+  阅读时长
+  最近阅读时间
+}
+
+entity "轮播图\n(BannerCarousel)" as Ban {
+  * 轮播ID
+  --
+  标题/图片/链接
+  展示时间段
+  排序与状态
+  点击统计
+}
+
+entity "推荐行为权重配置\n(RecommendCommentConfig)" as RecCfg {
+  * 配置ID(单行)
+  --
+  评论参与开关/权重
+  阅读历史参与开关/权重
+  上限与最近N条等参数
+}
+
+' ========= 关系（概念层表达，避免过细）=========
+Novel ||--o{ Vol : "1 本小说包含多分卷"
+
+User  ||--o{ Col : "1 用户可收藏多本"
+Novel ||--o{ Col : "1 小说可被多用户收藏"
+
+User  ||--o{ Cmt : "1 用户可发表多条评论"
+Novel ||--o{ Cmt : "1 小说可拥有多条评论"
+
+User  ||--o{ Fin : "1 用户可完读多本"
+Novel ||--o{ Fin : "1 小说可被多用户完读"
+
+User  ||--o{ RH  : "1 用户可产生多条阅读历史"
+Novel ||--o{ RH  : "1 小说可被多次阅读记录"
+
+Novel ||--o{ Ban : "首页轮播可关联小说(可选)"
+
+User  ||--o{ Pref : "1 用户可维护多条偏好标签"
+
+' 标签与小说/偏好标签在库中以“名称/label”关联，概念图用虚线表示语义联系
+Tag .. Novel : "标签用于小说分类/检索/推荐"
+Tag .. Pref  : "偏好标签来源于平台标签或自定义"
+
+RecCfg .. Cmt : "配置：评论热度参与推荐"
+RecCfg .. RH  : "配置：阅读历史参与推荐"
+
+note bottom
+  说明：本图为概念模型（简版），用于描述核心实体与主要联系；\n
+  物理实现中还包含推荐主配置、用户画像、标签权重覆盖、不感兴趣等扩展表，\n
+  可在“数据库物理设计”小节单独说明或另附全表 E-R 图。
+end note
+
+@enduml
+

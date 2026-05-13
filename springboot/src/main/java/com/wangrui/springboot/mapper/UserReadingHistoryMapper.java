@@ -26,4 +26,7 @@ public interface UserReadingHistoryMapper {
 
     /** 统计用户所有小说的阅读总时长（秒） */
     Long selectTotalReadDurationByUserId(@Param("userId") Integer userId);
+
+    /** 全站阅读历史（用于标签热度聚合，数据量大时建议后续改定时任务落表） */
+    List<UserReadingHistory> selectAllForSiteHeat();
 }

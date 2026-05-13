@@ -67,6 +67,7 @@ const router = createRouter({
         { path: 'publish', name: 'adminPublish', component: () => import('@/views/admin/PublishView.vue') },
         { path: 'books', name: 'adminBooks', component: () => import('@/views/admin/BookManageView.vue') },
         { path: 'users', name: 'adminUsers', component: () => import('@/views/admin/UserManageView.vue') },
+        { path: 'admins', name: 'adminManage', component: () => import('@/views/admin/AdminManageView.vue') },
         { path: 'recommend', name: 'adminRecommend', component: () => import('@/views/admin/RecommendConfigView.vue') },
         { path: 'config', name: 'adminConfig', component: () => import('@/views/admin/ConfigCenterView.vue') },
         { path: 'config/banner', name: 'AdminBannerManage', component: () => import('@/views/admin/BannerManageView.vue') },
@@ -119,7 +120,18 @@ router.beforeEach((to, from, next) => {
     return
   }
   
-  const adminRouteNames = ['admin', 'adminDashboard', 'adminPublish', 'adminBooks', 'adminUsers', 'adminRecommend', 'adminSettings']
+  const adminRouteNames = [
+    'admin',
+    'adminDashboard',
+    'adminPublish',
+    'adminBooks',
+    'adminUsers',
+    'adminManage',
+    'adminRecommend',
+    'adminConfig',
+    'AdminBannerManage',
+    'adminSettings'
+  ]
   if (adminRouteNames.includes(to.name)) {
     if (userInfo && userInfo.isAdmin === 1) {
       next()

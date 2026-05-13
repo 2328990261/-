@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wangrui.springboot.mapper.RecommendMainConfigMapper">
+
+    <resultMap id="MainConfigResultMap" type="com.wangrui.springboot.pojo.RecommendMainConfig">
+        <id column="id" property="id"/>
+        <result column="pop_weight" property="popWeight"/>
+        <result column="cf_blend_lambda" property="cfBlendLambda"/>
+        <result column="cf_max_seeds" property="cfMaxSeeds"/>
+        <result column="cf_pure_slot_cap" property="cfPureSlotCap"/>
+        <result column="mmr_pool_cap" property="mmrPoolCap"/>
+        <result column="mmr_lambda" property="mmrLambda"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="MainConfigResultMap">
+        SELECT id, pop_weight, cf_blend_lambda, cf_max_seeds, cf_pure_slot_cap, mmr_pool_cap, mmr_lambda, updated_at
+        FROM recommend_main_config
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.wangrui.springboot.pojo.RecommendMainConfig">
+        INSERT INTO recommend_main_config (
+            id, pop_weight, cf_blend_lambda, cf_max_seeds, cf_pure_slot_cap, mmr_pool_cap, mmr_lambda
+        ) VALUES (
+            #{id}, #{popWeight}, #{cfBlendLambda}, #{cfMaxSeeds}, #{cfPureSlotCap}, #{mmrPoolCap}, #{mmrLambda}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.wangrui.springboot.pojo.RecommendMainConfig">
+        UPDATE recommend_main_config
+        SET pop_weight = #{popWeight},
+            cf_blend_lambda = #{cfBlendLambda},
+            cf_max_seeds = #{cfMaxSeeds},
+            cf_pure_slot_cap = #{cfPureSlotCap},
+            mmr_pool_cap = #{mmrPoolCap},
+            mmr_lambda = #{mmrLambda}
+        WHERE id = #{id}
+    </update>
+</mapper>

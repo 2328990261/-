@@ -1,6 +1,9 @@
 import axios from 'axios'
 
-// 创建Axios实例，统一配置
+/**
+ * 默认请求实例：成功时直接返回后端 JSON（即原 axios 的 `response.data`），字段为 `{ code, msg, data }`。
+ * 后台管理（/api/admin/**）若需与「`const res = await axios.get(...); res.data.code`」一致，请使用 `@/utils/adminHttp`。
+ */
 const request = axios.create({
   // 使用代理服务器，baseURL改为'/api'
   baseURL: '/api',
@@ -31,8 +34,21 @@ request.interceptors.response.use(
     return response.data
   },
   (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      localStorage.removeItem('userId')
+      localStorage.removeItem('username')
+      const path = window.location.pathname || ''
+      if (!path.includes('/login')) {
+        window.location.assign('/login')
+      }
+      const body = error.response.data
+      return Promise.reject(
+        body && typeof body === 'object' ? body : { code: 401, msg: '未授权或登录已过期', data: null }
+      )
+    }
     console.error('请求失败：', error.message)
-    // 异常时返回统一格式，避免前端崩溃
     return Promise.reject({
       code: 500,
       message: '接口请求失败',

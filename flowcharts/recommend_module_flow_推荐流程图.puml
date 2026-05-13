@@ -1,0 +1,48 @@
+@startuml 推荐模块流程图
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+
+title 图4-x 推荐模块流程图
+
+start
+:接收推荐请求\n/api/recommend/books\n(userId, sortType);
+:加载用户推荐配置\nuser_recommend_profile\n(cf开关/MMR开关/推荐条数等);
+:加载主配置\nrecommend_main_config\n(融合系数、热度权重等);
+:读取候选小说全集;
+
+:汇总用户行为信号;\n收藏、完读、阅读进度、阅读时长、评论;
+:计算用户标签权重;\n动态权重 + 用户覆盖项 + 负反馈降权;
+:构建排除集合;\n已收藏/已完读/不感兴趣小说与作者;
+
+if (标签权重是否为空?) then (是)
+  :进入冷启动流程;
+  if (CF开关开启?) then (是)
+    :全站热门种子 -> 协同扩散;\n得到冷启动推荐候选;
+  else (否)
+    :按阅读量等热度排序推荐;
+  endif
+  :返回推荐结果;
+  stop
+else (否)
+  :按标签匹配计算 tagScore;\n过滤未命中与不符合条件条目;
+  if (CF开关开启?) then (是)
+    :按用户行为构建种子书;\n计算物品协同分 cfScore;
+    :融合得分\nfinalScore=(1-lambda)*normTag + lambda*normCf + popBoost;
+  else (否)
+    :仅使用标签分 + 热度补偿;\nfinalScore=tagScore + popBoost;
+  endif
+endif
+
+:按 finalScore 排序候选;
+if (MMR开关开启?) then (是)
+  :在候选池中进行MMR多样性重排;
+endif
+
+:应用业务约束;\n纯CF条目上限、补位、去重;
+:封装解释信息 _explain\n(命中标签/融合分/来源等);
+:输出推荐列表;
+stop
+
+@enduml

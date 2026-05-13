@@ -1,0 +1,23 @@
+%% 轻小说推荐系统 — 4.2.4（3）章节阅读设计（阅读页：EPUB 分卷解析后的正文分页）
+%% 正文宜写：选卷、分页浏览、阅读进度；非后台对章节的增删改
+%% https://mermaid.live
+
+flowchart TD
+  S([开始]) --> Rq{从详情进入阅读}
+  Rq -->|表格选卷| Rr[携带分卷 ID 进入阅读页]
+  Rq -->|开始阅读| Rs[按默认分卷进入阅读页]
+  Rr --> Rt[加载当前分卷正文并分页展示]
+  Rs --> Rt
+
+  Rt --> Ru{阅读中操作}
+  Ru -->|翻页或换卷| Rt
+  Ru -->|写阅读进度| Rv[异步保存阅读历史]
+  Rv --> Ru
+  Ru -->|返回详情| Ed([结束<br/>回到小说详情页])
+  Ru -->|结束阅读| T([结束])
+
+  style S fill:#fff,stroke:#000,color:#000
+  style T fill:#fff,stroke:#000,color:#000
+  style Ed fill:#fff,stroke:#000,color:#000
+  style Rq fill:#fff,stroke:#000,color:#000
+  style Ru fill:#fff,stroke:#000,color:#000

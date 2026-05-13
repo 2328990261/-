@@ -1,0 +1,129 @@
+// Chen 式概念 E-R：矩形=实体，菱形=联系，无向边，基数标在分段边上。
+//
+// 【布局】本文件用 subgraph cluster 分簇，必须用英文引擎 dot 渲染。
+// 在线 Graphviz：Engine 选 dot。不要用 fdp/neato——簇约束弱，容易又压成「两枢纽一排」。
+// 不要用中文「点」当引擎名。
+graph ER_Chen_11 {
+  graph [
+    charset="UTF-8"
+    layout=dot
+    rankdir=LR
+    splines=true
+    nodesep=0.5
+    ranksep=1.15
+    compound=true
+    label="图：轻小说推荐系统概念 E-R（11 实体 + 菱形联系）\n分簇仅为读图，非库模式"
+    labelloc=t
+    fontsize=11
+  ];
+  node [shape=box, style=rounded, fontsize=10];
+  edge [fontsize=9];
+
+  // ========== 簇：左—用户域 ==========
+  subgraph cluster_user {
+    graph [
+      style=rounded
+      color="#6b90c9"
+      bgcolor="#eef5ff"
+      fontsize=11
+      label="用户域"
+      labelloc=t
+    ];
+    用户;
+    用户偏好标签;
+    R_偏好 [shape=diamond, label="维护\n偏好", fixedsize=true, width=1.25, height=1.25];
+    用户 -- R_偏好 [label="1"];
+    R_偏好 -- 用户偏好标签 [label="n"];
+  }
+
+  // ========== 簇：中—用户×作品 关联表（桥接）==========
+  subgraph cluster_bridge {
+    graph [
+      style=rounded
+      color="#c98f6b"
+      bgcolor="#fff6ee"
+      fontsize=11
+      label="用户—作品 关联实体"
+      labelloc=t
+    ];
+    用户收藏;
+    用户评论;
+    完读记录;
+    阅读历史;
+
+    R_藏用户 [shape=diamond, label="用户\n收藏", fixedsize=true, width=1.25, height=1.25];
+    R_藏书 [shape=diamond, label="小说\n收藏", fixedsize=true, width=1.25, height=1.25];
+    R_评用户 [shape=diamond, label="发表\n评论", fixedsize=true, width=1.25, height=1.25];
+    R_评书 [shape=diamond, label="评论\n小说", fixedsize=true, width=1.25, height=1.25];
+    R_完用户 [shape=diamond, label="完读\n登记", fixedsize=true, width=1.25, height=1.25];
+    R_完书 [shape=diamond, label="完读\n小说", fixedsize=true, width=1.25, height=1.25];
+    R_读用户 [shape=diamond, label="产生\n阅读", fixedsize=true, width=1.25, height=1.25];
+    R_读书 [shape=diamond, label="阅读\n小说", fixedsize=true, width=1.25, height=1.25];
+
+    用户 -- R_藏用户 [label="1"];
+    R_藏用户 -- 用户收藏 [label="n"];
+    小说主卷 -- R_藏书 [label="1"];
+    R_藏书 -- 用户收藏 [label="n"];
+
+    用户 -- R_评用户 [label="1"];
+    R_评用户 -- 用户评论 [label="n"];
+    小说主卷 -- R_评书 [label="1"];
+    R_评书 -- 用户评论 [label="n"];
+
+    用户 -- R_完用户 [label="1"];
+    R_完用户 -- 完读记录 [label="n"];
+    小说主卷 -- R_完书 [label="1"];
+    R_完书 -- 完读记录 [label="n"];
+
+    用户 -- R_读用户 [label="1"];
+    R_读用户 -- 阅读历史 [label="n"];
+    小说主卷 -- R_读书 [label="1"];
+    R_读书 -- 阅读历史 [label="n"];
+  }
+
+  // ========== 簇：右—内容与展示（内嵌推荐配置子簇）==========
+  subgraph cluster_content {
+    graph [
+      style=rounded
+      color="#5fa86b"
+      bgcolor="#eefaf0"
+      fontsize=11
+      label="内容与展示域"
+      labelloc=t
+    ];
+
+    subgraph cluster_config {
+      graph [
+        style=rounded
+        color="#888888"
+        bgcolor="#ebebeb"
+        fontsize=10
+        label="推荐参数"
+        labelloc=t
+      ];
+      推荐配置 [fillcolor="#e0e0e0", style="rounded,filled"];
+      R_推 [shape=diamond, label="影响\n推荐", fixedsize=true, width=1.15, height=1.15, style=dashed];
+      推荐配置 -- R_推 [label="1", style=dashed];
+    }
+
+    小说主卷;
+    小说分卷;
+    轮播图;
+    平台标签;
+
+    R_分卷 [shape=diamond, label="分卷\n归属", fixedsize=true, width=1.25, height=1.25];
+    R_轮播 [shape=diamond, label="轮播\n指向", fixedsize=true, width=1.25, height=1.25];
+    R_标签 [shape=diamond, label="标签\n选用", fixedsize=true, width=1.25, height=1.25, style=dashed, fontcolor="#333333"];
+
+    R_推 -- 小说主卷 [label="n", style=dashed];
+
+    小说主卷 -- R_分卷 [label="1"];
+    R_分卷 -- 小说分卷 [label="n"];
+
+    小说主卷 -- R_轮播 [label="1"];
+    R_轮播 -- 轮播图 [label="n"];
+
+    小说主卷 -- R_标签 [label="n", style=dashed];
+    R_标签 -- 平台标签 [label="n", style=dashed];
+  }
+}

@@ -117,4 +117,8 @@
     <select id="selectCollectionCount" resultType="int">
         SELECT COUNT(*) FROM user_collection
     </select>
+
+    <select id="selectAllCollectionNovelIds" resultType="int">
+        SELECT novel_id FROM user_collection
+    </select>
 </mapper>

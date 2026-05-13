@@ -1,0 +1,22 @@
+%% 轻小说推荐系统 — 4.2.4（2）收藏管理设计（详情页等）
+%% 对应正文：已登录时添加或取消收藏并刷新按钮状态
+%% https://mermaid.live
+
+flowchart TD
+  S([开始]) --> Rj[进入小说详情路由]
+  Rj --> Rk[请求详情与分卷列表<br/>接口返回当前用户是否已收藏]
+  Rk --> Rp[展示封面、元信息与分卷表格]
+
+  Rp --> Rl{是否进行收藏操作}
+  Rl -->|否| E([结束])
+  Rl -->|是| Lg{是否已登录}
+  Lg -->|否| Lh[提示登录或跳转登录页]
+  Lh --> E
+  Lg -->|是| Rm[调用接口添加收藏或取消收藏]
+  Rm --> Ro[更新收藏按钮状态]
+  Ro --> E
+
+  style S fill:#fff,stroke:#000,color:#000
+  style E fill:#fff,stroke:#000,color:#000
+  style Rl fill:#fff,stroke:#000,color:#000
+  style Lg fill:#fff,stroke:#000,color:#000

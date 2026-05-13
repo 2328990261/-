@@ -1,0 +1,30 @@
+%%{init: {"securityLevel": "loose", "flowchart": {"htmlLabels": true, "curve": "stepAfter", "padding": 22, "nodeSpacing": 52, "rankSpacing": 64}, "themeVariables": {"fontFamily": "sans-serif"}}}%%
+flowchart TD
+  A(["<div style='width:92px;height:44px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;font-size:15px;font-weight:600'>开始</div>"]) --> B["<div style='width:248px;height:78px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;padding:4px;line-height:1.28;font-size:14px'>进入登录界面</div>"]
+  B --> C{"<div style='width:248px;height:78px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;padding:4px;line-height:1.28;font-size:14px'>选择登录方式</div>"}
+
+  C -->|账号密码| D["<div style='width:248px;height:78px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;padding:4px;line-height:1.28;font-size:14px'>输入用户名与密码</div>"]
+  D --> I["<div style='width:248px;height:78px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;padding:4px;line-height:1.28;font-size:14px'>点击登录</div>"]
+  I --> J{"<div style='width:248px;height:78px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;padding:4px;line-height:1.28;font-size:14px'>登录信息校验<br/>格式与账号状态、密码</div>"}
+  J -->|否| K["<div style='width:248px;height:78px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;padding:4px;line-height:1.28;font-size:14px'>提示错误信息</div>"]
+  K --> D
+
+  C -->|手机验证码| E["<div style='width:248px;height:78px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;padding:4px;line-height:1.28;font-size:14px'>输入手机号</div>"]
+  E --> F["<div style='width:248px;height:78px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;padding:4px;line-height:1.28;font-size:14px'>点击获取验证码</div>"]
+  F --> G["<div style='width:248px;height:78px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;padding:4px;line-height:1.28;font-size:14px'>输入验证码</div>"]
+  G --> P["<div style='width:248px;height:78px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;padding:4px;line-height:1.28;font-size:14px'>点击登录</div>"]
+  P --> H{"<div style='width:248px;height:78px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;padding:4px;line-height:1.28;font-size:14px'>验证码与用户校验</div>"}
+  H -->|否| L["<div style='width:248px;height:78px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;padding:4px;line-height:1.28;font-size:14px'>提示错误信息</div>"]
+  L --> E
+
+  J -->|是| M["<div style='width:248px;height:78px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;padding:4px;line-height:1.28;font-size:14px'>签发 JWT，写入本地存储</div>"]
+  H -->|是| M
+  M --> N["<div style='width:248px;height:78px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;padding:4px;line-height:1.28;font-size:14px'>跳转系统首页</div>"]
+  N --> O(["<div style='width:92px;height:44px;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;font-size:15px;font-weight:600'>结束</div>"])
+
+  classDef bw fill:#fff,stroke:#000,stroke-width:2px,color:#000
+  class A,B,C,D,E,F,G,H,I,J,K,L,M,N,O bw
+
+%% 与 LoginView 一致：账号密码 /auth/login；手机 /auth/sendCode + /auth/loginByPhone；成功写 token、userInfo。
+%% 样式与「注册流程图」一致：92×44 起止，248×78 过程框，stepAfter。
+%% 若 init 导致无法渲染，删除首行 %%{init:...}%%。

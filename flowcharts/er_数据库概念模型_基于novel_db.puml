@@ -1,0 +1,195 @@
+@startuml
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+hide circle
+
+title 图4-x 数据库概念模型（E-R图）
+
+' ========= 实体 =========
+entity "用户\nuser" as USER {
+  * id : int
+  --
+  username : varchar
+  password : varchar
+  email : varchar
+  phone : varchar
+  is_admin : int
+  status : tinyint
+  created_at : datetime
+}
+
+entity "小说主表\nnovel_book_main" as NOVEL {
+  * id : int
+  --
+  book_main_name : varchar
+  author : varchar
+  label : varchar
+  cover : varchar
+  read_count : int
+  status : tinyint
+  create_time : datetime
+}
+
+entity "分卷\nnovel_book_volume" as VOLUME {
+  * id : int
+  --
+  main_book_id : int(FK)
+  volume_name : varchar
+  content : longtext
+  create_time : datetime
+}
+
+entity "平台标签\ntag" as TAG {
+  * id : int
+  --
+  name : varchar
+  recommend_weight : decimal
+  sort_order : int
+  created_at : datetime
+}
+
+entity "收藏\nuser_collection" as COL {
+  * id : int
+  --
+  user_id : int
+  novel_id : int
+  created_at : datetime
+}
+
+entity "评论\nuser_comment" as COM {
+  * id : int
+  --
+  user_id : int
+  novel_id : int
+  content : text
+  created_at : timestamp
+}
+
+entity "完读记录\nuser_finished_novel" as FIN {
+  * id : int
+  --
+  user_id : int
+  novel_id : int
+  finished_time : timestamp
+}
+
+entity "用户偏好标签\nuser_preference_tag" as PREF {
+  * id : int
+  --
+  user_id : int
+  tag_name : varchar
+  tag_type : varchar
+  tag_order : int
+}
+
+entity "阅读历史\nuser_reading_history" as RH {
+  * id : int
+  --
+  user_id : int
+  novel_id : int
+  chapter_id : int
+  read_duration : int
+  read_progress : int
+  last_read_time : timestamp
+}
+
+entity "轮播图\nbanner_carousel" as BAN {
+  * id : int
+  --
+  novel_id : int
+  title : varchar
+  image_url : varchar
+  sort_order : int
+  status : tinyint
+  click_count : int
+}
+
+entity "推荐行为权重配置\nrecommend_comment_config" as RCC {
+  * id : int(固定1)
+  --
+  enabled : tinyint
+  comment_weight : decimal
+  read_history_enabled : tinyint
+  read_history_weight : decimal
+}
+
+entity "推荐主配置\nrecommend_main_config" as RMC {
+  * id : int(固定1)
+  --
+  pop_weight : decimal
+  cf_blend_lambda : decimal
+  cf_max_seeds : int
+  mmr_lambda : decimal
+}
+
+entity "用户推荐画像\nuser_recommend_profile" as URP {
+  * id : int
+  --
+  user_id : int(FK)
+  cf_enabled : tinyint
+  explain_enabled : tinyint
+  mmr_enabled : tinyint
+  recommend_limit : int
+}
+
+entity "用户标签权重\nuser_tag_weight" as UTW {
+  * id : int
+  --
+  user_id : int(FK)
+  tag_name : varchar
+  weight : decimal
+}
+
+entity "不感兴趣-小说\nuser_dislike_novel" as UDN {
+  * id : int
+  --
+  user_id : int(FK)
+  novel_id : int(FK)
+}
+
+entity "不感兴趣-作者\nuser_dislike_author" as UDA {
+  * id : int
+  --
+  user_id : int(FK)
+  author_name : varchar
+}
+
+entity "不感兴趣-标签\nuser_dislike_tag" as UDT {
+  * id : int
+  --
+  user_id : int(FK)
+  tag_name : varchar
+}
+
+' ========= 关系（按真实外键）=========
+NOVEL ||--o{ VOLUME : 包含
+NOVEL ||--o{ BAN : 关联展示
+
+USER ||--o{ COM : 发表评论
+NOVEL ||--o{ COM : 被评论
+
+NOVEL ||--o{ COL : 被收藏
+NOVEL ||--o{ FIN : 被完读
+NOVEL ||--o{ RH : 被阅读
+NOVEL ||--o{ UDN : 被屏蔽
+
+USER ||--o{ FIN : 完读
+USER ||--o{ PREF : 偏好标签
+USER ||--o{ RH : 阅读历史
+USER ||--o{ URP : 推荐画像
+USER ||--o{ UTW : 标签权重
+USER ||--o{ UDN : 不感兴趣小说
+USER ||--o{ UDA : 不感兴趣作者
+USER ||--o{ UDT : 不感兴趣标签
+
+' 注：user_collection 表在当前 SQL 中仅对 novel_id 建外键；
+' 若后续补充 user_id 外键，可在图中改为 USER ||--o{ COL : 收藏
+
+RCC .. RMC : 推荐全局配置（独立单行表）
+TAG .. PREF : 业务语义关联(按 tag_name)
+TAG .. UTW : 业务语义关联(按 tag_name)
+TAG .. UDT : 业务语义关联(按 tag_name)
+
+@enduml

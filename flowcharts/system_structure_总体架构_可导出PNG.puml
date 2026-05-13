@@ -1,0 +1,93 @@
+@startuml 轻小说推荐系统_系统结构图_对齐参考图
+!theme plain
+' 使用 smetana 布局，减轻「数据层跑到后端右侧」问题
+!pragma layout smetana
+
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam ranksep 50
+skinparam nodesep 15
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+
+title 轻小说推荐系统系统结构图（B/S + 前后端分离）
+
+top to bottom direction
+
+' ========== 用户层（参考图：左侧层名 + 右侧内容；此处为两格并排，对应 PC/业务人员）==========
+package "用户层" as L1 {
+  rectangle "浏览器（B/S）" as U1
+  rectangle "普通用户、管理员" as U2
+  U1 -[hidden]right- U2
+}
+
+' ========== 前端 UI：两格并排（参考图 Element + 模板）==========
+package "前端UI" as L2 {
+  rectangle "Element Plus\n组件库" as F1
+  rectangle "Vue 3 单页应用\n(views / components)" as F2
+  F1 -[hidden]right- F2
+}
+
+' ========== 交互层：多格并排（参考图为 Vue / Router / axios；本课题为 5 格）==========
+package "交互层" as L3 {
+  rectangle "Vue 3" as I1
+  rectangle "Vue Router" as I2
+  rectangle "Pinia" as I3
+  rectangle "Axios" as I4
+  rectangle "Vite" as I5
+  I1 -[hidden]right- I2
+  I2 -[hidden]right- I3
+  I3 -[hidden]right- I4
+  I4 -[hidden]right- I5
+}
+
+' ========== 后端处理：上三格 + 工具集成横条 + 下四格（与参考图结构一致）==========
+package "后端处理（Spring Boot）" as L4 {
+  rectangle "安全控制区\nJWT 生成与校验、登录鉴权" as Z1
+  rectangle "业务处理区\nController / Service" as Z2
+  rectangle "数据连接区\nMyBatis Mapper + XML" as Z3
+  Z1 -[hidden]right- Z2
+  Z2 -[hidden]right- Z3
+  rectangle "工具集成区" as TZ
+  rectangle "本地文件存储\n封面 / 轮播 / EPUB" as T1
+  rectangle "统一响应与实体\nResult、POJO" as T2
+  rectangle "后端工具类\nJwtUtil、BCrypt 等" as T3
+  rectangle "后端 VO 类" as T4
+  T1 -[hidden]right- T2
+  T2 -[hidden]right- T3
+  T3 -[hidden]right- T4
+  Z2 -[hidden]down- TZ
+  TZ -[hidden]down- T1
+}
+
+' ========== 数据层：两格并排（参考图：MySQL | Redis；本课题第二格为 JWT 说明）==========
+package "数据层" as L5 {
+  rectangle "持久化存储\nMySQL（novel_db）" as D1
+  rectangle "JWT 无状态\n令牌由前端保存" as D2
+  D1 -[hidden]right- D2
+}
+
+' ========== 运维工具层：三格并排（参考图：开发 | 测试 | 文档）==========
+package "运维工具层" as L6 {
+  rectangle "开发工具\nIDEA、VSCode、Maven" as O1
+  rectangle "测试工具\nPostman" as O2
+  rectangle "文档工具\nSpringDoc（Swagger UI）" as O3
+  O1 -[hidden]right- O2
+  O2 -[hidden]right- O3
+}
+
+' ========== 六层严格自上而下（仅隐藏连线定序，不显示箭头）==========
+L1 -[hidden]down- L2
+L2 -[hidden]down- L3
+L3 -[hidden]down- L4
+L4 -[hidden]down- L5
+L5 -[hidden]down- L6
+
+@enduml

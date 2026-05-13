@@ -1,0 +1,133 @@
+@startuml 轻小说推荐系统_管理员功能用例图
+title 轻小说推荐系统（管理端）— 管理员用例图（简洁版）
+
+' 入口→功能分派仅 1 条线；分派再连 5 个模块入口；子用例用 <<include>>；说明合并为底部 legend，无 note 虚线。
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 22
+skinparam ranksep 36
+skinparam packageStyle rectangle
+skinparam packagePadding 6
+skinparam ArrowColor #424242
+skinparam usecase {
+  BackgroundColor #FAFAFA
+  BorderColor #333333
+  FontSize 12
+}
+skinparam actor {
+  BackgroundColor #FFF3E0
+  BorderColor #333333
+}
+skinparam legend {
+  BackgroundColor #FFFDE7
+  BorderColor #C9A227
+  FontSize 10
+}
+
+top to bottom direction
+
+actor "管理员" as Admin
+
+rectangle "轻小说推荐系统（管理端）" {
+
+  usecase "系统入口\n（制图汇总）" as AD_HUB #FFFDE7
+  usecase "功能分派\n（制图汇总）" as AD_SPLIT #FFF9C4
+
+  package "一、账号与权限治理" as P1 #ECEFF1 {
+    usecase "一·模块入口\n（账号与权限）" as G1 #E8EAF6
+    usecase "用户与管理员\n账号管理" as UC_ACCT
+    usecase "权限管理" as UC_PERM
+  }
+
+  package "二、小说资源维护" as P2 #E8F5E9 {
+    usecase "二·模块入口\n（小说资源）" as G2 #E8EAF6
+    usecase "小说主数据管理" as UC_NOVEL_MAIN
+    usecase "分卷与章节管理" as UC_VOL_CH
+    usecase "上架状态管理" as UC_SHELF
+  }
+
+  package "三、推荐与基础配置" as P3 #F3E5F5 {
+    usecase "三·模块入口\n（推荐与配置）" as G3 #E8EAF6
+    usecase "推荐参数配置" as UC_REC_CFG
+    usecase "标签体系管理" as UC_TAG_SYS
+  }
+
+  package "四、内容与展示位维护" as P4 #E1F5FE {
+    usecase "四·模块入口\n（展示位）" as G4 #E8EAF6
+    usecase "首页展示管理" as UC_HOME_DSP
+    usecase "前台展示控制" as UC_FRONT_CTL
+  }
+
+  package "五、数据统计与概览" as P5 #FFF8E1 {
+    usecase "五·模块入口\n（数据统计）" as G5 #E8EAF6
+    usecase "书籍量统计" as UC_ST_BOOK
+    usecase "用户量统计" as UC_ST_USER
+    usecase "阅读量与收藏量统计" as UC_ST_READ_FAV
+  }
+
+  AD_HUB -[hidden]down- AD_SPLIT
+  AD_SPLIT -[hidden]down- P1
+  P1 -[hidden]down- P2
+  P2 -[hidden]down- P3
+  P3 -[hidden]down- P4
+  P4 -[hidden]down- P5
+}
+
+Admin -down-> AD_HUB
+AD_HUB -down-> AD_SPLIT
+
+AD_SPLIT --> G1
+AD_SPLIT --> G2
+AD_SPLIT --> G3
+AD_SPLIT --> G4
+AD_SPLIT --> G5
+
+G1 ..> UC_ACCT : <<include>>
+G1 ..> UC_PERM : <<include>>
+
+G2 ..> UC_NOVEL_MAIN : <<include>>
+G2 ..> UC_VOL_CH : <<include>>
+G2 ..> UC_SHELF : <<include>>
+
+G3 ..> UC_REC_CFG : <<include>>
+G3 ..> UC_TAG_SYS : <<include>>
+
+G4 ..> UC_HOME_DSP : <<include>>
+G4 ..> UC_FRONT_CTL : <<include>>
+
+G5 ..> UC_ST_BOOK : <<include>>
+G5 ..> UC_ST_USER : <<include>>
+G5 ..> UC_ST_READ_FAV : <<include>>
+
+legend bottom
+<b>图例说明（文字展开，不与用例连线）</b>
+——
+<b>一、账号与权限治理</b>
+· 用户与管理员账号管理：账号区分；分页查询、编辑；启用/禁用。
+· 权限管理：权限边界；限制非管理员访问后台功能。
+——
+<b>二、小说资源维护</b>
+· 小说主数据管理：基本信息维护；内容编辑与更新。
+· 分卷与章节管理：分卷信息；章节内容。
+· 上架状态管理：上架/下架；前台展示与后台维护一致。
+——
+<b>三、推荐与基础配置</b>
+· 推荐参数配置：算法参数；调整推荐模块逻辑。
+· 标签体系管理：标签管理与配置；推荐相关标签与分类。
+——
+<b>四、内容与展示位维护</b>
+· 首页展示管理：轮播图等资源；更新首页内容与展示形式。
+· 前台展示控制：前台内容可控、可更新。
+——
+<b>五、数据统计与概览</b>
+· 书籍量统计：书籍数量与展示。
+· 用户量统计：注册与活跃情况。
+· 阅读量与收藏量统计：汇总阅读、收藏等，辅助运营与决策。
+——
+<i>「系统入口 / 功能分派 / 各·模块入口」为制图汇总节点，语义上等同管理员与各具体用例关联。</i>
+endlegend
+
+' 导出论文时可改：scale 0.85 或 scale max 900 width
+scale max 900 width
+
+@enduml

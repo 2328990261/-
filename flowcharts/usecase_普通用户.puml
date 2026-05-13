@@ -1,0 +1,63 @@
+@startuml 轻小说推荐系统_普通用户功能用例图
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #F8F9FA
+  BorderColor #333333
+}
+skinparam actor {
+  BackgroundColor #E8F4FC
+  BorderColor #333333
+}
+
+left to right direction
+
+actor "普通用户" as User
+
+rectangle "轻小说推荐系统（用户端）" {
+  usecase "注册" as UC_REG
+  usecase "登录" as UC_LOGIN
+  usecase "退出" as UC_LOGOUT
+
+  usecase "浏览首页/书库\n(含热度列表)" as UC_BROWSE
+  usecase "关键词检索小说\n(书名、作者等)" as UC_SEARCH
+  usecase "按标签/题材筛选" as UC_TAG_FILTER
+
+  usecase "查看小说详情与目录" as UC_DETAIL
+  usecase "章节阅读" as UC_READ
+  usecase "阅读历史记录" as UC_HISTORY
+
+  usecase "收藏作品" as UC_FAV
+  usecase "发表评论" as UC_CMT
+
+  usecase "个人中心\n(资料维护)" as UC_PROFILE
+  usecase "阅读偏好设置\n(收藏排序/自定义标签)" as UC_PREF
+  usecase "标签权重配置" as UC_TAG_W
+
+  usecase "个性化推荐列表\n(首页/推荐页)" as UC_REC
+}
+
+User --> UC_REG
+User --> UC_LOGIN
+User --> UC_LOGOUT
+User --> UC_BROWSE
+User --> UC_SEARCH
+User --> UC_TAG_FILTER
+User --> UC_DETAIL
+User --> UC_READ
+User --> UC_FAV
+User --> UC_CMT
+User --> UC_PROFILE
+User --> UC_PREF
+User --> UC_TAG_W
+User --> UC_REC
+
+UC_READ ..> UC_HISTORY : <<include>>
+
+note right of UC_LOGIN
+  登录成功后保存令牌，
+  访问个人中心、收藏、评论等
+  需登录功能时携带并校验令牌
+end note
+
+@enduml

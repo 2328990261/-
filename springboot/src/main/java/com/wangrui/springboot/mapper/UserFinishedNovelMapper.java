@@ -20,4 +20,7 @@ public interface UserFinishedNovelMapper {
 
     // 删除用户指定小说的完读记录
     int deleteByUserIdAndNovelId(@Param("userId") Integer userId, @Param("novelId") Integer novelId);
+
+    /** 全站完读过的小说 id（去重） */
+    List<Integer> selectAllFinishedDistinctNovelIds();
 }

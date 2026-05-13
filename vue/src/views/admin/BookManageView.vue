@@ -104,10 +104,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import adminHttp from '@/utils/adminHttp'
 import { getTags } from '@/api/novel'
-
-const API = 'http://localhost:8081/api/admin'
 const list = ref([])
 const total = ref(0)
 const page = ref(1)
@@ -168,7 +166,7 @@ const loadList = async () => {
       params.keyword = searchKeyword.value
     }
     
-    const res = await axios.get(`${API}/novels`, { params })
+    const res = await adminHttp.get('/admin/novels', { params })
     if (res.data?.code === 200 && res.data?.data) {
       list.value = res.data.data.list || []
       total.value = res.data.data.total || 0
@@ -185,20 +183,20 @@ const openEdit = (row) => {
 
 const submitEdit = async () => {
   try {
-    await axios.put(`${API}/novels/${editForm.value.id}`, editForm.value)
+    await adminHttp.put(`/admin/novels/${editForm.value.id}`, editForm.value)
     showEdit.value = false
     loadList()
   } catch (e) {
-    alert(e.response?.data?.msg || '保存失败')
+    alert(e?.message || e?.msg || '保存失败')
   }
 }
 
 const setStatus = async (id, status) => {
   try {
-    await axios.put(`${API}/novels/${id}/status`, { status })
+    await adminHttp.put(`/admin/novels/${id}/status`, { status })
     loadList()
   } catch (e) {
-    alert(e.response?.data?.msg || '操作失败')
+    alert(e?.msg || e?.message || '操作失败')
   }
 }
 

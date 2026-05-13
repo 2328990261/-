@@ -1,0 +1,35 @@
+// 轻小说推荐系统 Chen 式 E-R 简图（UTF-8）
+// dot -Tsvg er_chen_novel_simple.dot -o er_chen_novel_simple.svg
+digraph ER_chen_novel {
+  graph [rankdir=TB, splines=ortho, nodesep=0.6, ranksep=0.9];
+  node [fontname="Microsoft YaHei", fontsize=11];
+  edge [dir=none, fontsize=10, fontname="Microsoft YaHei"];
+
+  node [shape=box, style=rounded];
+  ent_user [label="用户"];
+  ent_novel [label="小说"];
+  ent_volume [label="分卷"];
+  ent_tag [label="标签"];
+  ent_banner [label="轮播图"];
+
+  node [shape=diamond, style="", fixedsize=true, width=1.1, height=1.1];
+  rel_interact [label="交互"];
+  rel_contain [label="包含"];
+  rel_link [label="关联"];
+  rel_tag [label="用于分类\n与推荐"];
+
+  ent_user -> rel_interact [taillabel="m", labeldistance=3];
+  rel_interact -> ent_novel [headlabel="n", labeldistance=3];
+
+  ent_novel -> rel_contain [taillabel="1", labeldistance=3];
+  rel_contain -> ent_volume [headlabel="n", labeldistance=3];
+
+  ent_novel -> rel_link [taillabel="1", labeldistance=3];
+  rel_link -> ent_banner [headlabel="n", labeldistance=3];
+
+  ent_tag -> rel_tag [taillabel="m", labeldistance=3];
+  rel_tag -> ent_novel [headlabel="n", labeldistance=3];
+
+  { rank=same; ent_user; ent_novel; }
+  { rank=same; ent_volume; ent_banner; }
+}

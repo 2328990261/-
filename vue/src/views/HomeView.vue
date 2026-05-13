@@ -149,23 +149,23 @@ onMounted(async () => {
       const tempBannerList = carouselData.map(item => ({
         id: item.id,
         image: `http://localhost:8081/novel/cover/${encodeURIComponent(item.cover)}`,
-        title: item.bookMainName || '热门小说'
+        title: ''  // ←【留白处】在这里填写轮播图标题文字
       }))
       // 方式1：用数组解构强制更新（最稳妥）
       bannerList.value = [...tempBannerList]
       console.log('轮播图最终数据:', bannerList.value)
     } else {
       bannerList.value = [
-        {id: 1, image: 'https://picsum.photos/1200/400?random=1', title: '兜底小说1'},
-        {id: 2, image: 'https://picsum.photos/1200/400?random=2', title: '兜底小说2'}
+        {id: 1, image: 'https://picsum.photos/1200/400?random=1', title: ''},
+        {id: 2, image: 'https://picsum.photos/1200/400?random=2', title: ''}
       ]
     }
   } catch (err) {
     console.error('轮播图加载失败:', err)
     bannerErrorMsg.value = err.message || '轮播图数据加载失败'
     bannerList.value = [
-      {id: 1, image: 'https://picsum.photos/1200/400?random=1', title: '兜底小说1'},
-      {id: 2, image: 'https://picsum.photos/1200/400?random=2', title: '兜底小说2'}
+      {id: 1, image: 'https://picsum.photos/1200/400?random=1', title: ''},
+      {id: 2, image: 'https://picsum.photos/1200/400?random=2', title: ''}
     ]
   }
 
@@ -259,7 +259,7 @@ onMounted(async () => {
   .tag-content {
     flex-direction: column;
   }
-  
+
   .rank-section {
     width: 100%;
     position: static;
@@ -269,7 +269,7 @@ onMounted(async () => {
   .banner-container {
     height: 240px;
   }
-  
+
   .container {
     max-width: 100%;
   }
@@ -285,20 +285,20 @@ onMounted(async () => {
     margin-bottom: 12px;
     padding: 0 12px;
   }
-  
+
   .tag-bar-container {
     margin-bottom: 12px;
     padding: 12px;
   }
-  
+
   .container {
     padding: 0 12px 30px;
   }
-  
+
   .tag-content {
     gap: 12px;
   }
-  
+
   .books-section, .rank-section {
     padding: 16px;
   }

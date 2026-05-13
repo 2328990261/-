@@ -1,0 +1,70 @@
+@startuml
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Microsoft YaHei"
+skinparam linetype ortho
+left to right direction
+
+title 图4-x 数据库E-R模型图（论文简洁版）
+
+' ===== 实体（矩形）=====
+rectangle "用户\n(User)" as U
+rectangle "小说主表\n(NovelBookMain)" as N
+rectangle "收藏\n(Collection)" as C1
+rectangle "评论\n(Comment)" as C2
+rectangle "阅读历史\n(ReadingHistory)" as C3
+rectangle "完读记录\n(FinishedNovel)" as C4
+rectangle "分卷\n(Volume)" as V
+rectangle "标签\n(Tag)" as T
+rectangle "轮播图\n(BannerCarousel)" as B
+rectangle "推荐行为权重配置\n(RecommendCommentConfig)" as RC
+rectangle "用户偏好标签\n(PreferenceTag)" as P
+
+' ===== 布局锚点（保证整齐）=====
+U -[hidden]right- C1
+C1 -[hidden]right- N
+
+C2 -[hidden]down- C3
+C3 -[hidden]down- C4
+C1 -[hidden]down- C2
+
+T -[hidden]up- N
+B -[hidden]down- N
+RC -[hidden]right- C2
+P -[hidden]down- U
+
+' ===== 关系（简洁、少线）=====
+U -down-> C1 : 1
+C1 -down-> N : n
+note on link
+  收藏关系
+end note
+
+U --> C2 : 1
+C2 --> N : n
+note on link
+  评论关系
+end note
+
+U --> C3 : 1
+C3 --> N : n
+note on link
+  阅读关系
+end note
+
+U --> C4 : 1
+C4 --> N : n
+note on link
+  完读关系
+end note
+
+N --> V : 1 对 n
+T ..> N : 标签分类/检索
+B ..> N : 首页展示关联
+P ..> U : 用户偏好
+RC ..> C2 : 配置评论参与推荐
+RC ..> C3 : 配置阅读历史参与推荐
+
+@enduml
+
