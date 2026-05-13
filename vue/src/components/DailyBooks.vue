@@ -4,12 +4,22 @@
 
     <!-- 小说列表，使用动态列数 -->
     <div class="books-grid" :style="{ gridTemplateColumns: `repeat(${columns}, 1fr)` }">
-      <div class="book-item" v-for="book in bookList" :key="book.id"
-      @click="toBookDetail(book.id)"
+      <div
+        v-for="book in bookList"
+        :key="book.id"
+        class="book-item"
+        @click="toBookDetail(book.id)"
       >
         <img :src="`http://localhost:8081/novel/cover/${encodeURIComponent(book.cover)}`" alt="小说封面" class="book-cover">
         <p class="book-name">{{ book.bookMainName }}</p>
-        <p class="book-author">作者：{{ book.author }}</p>
+        <div class="book-footer-row">
+          <p class="book-author">作者：{{ book.author }}</p>
+          <BookCardMoreMenu
+            v-if="enableDislike"
+            :book="book"
+            @open-dislike="openDislike"
+          />
+        </div>
       </div>
     </div>
 
@@ -21,17 +31,46 @@
     >
       加载更多
     </button>
+
+    <DislikeBookDialog
+      v-model="dislikeVisible"
+      :novel-id="dislikeBook?.id"
+      :author="dislikeBook?.author"
+      :label="dislikeBook?.label"
+      @saved="onDislikeDialogSaved"
+    />
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import DislikeBookDialog from '@/components/DislikeBookDialog.vue'
+import BookCardMoreMenu from '@/components/BookCardMoreMenu.vue'
+
 defineProps({
   bookList: { type: Array, default: () => [] },
   title: { type: String, default: '' },
   totalCount: { type: Number, default: 0 },
-  columns: { type: Number, default: 2 }
+  columns: { type: Number, default: 2 },
+  enableDislike: { type: Boolean, default: false }
 })
+
+const emit = defineEmits(['load-more', 'dislike-saved'])
+
+const dislikeVisible = ref(false)
+const dislikeBook = ref(null)
+
+const openDislike = (book) => {
+  dislikeBook.value = book
+  dislikeVisible.value = true
+}
+
+const onDislikeDialogSaved = () => {
+  dislikeBook.value = null
+  emit('dislike-saved')
+}
+
 const router = useRouter()
 const toBookDetail = (bookId) => {
   console.log('点击了小说，ID是：', bookId)
@@ -95,7 +134,7 @@ const toBookDetail = (bookId) => {
   cursor: pointer;
   box-sizing: border-box;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .book-item::before {
@@ -119,6 +158,15 @@ const toBookDetail = (bookId) => {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
   border-color: #f8a555;
   z-index: 10;
+}
+
+.book-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  min-height: 28px;
 }
 
 /* 封面图 */
@@ -160,7 +208,12 @@ const toBookDetail = (bookId) => {
   font-size: 12px;
   color: #999;
   margin: 0;
-  text-align: center;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   transition: color 0.3s ease;
 }
 

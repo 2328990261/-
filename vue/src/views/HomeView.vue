@@ -23,7 +23,9 @@
             :title="currentTagName"
             :total-count="allBooks.length"
             :columns="4"
+            :enable-dislike="isLoggedIn"
             @load-more="loadMore"
+            @dislike-saved="reloadBooksAfterDislike"
           />
         </div>
 
@@ -66,6 +68,8 @@ const selectedTags = ref([])
 const currentTagName = computed(() => {
   return selectedTags.value.length > 0 ? selectedTags.value.join('、') : '全部'
 })
+
+const isLoggedIn = computed(() => !!localStorage.getItem('token'))
 
 // 4. 小说数据
 const allBooks = ref([])
@@ -118,6 +122,15 @@ const loadAllNovels = async () => {
 // 3. 加载更多
 const loadMore = () => {
   pageSize.value += 10
+}
+
+// 不感兴趣保存后刷新当前列表（与后端屏蔽/降权一致）
+const reloadBooksAfterDislike = async () => {
+  if (selectedTags.value.length === 0) {
+    await loadAllNovels()
+  } else {
+    await handleTagsSelect([...selectedTags.value])
+  }
 }
 
 // 4. 加载轮播图

@@ -1,5 +1,6 @@
 package com.wangrui.springboot.config;
 
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -8,10 +9,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
-
-    // 【临时关闭 JWT】调试前端 401 等问题时取消下面拦截器注册；恢复校验请取消注释整块 addInterceptors。
-    // @Autowired
-    // private JwtInterceptor jwtInterceptor;
 
     // 原有：跨域配置（保持不变）
     @Override
@@ -32,25 +29,11 @@ public class WebConfig implements WebMvcConfigurer {
                 .addResourceLocations("classpath:/static/images/");
     }
 
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        /* 【临时关闭 JWT 全局校验】调试完请恢复：取消本块注释，并恢复上方 @Autowired JwtInterceptor
-        registry.addInterceptor(jwtInterceptor)
-                .addPathPatterns("/**")
-                .excludePathPatterns(
-                        "/error",
-                        "/auth/login",
-                        "/auth/loginByPhone",
-                        "/auth/register",
-                        "/auth/sendCode",
-                        "/novel/**",
-                        "/api/recommend/**",
-                        "/swagger-ui.html",
-                        "/swagger-ui/**",
-                        "/v3/api-docs",
-                        "/v3/api-docs/**",
-                        "/images/**"
-                );
-        */
-    }
+    // 新增：注册JWT拦截器（实现登录验证）
+//    @Override
+//    public void addInterceptors(InterceptorRegistry registry) {
+//        registry.addInterceptor(new JwtlInterceptor())
+//                .addPathPatterns("/api/novel/**", "/api/user/**", "/api/recommend/**")
+//                .excludePathPatterns("/api/user/login/**", "/api/user/register", "/api/novel/label/**");
+//    }
 }

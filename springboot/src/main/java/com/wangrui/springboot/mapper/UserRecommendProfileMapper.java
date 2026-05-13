@@ -11,5 +11,7 @@ public interface UserRecommendProfileMapper {
     int insert(UserRecommendProfile profile);
 
     int update(UserRecommendProfile profile);
+
+    int deleteByUserId(@Param("userId") Integer userId);
 }
 

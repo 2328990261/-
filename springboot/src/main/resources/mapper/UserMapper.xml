@@ -114,6 +114,41 @@
         UPDATE user SET status = #{status} WHERE id = #{id}
     </update>
 
+    <select id="selectUserAdminById" resultType="java.util.HashMap">
+        SELECT id, username, email, phone, is_admin AS isAdmin, status, created_at AS createdAt
+        FROM user
+        WHERE id = #{id}
+    </select>
+
+    <update id="adminUpdateUser" parameterType="java.util.Map">
+        UPDATE user
+        SET username = #{username},
+            email = #{email},
+            phone = #{phone},
+            is_admin = #{isAdmin},
+            status = #{status}
+        <if test="passwordEncoded != null and passwordEncoded != ''">
+            , password = #{passwordEncoded}
+        </if>
+        WHERE id = #{id}
+    </update>
+
+    <select id="countUsernameExcludeId" resultType="int">
+        SELECT COUNT(*) FROM user
+        WHERE username = #{username}
+        <if test="id != null">
+            AND id != #{id}
+        </if>
+    </select>
+
+    <delete id="deleteUserById">
+        DELETE FROM user WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteAllCollectionsByUserId">
+        DELETE FROM user_collection WHERE user_id = #{userId}
+    </delete>
+
     <select id="selectCollectionCount" resultType="int">
         SELECT COUNT(*) FROM user_collection
     </select>

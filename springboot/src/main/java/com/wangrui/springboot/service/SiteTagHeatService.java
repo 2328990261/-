@@ -19,7 +19,7 @@ public interface SiteTagHeatService {
     List<Map<String, Object>> getTop5HotTags();
 
     /**
-     * tag 表中全部标签：原始热度、占全站原始热度占比、映射推荐权重、库内兜底权重（与推荐配置页一致数据源）。
+     * 推荐配置页：tag 表内全部标签的热度、映射权重与占全站热度占比（与聚合缓存同源）。
      */
     List<Map<String, Object>> getAllTagHeatRows();
 

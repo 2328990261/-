@@ -41,19 +41,42 @@
             class="publish-selected-tag"
             @click="removeLabelTag(t)"
           >{{ t }} ×</span>
-          <button type="button" class="publish-clear-tags" @click="selectedLabelTags = []">清空</button>
+          <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" @click="selectedLabelTags = []">清空</button>
         </div>
       </div>
 
       <div class="form-item">
         <label>封面上传：</label>
-        <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" @change="onCoverChange" class="file-input" />
-        <p v-if="mainBookData.cover" class="cover-tip">已选封面：{{ mainBookData.cover }}</p>
-        <p v-else class="cover-tip text-muted">上传后会自动填入，数据库存文件名</p>
+        <input
+          ref="coverInputRef"
+          type="file"
+          class="sr-only-file"
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          @change="onCoverChange"
+        />
+        <div
+          class="file-upload-card"
+          role="button"
+          tabindex="0"
+          @click="triggerCoverPick"
+          @keydown.enter.prevent="triggerCoverPick"
+        >
+          <div v-if="mainBookData.cover" class="cover-preview-box">
+            <img :src="coverPreviewUrl" alt="封面预览" />
+            <span class="upload-overlay-hint">{{ coverUploading ? '上传中…' : '点击更换封面' }}</span>
+          </div>
+          <div v-else class="file-upload-placeholder">
+            <span class="upload-icon" aria-hidden="true">+</span>
+            <p class="upload-title">点击选择封面图片</p>
+            <p class="cover-tip text-muted">支持 jpg / png / gif / webp，上传后自动保存文件名</p>
+            <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" @click.stop="triggerCoverPick">选择文件</button>
+          </div>
+        </div>
+        <p v-if="mainBookData.cover" class="cover-tip">已保存：{{ mainBookData.cover }}</p>
       </div>
 
       <div class="form-actions">
-        <button @click="createMainBook" class="upload-btn" :disabled="uploading">
+        <button type="button" class="admin-btn admin-btn--primary admin-btn--lg" @click="createMainBook" :disabled="uploading">
           {{ uploading ? '创建中...' : '创建主卷' }}
         </button>
       </div>
@@ -71,28 +94,42 @@
       </div>
 
       <div class="form-item">
-        <label>选择EPUB文件（分卷）：</label>
-        <input 
-          type="file" 
+        <label>选择 EPUB 文件（分卷）：</label>
+        <input
           ref="fileInput"
-          @change="handleFileChange" 
+          type="file"
+          class="sr-only-file"
           accept=".epub"
           multiple
-          class="file-input"
+          @change="handleFileChange"
         />
+        <div
+          class="file-upload-card file-upload-card--epub"
+          role="button"
+          tabindex="0"
+          @click="triggerEpubPick"
+          @keydown.enter.prevent="triggerEpubPick"
+        >
+          <div class="file-upload-placeholder">
+            <span class="upload-icon upload-icon--epub" aria-hidden="true">EPUB</span>
+            <p class="upload-title">点击或按钮选择 EPUB（可多选）</p>
+            <p class="cover-tip text-muted">选择后将显示在下方列表，确认后点「上传分卷」</p>
+            <button type="button" class="admin-btn admin-btn--primary admin-btn--sm" @click.stop="triggerEpubPick">选择 EPUB</button>
+          </div>
+        </div>
         <div v-if="selectedFiles.length > 0" class="file-list">
           <div v-for="(file, index) in selectedFiles" :key="index" class="file-item">
             <span>{{ file.name }}</span>
-            <button @click="removeFile(index)" class="remove-btn">×</button>
+            <button type="button" class="admin-btn admin-btn--danger remove-file-x" @click="removeFile(index)">×</button>
           </div>
         </div>
       </div>
 
       <div class="form-actions">
-        <button @click="uploadVolumes" class="upload-btn" :disabled="uploading">
+        <button type="button" class="admin-btn admin-btn--primary admin-btn--lg" @click="uploadVolumes" :disabled="uploading">
           {{ uploading ? '上传中...' : '上传分卷' }}
         </button>
-        <button @click="resetForm" class="reset-btn">
+        <button type="button" class="admin-btn admin-btn--reset admin-btn--lg" @click="resetForm">
           重新开始
         </button>
       </div>
@@ -101,10 +138,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import adminHttp from '@/utils/adminHttp'
 import { getTags } from '@/api/novel'
+import { backendUrl } from '@/config/env'
 const fileInput = ref(null)
+const coverInputRef = ref(null)
+const coverUploading = ref(false)
 const selectedFiles = ref([])
 const uploading = ref(false)
 const step = ref(1)
@@ -116,6 +156,19 @@ const mainBookData = ref({
   label: '',
   cover: ''
 })
+
+const coverPreviewUrl = computed(() => {
+  const c = mainBookData.value.cover
+  return c ? `${backendUrl('/novel/cover')}/${encodeURIComponent(c)}` : ''
+})
+
+function triggerCoverPick() {
+  coverInputRef.value?.click()
+}
+
+function triggerEpubPick() {
+  fileInput.value?.click()
+}
 
 /** 标签栏数据：与前台一致，从后端 tag 表拉取 */
 const tagRows = ref([])
@@ -198,6 +251,7 @@ const onCoverChange = async (e) => {
   if (!file) return
   const formData = new FormData()
   formData.append('file', file)
+  coverUploading.value = true
   try {
     const res = await adminHttp.post('/admin/uploadCover', formData)
     if (res.data?.code === 200 && res.data?.data) {
@@ -208,6 +262,8 @@ const onCoverChange = async (e) => {
   } catch (err) {
     console.error(err)
     alert('封面上传失败')
+  } finally {
+    coverUploading.value = false
   }
   e.target.value = ''
 }
@@ -310,6 +366,9 @@ const resetForm = () => {
   if (fileInput.value) {
     fileInput.value.value = ''
   }
+  if (coverInputRef.value) {
+    coverInputRef.value.value = ''
+  }
 }
 </script>
 
@@ -354,6 +413,7 @@ h2 {
 
 .form-item {
   margin-bottom: 25px;
+  position: relative;
 }
 
 .form-item label {
@@ -361,6 +421,107 @@ h2 {
   margin-bottom: 8px;
   color: #606266;
   font-weight: 500;
+}
+
+.sr-only-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.file-upload-card {
+  position: relative;
+  border: 1px dashed #c7cdd5;
+  border-radius: 10px;
+  background: #fafbfc;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  outline: none;
+}
+
+.file-upload-card:hover,
+.file-upload-card:focus-visible {
+  border-color: #409eff;
+  background: #f0f9ff;
+}
+
+.file-upload-placeholder {
+  padding: 28px 20px;
+  text-align: center;
+}
+
+.upload-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 10px;
+  border-radius: 50%;
+  background: #e8f4ff;
+  color: #409eff;
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.upload-icon--epub {
+  border-radius: 10px;
+  width: auto;
+  min-width: 72px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.upload-title {
+  margin: 0 0 6px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.cover-preview-box {
+  position: relative;
+  max-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: #f5f7fa;
+}
+
+.cover-preview-box img {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.upload-overlay-hint {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  padding: 8px 10px;
+  text-align: center;
+  font-size: 13px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.file-upload-card--epub .file-upload-placeholder {
+  padding: 22px 16px;
 }
 
 .form-item input[type="text"] {
@@ -375,15 +536,6 @@ h2 {
 .form-item input[type="text"]:focus {
   outline: none;
   border-color: #409eff;
-}
-
-.file-input {
-  display: block;
-  padding: 10px;
-  border: 1px dashed #dcdfe6;
-  border-radius: 4px;
-  cursor: pointer;
-  width: 100%;
 }
 
 .file-list {
@@ -403,20 +555,14 @@ h2 {
   border-radius: 4px;
 }
 
-.remove-btn {
-  background-color: #f56c6c;
-  color: #fff;
-  border: none;
+.remove-file-x {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  cursor: pointer;
   font-size: 18px;
   line-height: 1;
-}
-
-.remove-btn:hover {
-  background-color: #f78989;
 }
 
 .form-actions {
@@ -425,41 +571,6 @@ h2 {
   display: flex;
   gap: 15px;
   justify-content: center;
-}
-
-.upload-btn {
-  padding: 12px 40px;
-  background-color: #409eff;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.upload-btn:hover:not(:disabled) {
-  background-color: #66b1ff;
-}
-
-.upload-btn:disabled {
-  background-color: #a0cfff;
-  cursor: not-allowed;
-}
-
-.reset-btn {
-  padding: 12px 40px;
-  background-color: #909399;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.reset-btn:hover {
-  background-color: #a6a9ad;
 }
 
 .cover-tip { margin-top: 6px; font-size: 13px; color: #606266; }
@@ -501,14 +612,4 @@ h2 {
   cursor: pointer;
 }
 .publish-selected-tag:hover { opacity: 0.9; }
-.publish-clear-tags {
-  padding: 4px 12px;
-  font-size: 12px;
-  color: #409eff;
-  background: #fff;
-  border: 1px solid #409eff;
-  border-radius: 12px;
-  cursor: pointer;
-}
-.publish-clear-tags:hover { background: #ecf5ff; }
 </style>

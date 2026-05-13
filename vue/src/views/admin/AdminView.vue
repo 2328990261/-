@@ -454,3 +454,7 @@ watch(
   }
 }
 </style>
+
+<style>
+@import '@/styles/admin-ui.css';
+</style>

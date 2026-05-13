@@ -24,4 +24,16 @@
         INSERT INTO novel_book_volume (main_book_id, volume_name, content, create_time)
         VALUES (#{mainBookId}, #{volumeName}, #{content}, #{createTime})
     </insert>
+
+    <select id="selectVolumeMetaByMainBookId" resultType="com.wangrui.springboot.pojo.NovelBookVolume">
+        SELECT id, main_book_id, volume_name, create_time
+        FROM novel_book_volume
+        WHERE main_book_id = #{mainBookId}
+        ORDER BY id ASC
+    </select>
+
+    <delete id="deleteVolumeByIdAndMainBook">
+        DELETE FROM novel_book_volume
+        WHERE id = #{volumeId} AND main_book_id = #{mainBookId}
+    </delete>
 </mapper>

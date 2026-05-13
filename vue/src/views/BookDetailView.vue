@@ -37,6 +37,9 @@
                   </span>
                   <span class="btn-text">收藏</span>
                 </button>
+                <button type="button" class="dislike-outline-btn" @click="dislikeVisible = true">
+                  不感兴趣
+                </button>
               </div>
 
               <!-- 继续阅读区域，有阅读记录时显示 -->
@@ -155,11 +158,19 @@
         </div>
       </div>
     </div>
+
+    <DislikeBookDialog
+      v-model="dislikeVisible"
+      :novel-id="detailNovelId"
+      :author="novelDetail.author"
+      :label="novelDetail.label"
+    />
   </div>
 </template>
 
 <script setup>
 import Navbar from '@/components/Navbar.vue'
+import DislikeBookDialog from '@/components/DislikeBookDialog.vue'
 import { ref, onMounted, defineProps, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { getNovelDetailById, addCollection, removeCollection, checkCollection } from '@/api/novel'
@@ -182,6 +193,12 @@ const coverImg = ref(null)
 const isCoverErrorHandled = ref(false)
 const readingProgress = ref(null)
 const isFavorited = ref(false)
+const dislikeVisible = ref(false)
+
+const detailNovelId = computed(() => {
+  const n = Number(props.id)
+  return Number.isNaN(n) ? props.id : n
+})
 
 // 评论
 const commentList = ref([])
@@ -524,6 +541,7 @@ const goBack = () => {
 /* 开始阅读和收藏按钮容器 */
 .read-favorite-container {
   display: flex;
+  flex-wrap: wrap;
   gap: 15px;
   align-items: center;
 }
@@ -576,6 +594,28 @@ const goBack = () => {
   background-color: #fff8f0;
   border-color: #ff6b00;
   color: #ff6b00;
+}
+
+/* 不感兴趣（次按钮样式） */
+.dislike-outline-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #909399;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  align-self: flex-start;
+}
+
+.dislike-outline-btn:hover {
+  border-color: #c0c4cc;
+  color: #606266;
+  background-color: #f5f7fa;
 }
 
 .favorite-btn .btn-icon {

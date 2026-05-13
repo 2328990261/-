@@ -61,15 +61,7 @@ public class SiteTagHeatServiceImpl implements SiteTagHeatService {
     @Override
     public List<Map<String, Object>> getAllTagHeatRows() {
         ensureFresh();
-        List<Map<String, Object>> src = cachedAllRows;
-        if (src == null || src.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<Map<String, Object>> copy = new ArrayList<>();
-        for (Map<String, Object> m : src) {
-            copy.add(new LinkedHashMap<>(m));
-        }
-        return copy;
+        return cachedAllRows;
     }
 
     @Override
@@ -149,44 +141,12 @@ public class SiteTagHeatServiceImpl implements SiteTagHeatService {
             row.put("computedRecommendWeight", weights.containsKey(name) ? round4(weights.get(name)) : null);
         }
 
+        List<Map<String, Object>> allRows = buildAllTagRows(raw, weights);
+
         this.cachedWeights = weights;
         this.cachedTop5 = top5;
-        this.cachedAllRows = buildAllTagRows(raw, weights, dbFallback);
+        this.cachedAllRows = allRows;
         this.lastComputedAt = System.currentTimeMillis();
-    }
-
-    /** 系统标签表内每一行：热度、占比、当前推荐映射权重、库内兜底。 */
-    private List<Map<String, Object>> buildAllTagRows(Map<String, Double> raw, Map<String, Double> weights, Map<String, Double> dbFallback) {
-        List<Tag> sysTags = tagMapper.selectAll();
-        if (sysTags == null || sysTags.isEmpty()) {
-            return Collections.emptyList();
-        }
-        double sumAllRaw = raw.values().stream().mapToDouble(Double::doubleValue).sum();
-        List<Map<String, Object>> list = new ArrayList<>();
-        for (Tag t : sysTags) {
-            if (t == null || t.getName() == null) {
-                continue;
-            }
-            String name = t.getName().trim();
-            if (name.isEmpty()) {
-                continue;
-            }
-            double r = Math.max(0.0, raw.getOrDefault(name, 0.0));
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("tagId", t.getId());
-            row.put("tagName", name);
-            row.put("rawScore", round4(r));
-            row.put("computedRecommendWeight", round4(weights.getOrDefault(name, dbFallback.getOrDefault(name, 0.1))));
-            row.put("dbFallbackWeight", round4(dbFallback.getOrDefault(name, 0.1)));
-            row.put("shareOfAllTagsPercent", sumAllRaw > 0 ? round2(100.0 * r / sumAllRaw) : 0.0);
-            list.add(row);
-        }
-        list.sort((a, b) -> Double.compare(((Number) b.get("rawScore")).doubleValue(), ((Number) a.get("rawScore")).doubleValue()));
-        int rank = 1;
-        for (Map<String, Object> row : list) {
-            row.put("rank", rank++);
-        }
-        return list;
     }
 
     private Map<Integer, String> buildNovelLabelMap() {
@@ -262,6 +222,58 @@ public class SiteTagHeatServiceImpl implements SiteTagHeatService {
             }
         }
         return out;
+    }
+
+    /**
+     * 以 tag 表为准输出全部标签行：按原始热度降序；占比分母为全站 raw 总和（与 Top5 卡片一致）。
+     */
+    private List<Map<String, Object>> buildAllTagRows(Map<String, Double> raw, Map<String, Double> weights) {
+        List<Tag> sysTags = tagMapper.selectAll();
+        if (sysTags == null || sysTags.isEmpty()) {
+            return Collections.emptyList();
+        }
+        double sumAll = raw.values().stream().mapToDouble(Double::doubleValue).sum();
+        List<Tag> sorted = new ArrayList<>(sysTags);
+        sorted.sort((a, b) -> {
+            double ra = tagRaw(raw, a);
+            double rb = tagRaw(raw, b);
+            int c = Double.compare(rb, ra);
+            if (c != 0) {
+                return c;
+            }
+            String na = a.getName() != null ? a.getName() : "";
+            String nb = b.getName() != null ? b.getName() : "";
+            return na.compareToIgnoreCase(nb);
+        });
+        List<Map<String, Object>> list = new ArrayList<>();
+        int rank = 1;
+        for (Tag t : sorted) {
+            if (t == null || t.getName() == null) {
+                continue;
+            }
+            String name = t.getName().trim();
+            if (name.isEmpty()) {
+                continue;
+            }
+            double r = raw.getOrDefault(name, 0.0);
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("rank", rank++);
+            row.put("tagId", t.getId());
+            row.put("tagName", name);
+            row.put("rawScore", round4(r));
+            row.put("computedRecommendWeight", weights.containsKey(name) ? round4(weights.get(name)) : null);
+            row.put("shareOfAllTagsPercent", sumAll > 0 ? round2(100.0 * r / sumAll) : 0.0);
+            list.add(row);
+        }
+        return list;
+    }
+
+    private static double tagRaw(Map<String, Double> raw, Tag t) {
+        if (t == null || t.getName() == null) {
+            return 0.0;
+        }
+        String k = t.getName().trim();
+        return k.isEmpty() ? 0.0 : raw.getOrDefault(k, 0.0);
     }
 
     private List<Map<String, Object>> buildTop5List(Map<String, Double> raw) {

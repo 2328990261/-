@@ -35,6 +35,18 @@ public interface UserMapper {
     void updateStatus(@Param("id") Integer id, @Param("status") Integer status);
     int selectCollectionCount();
 
+    /** 后台：按 id 查询（不含密码） */
+    Map<String, Object> selectUserAdminById(@Param("id") Integer id);
+
+    /** 后台：更新用户（passwordEncoded 非空时同时改密） */
+    int adminUpdateUser(Map<String, Object> params);
+
+    int countUsernameExcludeId(@Param("username") String username, @Param("id") Integer id);
+
+    int deleteUserById(@Param("id") Integer id);
+
+    void deleteAllCollectionsByUserId(@Param("userId") Integer userId);
+
     /** 全站收藏的小说 id（含不同用户重复收藏同一书，重复计数以放大热度） */
     List<Integer> selectAllCollectionNovelIds();
 }

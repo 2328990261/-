@@ -60,6 +60,10 @@
         WHERE user_id = #{userId} AND novel_id = #{novelId}
     </delete>
 
+    <delete id="deleteByUserId">
+        DELETE FROM user_reading_history WHERE user_id = #{userId}
+    </delete>
+
     <!-- 统计用户阅读总时长（秒） -->
     <select id="selectTotalReadDurationByUserId" resultType="java.lang.Long">
         SELECT COALESCE(SUM(read_duration), 0) FROM user_reading_history WHERE user_id = #{userId}

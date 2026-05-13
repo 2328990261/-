@@ -66,5 +66,9 @@
         WHERE user_id = #{userId}
     </update>
 
+    <delete id="deleteByUserId">
+        DELETE FROM user_recommend_profile WHERE user_id = #{userId}
+    </delete>
+
 </mapper>
 

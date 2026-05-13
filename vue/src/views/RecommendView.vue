@@ -50,7 +50,10 @@
           </div>
           <div class="book-info">
             <h3 class="book-title">{{ book.bookMainName }}</h3>
-            <p class="book-author">{{ book.author }}</p>
+            <div class="book-meta-row">
+              <p class="book-author">{{ book.author }}</p>
+              <BookCardMoreMenu :book="book" @open-dislike="openDislikeDialog" />
+            </div>
             <div class="book-tags">
               <span
                 v-for="(tag, index) in getBookTags(book.label)"
@@ -156,6 +159,14 @@
         </div>
       </div>
     </div>
+
+    <DislikeBookDialog
+      v-model="dislikeDialogVisible"
+      :novel-id="dislikeBook?.id"
+      :author="dislikeBook?.author"
+      :label="dislikeBook?.label"
+      @saved="onDislikeSaved"
+    />
   </div>
 </template>
 
@@ -166,6 +177,8 @@ import axios from 'axios'
 import Navbar from '@/components/Navbar.vue'
 import LibraryTagSearch from '@/components/LibraryTagSearch.vue'
 import DailyBooks from '@/components/DailyBooks.vue'
+import DislikeBookDialog from '@/components/DislikeBookDialog.vue'
+import BookCardMoreMenu from '@/components/BookCardMoreMenu.vue'
 import { getAllNovels, getNovelsByLabels } from '@/api/novel'
 
 const router = useRouter()
@@ -219,6 +232,19 @@ const otherTags = [
   '宫廷', '虚拟网游', '现实题材', '种田文', '转生', '穿越', '魔法',
   '全年龄', '轻百'
 ]
+
+const dislikeDialogVisible = ref(false)
+const dislikeBook = ref(null)
+
+const openDislikeDialog = (book) => {
+  dislikeBook.value = book
+  dislikeDialogVisible.value = true
+}
+
+const onDislikeSaved = async () => {
+  dislikeBook.value = null
+  await getRecommendations(currentSortType.value)
+}
 
 const showDialog = ref(false)
 const showTagDialog = ref(false)
@@ -551,12 +577,30 @@ h1 {
 }
 
 .book-card {
+  position: relative;
   background: white;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.book-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.book-meta-row .book-author {
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .book-card:hover {

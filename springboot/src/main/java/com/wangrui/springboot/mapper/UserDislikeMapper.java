@@ -17,4 +17,10 @@ public interface UserDislikeMapper {
     List<String> selectAuthorsByUserId(@Param("userId") Integer userId);
 
     List<String> selectTagsByUserId(@Param("userId") Integer userId);
+
+    int deleteDislikeNovelsByUserId(@Param("userId") Integer userId);
+
+    int deleteDislikeAuthorsByUserId(@Param("userId") Integer userId);
+
+    int deleteDislikeTagsByUserId(@Param("userId") Integer userId);
 }

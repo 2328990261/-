@@ -47,6 +47,10 @@
         WHERE user_id = #{userId} AND novel_id = #{novelId}
     </delete>
 
+    <delete id="deleteByUserId">
+        DELETE FROM user_finished_novel WHERE user_id = #{userId}
+    </delete>
+
     <select id="selectAllFinishedDistinctNovelIds" resultType="int">
         SELECT DISTINCT novel_id FROM user_finished_novel
     </select>

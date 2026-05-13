@@ -4,12 +4,12 @@
     <p class="page-hint">仅展示管理员（is_admin = 1）。编辑中可将角色改为普通用户以取消后台权限。</p>
     <div class="toolbar">
       <input v-model="keyword" type="text" placeholder="搜索用户名/邮箱" @keyup.enter="loadList" />
-      <select v-model="filterStatus" @change="loadList">
+      <select v-model="filterStatus" class="admin-select" @change="loadList">
         <option :value="null">全部状态</option>
         <option :value="0">正常</option>
         <option :value="1">禁用</option>
       </select>
-      <button class="btn-refresh" @click="loadList">查询</button>
+      <button type="button" class="admin-btn admin-btn--primary" @click="loadList">查询</button>
     </div>
     <div class="table-wrap">
       <table class="data-table">
@@ -34,19 +34,44 @@
             <td>{{ row.phone || '-' }}</td>
             <td><span :class="['status-tag', row.status === 0 ? 'normal' : 'disabled']">{{ row.status === 0 ? '0 正常' : '1 禁用' }}</span></td>
             <td>{{ formatDateTime(row.createdAt) }}</td>
-            <td class="ops">
-              <button type="button" class="btn-sm" @click="openEdit(row)">编辑</button>
-              <button v-if="row.status === 0" type="button" class="btn-sm btn-warn" @click="setStatus(row.id, 1)">禁用</button>
-              <button v-else type="button" class="btn-sm btn-ok" @click="setStatus(row.id, 0)">启用</button>
+            <td class="ops admin-ops">
+              <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" @click="openEdit(row)">
+                编辑
+              </button>
+              <button
+                v-if="row.status === 0"
+                type="button"
+                class="admin-btn admin-btn--warn admin-btn--sm"
+                @click="setStatus(row.id, 1)"
+              >
+                禁用
+              </button>
+              <button v-else type="button" class="admin-btn admin-btn--success admin-btn--sm" @click="setStatus(row.id, 0)">
+                启用
+              </button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
     <div class="pagination">
-      <button :disabled="page <= 1" @click="page--; loadList()">上一页</button>
+      <button
+        type="button"
+        class="admin-btn admin-btn--secondary admin-btn--sm"
+        :disabled="page <= 1"
+        @click="page--; loadList()"
+      >
+        上一页
+      </button>
       <span>第 {{ page }} 页 / 共 {{ total }} 条</span>
-      <button :disabled="page * pageSize >= total" @click="page++; loadList()">下一页</button>
+      <button
+        type="button"
+        class="admin-btn admin-btn--secondary admin-btn--sm"
+        :disabled="page * pageSize >= total"
+        @click="page++; loadList()"
+      >
+        下一页
+      </button>
     </div>
 
     <div v-if="showEdit" class="modal-mask" @click.self="showEdit = false">
@@ -84,8 +109,8 @@
           <input v-model="editForm.newPassword" type="password" maxlength="60" placeholder="留空则不修改（BCrypt 存入 password）" autocomplete="new-password" />
         </div>
         <div class="modal-actions">
-          <button type="button" class="btn-refresh" @click="showEdit = false">取消</button>
-          <button type="button" class="btn-save" @click="saveEdit">保存</button>
+          <button type="button" class="admin-btn admin-btn--secondary" @click="showEdit = false">取消</button>
+          <button type="button" class="admin-btn admin-btn--primary" @click="saveEdit">保存</button>
         </div>
       </div>
     </div>
@@ -201,17 +226,11 @@ onMounted(loadList)
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
 .data-table th { background: #f9fafb; font-weight: 600; }
-.ops { display: flex; flex-wrap: wrap; gap: 8px; }
+.ops { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .status-tag { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
 .status-tag.normal { background: #d1fae5; color: #065f46; }
 .status-tag.disabled { background: #fee2e2; color: #991b1b; }
-.btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 4px; cursor: pointer; border: 1px solid #d1d5db; background: #fff; }
-.btn-sm.btn-ok { background: #10b981; color: #fff; border-color: #10b981; }
-.btn-sm.btn-warn { background: #f59e0b; color: #fff; border-color: #f59e0b; }
-.pagination { margin-top: 16px; display: flex; align-items: center; gap: 16px; }
-.btn-refresh { padding: 6px 14px; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; background: #fff; }
-.btn-save { padding: 6px 14px; border: 1px solid #2563eb; border-radius: 6px; cursor: pointer; background: #2563eb; color: #fff; }
-
+.pagination { margin-top: 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1100; padding: 12px; box-sizing: border-box; }
 .modal { background: #fff; padding: 24px; border-radius: 12px; min-width: 0; width: 100%; max-width: 420px; box-sizing: border-box; }
 .modal h3 { margin: 0 0 8px 0; }

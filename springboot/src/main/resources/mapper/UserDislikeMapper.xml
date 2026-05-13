@@ -32,4 +32,16 @@
         SELECT tag_name FROM user_dislike_tag WHERE user_id = #{userId}
     </select>
 
+    <delete id="deleteDislikeNovelsByUserId">
+        DELETE FROM user_dislike_novel WHERE user_id = #{userId}
+    </delete>
+
+    <delete id="deleteDislikeAuthorsByUserId">
+        DELETE FROM user_dislike_author WHERE user_id = #{userId}
+    </delete>
+
+    <delete id="deleteDislikeTagsByUserId">
+        DELETE FROM user_dislike_tag WHERE user_id = #{userId}
+    </delete>
+
 </mapper>

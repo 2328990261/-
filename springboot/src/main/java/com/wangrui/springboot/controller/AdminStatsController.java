@@ -45,18 +45,20 @@ public class AdminStatsController {
         data.put("lastComputedAt", siteTagHeatService.getLastComputedAtMillis());
         data.put("cacheTtlSeconds", 120);
         data.put("top5", siteTagHeatService.getTop5HotTags());
-        data.put("description", "来源：全站收藏、阅读历史、评论条数（按书封顶）、完读；标签上按热度映射为 0.1~1.0 推荐权重");
+        data.put("description", "来源：全站收藏、阅读历史、评论条数（按书封顶）、完读；在 tag 表标签上按热度映射为 0.1~1.0 推荐权重");
         return Result.success(data);
     }
 
-    /** 推荐配置 / 运营：tag 表全部标签的热度、占比与映射权重（与聚合服务同源缓存）。 */
+    /**
+     * 推荐配置页：返回 tag 表内全部标签的热度行（与 {@link #tagSiteHeat()} 同源缓存）。
+     */
     @GetMapping("/stats/tag-site-heat-rows")
     public Result<Map<String, Object>> tagSiteHeatRows() {
         Map<String, Object> data = new HashMap<>();
+        data.put("rows", siteTagHeatService.getAllTagHeatRows());
         data.put("lastComputedAt", siteTagHeatService.getLastComputedAtMillis());
         data.put("cacheTtlSeconds", 120);
-        data.put("rows", siteTagHeatService.getAllTagHeatRows());
-        data.put("description", "来源：全站收藏、阅读历史、评论条数（按书封顶）、完读；标签上按热度映射为 0.1~1.0 推荐权重");
+        data.put("description", "来源：全站收藏、阅读历史、评论条数（按书封顶）、完读；在 tag 表标签上按热度映射为 0.1~1.0 推荐权重");
         return Result.success(data);
     }
 }

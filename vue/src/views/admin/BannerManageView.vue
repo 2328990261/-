@@ -2,7 +2,7 @@
   <div class="banner-manage">
     <div class="header">
       <h2>轮播图管理</h2>
-      <button class="add-btn" @click="showAddDialog">新增轮播图</button>
+      <button type="button" class="admin-btn admin-btn--primary" @click="showAddDialog">新增轮播图</button>
     </div>
 
     <div class="table-container">
@@ -36,9 +36,9 @@
                 {{ banner.status === 1 ? '启用' : '禁用' }}
               </span>
             </td>
-            <td class="actions">
-              <button class="btn-edit" @click="editBanner(banner)">编辑</button>
-              <button class="btn-delete" @click="deleteBanner(banner.id)">删除</button>
+            <td class="actions admin-ops">
+              <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" @click="editBanner(banner)">编辑</button>
+              <button type="button" class="admin-btn admin-btn--danger admin-btn--sm" @click="deleteBanner(banner.id)">删除</button>
             </td>
           </tr>
         </tbody>
@@ -86,7 +86,7 @@
             </div>
             <div v-else class="image-preview">
               <img :src="imagePreview" alt="预览图" />
-              <button class="remove-image" @click="removeImage">
+              <button type="button" class="admin-btn admin-btn--danger banner-remove-image" @click="removeImage">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -108,7 +108,7 @@
 
         <div class="form-group">
           <label>状态（可选）</label>
-          <select v-model.number="formData.status">
+          <select v-model.number="formData.status" class="admin-form-select">
             <option :value="1">启用</option>
             <option :value="0">禁用</option>
           </select>
@@ -125,8 +125,8 @@
         </div>
 
         <div class="dialog-actions">
-          <button class="btn-cancel" @click="closeDialog">取消</button>
-          <button class="btn-confirm" @click="submitForm">确定</button>
+          <button type="button" class="admin-btn admin-btn--secondary" @click="closeDialog">取消</button>
+          <button type="button" class="admin-btn admin-btn--primary" @click="submitForm">确定</button>
         </div>
       </div>
     </div>
@@ -390,21 +390,6 @@ onMounted(() => {
   margin: 0;
 }
 
-.add-btn {
-  padding: 10px 24px;
-  background: #409eff;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s;
-}
-
-.add-btn:hover {
-  background: #66b1ff;
-}
-
 .table-container {
   background: #fff;
   border-radius: 8px;
@@ -472,33 +457,7 @@ onMounted(() => {
 .actions {
   display: flex;
   gap: 8px;
-}
-
-.btn-edit, .btn-delete {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.3s;
-}
-
-.btn-edit {
-  background: #e6f7ff;
-  color: #1890ff;
-}
-
-.btn-edit:hover {
-  background: #bae7ff;
-}
-
-.btn-delete {
-  background: #fff1f0;
-  color: #ff4d4f;
-}
-
-.btn-delete:hover {
-  background: #ffccc7;
+  align-items: center;
 }
 
 .empty-state {
@@ -579,36 +538,7 @@ onMounted(() => {
   justify-content: flex-end;
   gap: 12px;
   margin-top: 24px;
-}
-
-.btn-cancel, .btn-confirm {
-  padding: 8px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s;
-}
-
-.btn-cancel {
-  background: #fff;
-  color: #606266;
-  border: 1px solid #dcdfe6;
-}
-
-.btn-cancel:hover {
-  color: #409eff;
-  border-color: #c6e2ff;
-  background: #ecf5ff;
-}
-
-.btn-confirm {
-  background: #409eff;
-  color: #fff;
-}
-
-.btn-confirm:hover {
-  background: #66b1ff;
+  flex-wrap: wrap;
 }
 
 /* 图片上传样式 */
@@ -662,27 +592,25 @@ onMounted(() => {
   background: #f5f7fa;
 }
 
-.remove-image {
+.banner-remove-image {
   position: absolute;
   top: 8px;
   right: 8px;
-  width: 32px;
-  height: 32px;
-  background: rgba(0, 0, 0, 0.6);
-  border: none;
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
   border-radius: 50%;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s;
 }
 
-.remove-image:hover {
-  background: rgba(0, 0, 0, 0.8);
+.banner-remove-image:hover:not(:disabled) {
+  filter: brightness(1.06);
 }
 
-.remove-image svg {
+.banner-remove-image svg {
   color: #fff;
 }
 </style>

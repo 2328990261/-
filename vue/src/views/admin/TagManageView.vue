@@ -2,7 +2,7 @@
   <div class="tag-manage">
     <h2 class="page-heading">标签管理（系统设置）</h2>
     <div class="toolbar">
-      <button class="btn-primary" @click="openAdd">新增标签</button>
+      <button type="button" class="admin-btn admin-btn--primary" @click="openAdd">新增标签</button>
     </div>
     <div class="table-wrap">
       <table class="data-table">
@@ -19,9 +19,9 @@
             <td>{{ tag.id }}</td>
             <td>{{ tag.name }}</td>
             <td>{{ tag.sortOrder }}</td>
-            <td>
-              <button class="btn-sm" @click="openEdit(tag)">编辑</button>
-              <button class="btn-sm btn-danger" @click="doDelete(tag)">删除</button>
+            <td class="admin-ops">
+              <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" @click="openEdit(tag)">编辑</button>
+              <button type="button" class="admin-btn admin-btn--danger admin-btn--sm" @click="doDelete(tag)">删除</button>
             </td>
           </tr>
         </tbody>
@@ -33,8 +33,8 @@
         <div class="form-item"><label>标签名</label><input v-model="form.name" placeholder="如：奇幻" /></div>
         <div class="form-item"><label>排序（数字越小越靠前）</label><input v-model.number="form.sortOrder" type="number" /></div>
         <div class="modal-actions">
-          <button class="btn-ok" @click="submit">{{ editId ? '保存' : '添加' }}</button>
-          <button @click="showModal = false">取消</button>
+          <button type="button" class="admin-btn admin-btn--primary" @click="submit">{{ editId ? '保存' : '添加' }}</button>
+          <button type="button" class="admin-btn admin-btn--secondary" @click="showModal = false">取消</button>
         </div>
       </div>
     </div>
@@ -108,19 +108,15 @@ onMounted(loadTags)
 .tag-manage { padding: 0; }
 .page-heading { margin: 0 0 20px 0; font-size: 20px; }
 .toolbar { margin-bottom: 16px; }
-.btn-primary { padding: 8px 16px; background: #3b82f6; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
 .table-wrap { border: 1px solid #e5e7eb; border-radius: 8px; overflow-x: auto; }
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
 .data-table th { background: #f9fafb; font-weight: 600; }
-.btn-sm { margin-right: 8px; padding: 4px 10px; font-size: 12px; border-radius: 4px; cursor: pointer; border: 1px solid #d1d5db; background: #fff; }
-.btn-sm.btn-danger { background: #ef4444; color: #fff; border-color: #ef4444; }
 .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
 .modal { background: #fff; padding: 24px; border-radius: 12px; min-width: 320px; }
 .modal h3 { margin: 0 0 16px 0; }
 .form-item { margin-bottom: 12px; }
 .form-item label { display: block; margin-bottom: 4px; font-size: 13px; }
 .form-item input { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; }
-.modal-actions { margin-top: 20px; display: flex; gap: 10px; }
-.btn-ok { padding: 8px 16px; background: #10b981; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+.modal-actions { margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
 </style>

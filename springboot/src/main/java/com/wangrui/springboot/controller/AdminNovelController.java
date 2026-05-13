@@ -1,7 +1,9 @@
 package com.wangrui.springboot.controller;
 
 import com.wangrui.springboot.mapper.NovelBookMainMapper;
+import com.wangrui.springboot.mapper.NovelVolumeMapper;
 import com.wangrui.springboot.pojo.NovelBook;
+import com.wangrui.springboot.pojo.NovelBookVolume;
 import com.wangrui.springboot.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +19,8 @@ import java.util.stream.Collectors;
 public class AdminNovelController {
     @Autowired
     private NovelBookMainMapper novelBookMainMapper;
+    @Autowired
+    private NovelVolumeMapper novelVolumeMapper;
 
     /** 后台分页列表，status 可选：null=全部 0=下架 1=上架，支持标签和关键词筛选 */
     @GetMapping("/novels")
@@ -85,6 +89,33 @@ public class AdminNovelController {
         Integer status = body.get("status");
         if (status == null || (status != 0 && status != 1)) return Result.error("status 须为 0 或 1");
         novelBookMainMapper.updateNovelStatus(id, status);
+        return Result.success(null);
+    }
+
+    /** 管理端：分卷列表（不含正文，便于编辑页展示） */
+    @GetMapping("/novels/{id}/volumes")
+    public Result<List<Map<String, Object>>> listVolumesMeta(@PathVariable Integer id) {
+        NovelBook existing = novelBookMainMapper.selectNovelById(id);
+        if (existing == null) return Result.error("书籍不存在");
+        List<NovelBookVolume> volumes = novelVolumeMapper.selectVolumeMetaByMainBookId(id);
+        List<Map<String, Object>> rows = volumes.stream().map(v -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", v.getId());
+            m.put("mainBookId", v.getMainBookId());
+            m.put("volumeName", v.getVolumeName());
+            m.put("createTime", v.getCreateTime());
+            return m;
+        }).collect(Collectors.toList());
+        return Result.success(rows);
+    }
+
+    /** 管理端：删除指定分卷（须属于该书） */
+    @DeleteMapping("/novels/{novelId}/volumes/{volumeId}")
+    public Result<Void> deleteVolume(@PathVariable Integer novelId, @PathVariable Integer volumeId) {
+        NovelBook existing = novelBookMainMapper.selectNovelById(novelId);
+        if (existing == null) return Result.error("书籍不存在");
+        int n = novelVolumeMapper.deleteVolumeByIdAndMainBook(volumeId, novelId);
+        if (n == 0) return Result.error("分卷不存在或不属于该书");
         return Result.success(null);
     }
 }

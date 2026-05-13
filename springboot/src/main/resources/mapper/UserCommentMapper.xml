@@ -70,6 +70,10 @@
         WHERE id = #{id}
     </delete>
 
+    <delete id="deleteByUserId">
+        DELETE FROM user_comment WHERE user_id = #{userId}
+    </delete>
+
     <select id="selectCommentCountByNovel" resultType="java.util.HashMap">
         SELECT novel_id AS novelId, COUNT(*) AS cnt FROM user_comment GROUP BY novel_id
     </select>

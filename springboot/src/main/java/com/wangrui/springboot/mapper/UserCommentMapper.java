@@ -25,6 +25,8 @@ public interface UserCommentMapper {
     // 删除用户评论
     int deleteById(@Param("id") Integer id);
 
+    int deleteByUserId(@Param("userId") Integer userId);
+
     /** 每本小说的评论条数（全站聚合） */
     List<Map<String, Object>> selectCommentCountByNovel();
 }

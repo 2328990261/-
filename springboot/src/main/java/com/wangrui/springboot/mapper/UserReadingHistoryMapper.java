@@ -24,6 +24,8 @@ public interface UserReadingHistoryMapper {
     // 删除用户指定小说的阅读历史
     int deleteByUserIdAndNovelId(@Param("userId") Integer userId, @Param("novelId") Integer novelId);
 
+    int deleteByUserId(@Param("userId") Integer userId);
+
     /** 统计用户所有小说的阅读总时长（秒） */
     Long selectTotalReadDurationByUserId(@Param("userId") Integer userId);
 

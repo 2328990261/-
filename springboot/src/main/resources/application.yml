@@ -1,7 +1,3 @@
-# JWT：请改为自己的随机长字符串（任意长度，内部会 SHA-256 派生密钥）；勿提交真实生产密钥到公开仓库
-jwt:
-  secret: novel-platform-dev-change-me-to-a-long-random-string
-
 spring:
   # 数据库配置（保持你的信息）
   datasource:

@@ -1,13 +1,17 @@
 package com.wangrui.springboot.controller;
 
 import com.wangrui.springboot.pojo.UserComment;
+import com.wangrui.springboot.pojo.UserDislikeRequest;
+import com.wangrui.springboot.pojo.UserDislikeSnapshot;
 import com.wangrui.springboot.pojo.UserFinishedNovel;
 import com.wangrui.springboot.pojo.UserPreferenceTag;
 import com.wangrui.springboot.pojo.UserReadingHistory;
 import com.wangrui.springboot.service.UserCommentService;
+import com.wangrui.springboot.service.UserDislikeService;
 import com.wangrui.springboot.service.UserFinishedService;
 import com.wangrui.springboot.service.UserPreferenceService;
 import com.wangrui.springboot.service.UserReadingService;
+import com.wangrui.springboot.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,6 +38,9 @@ public class UserBehaviorController {
 
     @Autowired
     private UserCommentService userCommentService;
+
+    @Autowired
+    private UserDislikeService userDislikeService;
 
     // ==================== 用户偏好标签接口 ====================
 
@@ -193,5 +200,38 @@ public class UserBehaviorController {
     @DeleteMapping("/comments/{id}")
     public boolean deleteComment(@PathVariable("id") Integer id) {
         return userCommentService.deleteComment(id);
+    }
+
+    // ==================== 不感兴趣（负反馈）接口 ====================
+
+    /**
+     * 提交不感兴趣：屏蔽书/作者、标签降权
+     * POST /api/user/behavior/dislike?userId=
+     */
+    @PostMapping("/dislike")
+    public Result<Void> saveDislike(@RequestParam("userId") Integer userId, @RequestBody UserDislikeRequest request) {
+        if (userId == null) {
+            return Result.error("userId 不能为空");
+        }
+        if (request == null || request.getNovelId() == null) {
+            return Result.error("novelId 不能为空");
+        }
+        boolean ok = userDislikeService.saveDislike(userId, request);
+        if (ok) {
+            return Result.success(null);
+        }
+        return Result.error("保存失败：请检查小说是否存在，或已执行 sql/user_dislike.sql 建表脚本");
+    }
+
+    /**
+     * 查询当前用户不感兴趣快照
+     * GET /api/user/behavior/dislike?userId=
+     */
+    @GetMapping("/dislike")
+    public Result<UserDislikeSnapshot> getDislike(@RequestParam("userId") Integer userId) {
+        if (userId == null) {
+            return Result.error("userId 不能为空");
+        }
+        return Result.success(userDislikeService.getDislike(userId));
     }
 }
