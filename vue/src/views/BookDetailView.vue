@@ -175,6 +175,8 @@ import { ref, onMounted, defineProps, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { getNovelDetailById, addCollection, removeCollection, checkCollection } from '@/api/novel'
 import { getNovelComments, addComment } from '@/api/behavior'
+import { touchReadingHistoryRecency, getReadingHistoryList } from '@/utils/readingHistoryLocal'
+import { backendUrl } from '@/config/env'
 
 // 路由与传参
 const router = useRouter()
@@ -297,7 +299,7 @@ const submitComment = async () => {
 // 封面URL（对接后端接口，编码中文）
 const coverUrl = computed(() => {
   if (!novelDetail.value.cover) return ''
-  return `http://localhost:8081/novel/cover/${encodeURIComponent(novelDetail.value.cover)}`
+  return `${backendUrl('/novel/cover')}/${encodeURIComponent(novelDetail.value.cover)}`
 })
 
 // 封面加载失败处理（仅执行一次，避免死循环）
@@ -315,7 +317,7 @@ const getReadingProgress = () => {
   const novelId = Number(props.id)
   if (!novelId) return
 
-  const readingHistory = JSON.parse(localStorage.getItem('readingHistory') || '[]')
+  const readingHistory = getReadingHistoryList()
   // 注意类型匹配，将小说ID转换为字符串进行比较
   const progress = readingHistory.find(item => String(item.novelId) === String(novelId))
 
@@ -336,6 +338,12 @@ const getReadingProgress = () => {
 const gotoContinueRead = () => {
   if (!readingProgress.value) return
 
+  touchReadingHistoryRecency(props.id, {
+    chapterId: readingProgress.value.chapterId,
+    page: readingProgress.value.page,
+    bookMainName: novelDetail.value?.bookMainName,
+    cover: novelDetail.value?.cover
+  })
   // 记录最近点击的小说 ID 到 localStorage
   localStorage.setItem('lastClickedNovelId', String(props.id))
   router.push({
@@ -350,8 +358,9 @@ const gotoContinueRead = () => {
 
 // 切换收藏状态
 const toggleFavorite = async () => {
-  const userId = JSON.parse(localStorage.getItem('userId') || '1') // 假设从localStorage获取用户ID
-  
+  const userId = getCommentUserId()
+  if (!userId) return
+
   try {
     if (isFavorited.value) {
       // 取消收藏
@@ -373,8 +382,12 @@ const toggleFavorite = async () => {
 
 // 检查收藏状态
 const checkFavoriteStatus = async () => {
-  const userId = JSON.parse(localStorage.getItem('userId') || '1')
-  
+  const userId = getCommentUserId()
+  if (!userId) {
+    isFavorited.value = false
+    return
+  }
+
   try {
     const res = await checkCollection(userId, props.id)
     if (res.code === 200) {
@@ -412,6 +425,13 @@ watch(() => novelDetail.value.volumeList, (newVolumeList) => {
 
 // 跳转阅读页（默认第一章）
 const gotoReadPage = () => {
+  const firstCh = novelDetail.value?.volumeList?.[0]?.id
+  touchReadingHistoryRecency(props.id, {
+    chapterId: firstCh ?? null,
+    page: 1,
+    bookMainName: novelDetail.value?.bookMainName,
+    cover: novelDetail.value?.cover
+  })
   // 记录最近点击的小说 ID 到 localStorage
   localStorage.setItem('lastClickedNovelId', String(props.id))
   router.push({
@@ -422,6 +442,12 @@ const gotoReadPage = () => {
 
 // 跳转指定章节
 const gotoReadPageWithChapter = (chapterId) => {
+  touchReadingHistoryRecency(props.id, {
+    chapterId,
+    page: 1,
+    bookMainName: novelDetail.value?.bookMainName,
+    cover: novelDetail.value?.cover
+  })
   // 记录最近点击的小说 ID 到 localStorage
   localStorage.setItem('lastClickedNovelId', String(props.id))
   router.push({

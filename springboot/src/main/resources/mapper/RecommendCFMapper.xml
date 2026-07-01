@@ -32,13 +32,26 @@
         SELECT
             other.novel_id AS novelId,
             COUNT(DISTINCT other.user_id) AS coCount,
-            (SELECT COUNT(DISTINCT user_id) FROM <include refid="Interactions"/> x WHERE x.novel_id = #{seedNovelId}) AS cntI,
-            (SELECT COUNT(DISTINCT user_id) FROM <include refid="Interactions"/> y WHERE y.novel_id = other.novel_id) AS cntJ
+            (SELECT COUNT(DISTINCT x.user_id) FROM <include refid="Interactions"/> x
+             WHERE x.novel_id = #{seedNovelId}
+             <if test="excludeUserId != null">
+               AND x.user_id &lt;&gt; #{excludeUserId}
+             </if>
+            ) AS cntI,
+            (SELECT COUNT(DISTINCT y.user_id) FROM <include refid="Interactions"/> y
+             WHERE y.novel_id = other.novel_id
+             <if test="excludeUserId != null">
+               AND y.user_id &lt;&gt; #{excludeUserId}
+             </if>
+            ) AS cntJ
         FROM <include refid="Interactions"/> seed
         JOIN <include refid="Interactions"/> other
           ON seed.user_id = other.user_id
         WHERE seed.novel_id = #{seedNovelId}
           AND other.novel_id &lt;&gt; #{seedNovelId}
+        <if test="excludeUserId != null">
+          AND seed.user_id &lt;&gt; #{excludeUserId}
+        </if>
         GROUP BY other.novel_id
         ORDER BY coCount DESC
         LIMIT #{limit}

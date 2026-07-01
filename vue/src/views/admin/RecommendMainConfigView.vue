@@ -39,6 +39,11 @@
           <strong>多样性平衡</strong>（0～1）<br />
           越大越优先保留分数高的书（可能题材更集中）；越小越愿意为了「标签岔开」牺牲一点分数。
         </li>
+        <li>
+          <strong>协同共现每条边调试加分</strong>（0～1，建议接近 0）<br />
+          物品协同（Item-CF）从种子书拉共现列表时，每一行在相似度 sim 之外再累加该值，便于对照日志观察协同路径；存于表
+          <code>recommend_score_debug.cf_cooc_unit_bonus</code>。
+        </li>
       </ul>
 
       <h3 class="card-title form-section-title">调整数值</h3>
@@ -85,8 +90,16 @@
         </label>
         <input v-model.number="cfg.mmrLambda" type="number" min="0" max="1" step="0.05" class="field" />
       </div>
+      <div class="form-row">
+        <label class="label-block">
+          <span class="label-title">协同共现每条边调试加分</span>
+          <span class="label-sub">允许范围 0～1，默认 0 表示仅使用 sim</span>
+        </label>
+        <input v-model.number="cfg.cfCoocUnitBonus" type="number" min="0" max="1" step="0.001" class="field" />
+      </div>
 
-      <p v-if="cfg.updatedAt" class="meta">最近更新：{{ cfg.updatedAt }}</p>
+      <p v-if="cfg.updatedAt" class="meta">全局参数最近更新：{{ cfg.updatedAt }}</p>
+      <p v-if="cfg.scoreDebugUpdatedAt" class="meta">计分调试表最近更新：{{ cfg.scoreDebugUpdatedAt }}</p>
       <button type="button" class="btn-save" @click="save">保存</button>
       <p class="footer-note">
         若保存失败，请联系技术人员检查服务端是否已初始化「推荐全局参数」存储。
@@ -106,7 +119,9 @@ const defaultCfg = () => ({
   cfPureSlotCap: 4,
   mmrPoolCap: 50,
   mmrLambda: 0.7,
-  updatedAt: null
+  cfCoocUnitBonus: 0,
+  updatedAt: null,
+  scoreDebugUpdatedAt: null
 })
 
 const cfg = ref(defaultCfg())
@@ -121,7 +136,9 @@ const mapFromApi = (d) => {
     cfPureSlotCap: d.cfPureSlotCap != null ? Number(d.cfPureSlotCap) : 4,
     mmrPoolCap: d.mmrPoolCap != null ? Number(d.mmrPoolCap) : 50,
     mmrLambda: d.mmrLambda != null ? Number(d.mmrLambda) : 0.7,
-    updatedAt: d.updatedAt || null
+    cfCoocUnitBonus: d.cfCoocUnitBonus != null ? Number(d.cfCoocUnitBonus) : 0,
+    updatedAt: d.updatedAt || null,
+    scoreDebugUpdatedAt: d.scoreDebugUpdatedAt || null
   }
 }
 
@@ -150,7 +167,8 @@ const save = async () => {
       cfMaxSeeds: cfg.value.cfMaxSeeds,
       cfPureSlotCap: cfg.value.cfPureSlotCap,
       mmrPoolCap: cfg.value.mmrPoolCap,
-      mmrLambda: cfg.value.mmrLambda
+      mmrLambda: cfg.value.mmrLambda,
+      cfCoocUnitBonus: cfg.value.cfCoocUnitBonus
     })
     alert('已保存')
     await load()

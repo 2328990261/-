@@ -25,7 +25,7 @@ public class AdminStatsController {
     @GetMapping("/stats/overview")
     public Result<Map<String, Object>> overview() {
         int totalBooks = novelBookMainMapper.selectNovelTotalCountAdmin(null);
-        int totalUsers = userMapper.selectUserCount(null, null);
+        int totalUsers = userMapper.selectUserCount(null, null, null);
         Long totalViews = novelBookMainMapper.selectSumReadCount();
         int totalCollections = userMapper.selectCollectionCount();
         Map<String, Object> data = new HashMap<>();

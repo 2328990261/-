@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { clearReadingCachesForLogout } from '@/utils/userBrowserCache'
 
 /**
  * 默认请求实例：成功时直接返回后端 JSON（即原 axios 的 `response.data`），字段为 `{ code, msg, data }`。
@@ -35,6 +36,7 @@ request.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
+      clearReadingCachesForLogout()
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')
       localStorage.removeItem('userId')

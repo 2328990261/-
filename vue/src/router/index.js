@@ -69,8 +69,11 @@ const router = createRouter({
         { path: 'users', name: 'adminUsers', component: () => import('@/views/admin/UserManageView.vue') },
         { path: 'admins', name: 'adminManage', component: () => import('@/views/admin/AdminManageView.vue') },
         { path: 'recommend', name: 'adminRecommend', component: () => import('@/views/admin/RecommendConfigView.vue') },
+        { path: 'recommend/dashboard', name: 'adminRecommendDashboard', component: () => import('@/views/admin/RecommendTagDashboardView.vue') },
         { path: 'config', name: 'adminConfig', component: () => import('@/views/admin/ConfigCenterView.vue') },
         { path: 'config/banner', name: 'AdminBannerManage', component: () => import('@/views/admin/BannerManageView.vue') },
+        { path: 'config/recommend-main', name: 'RecommendMainConfig', component: () => import('@/views/admin/RecommendMainConfigView.vue') },
+        { path: 'config/recommend-behavior', name: 'RecommendBehaviorConfig', component: () => import('@/views/admin/RecommendBehaviorConfigView.vue') },
         { path: 'settings', name: 'adminSettings', component: () => import('@/views/admin/TagManageView.vue') }
       ]
     },
@@ -79,6 +82,11 @@ const router = createRouter({
       path: '/user/center',
       name: 'userCenter',
       component: UserCenterView
+    },
+    {
+      path: '/user/tag-weights',
+      name: 'userTagWeights',
+      component: () => import('@/views/UserTagWeightConfigView.vue')
     }
 
   ]
@@ -128,8 +136,11 @@ router.beforeEach((to, from, next) => {
     'adminUsers',
     'adminManage',
     'adminRecommend',
+    'adminRecommendDashboard',
     'adminConfig',
     'AdminBannerManage',
+    'RecommendMainConfig',
+    'RecommendBehaviorConfig',
     'adminSettings'
   ]
   if (adminRouteNames.includes(to.name)) {

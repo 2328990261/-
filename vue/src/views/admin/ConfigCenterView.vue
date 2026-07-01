@@ -17,6 +17,34 @@
         <div class="card-arrow">→</div>
       </div>
 
+      <div class="config-card" @click="goRecommendBehavior">
+        <div class="card-icon">
+          <svg viewBox="0 0 1024 1024" width="48" height="48">
+            <path d="M832 384H576V128H192v704h640V384z m-64 256H256V192h256v256h256v192z" fill="#67C23A"/>
+            <path d="M448 576h128v64H448z" fill="#67C23A"/>
+          </svg>
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">评论热度与最近阅读 · 行为计分</h3>
+          <p class="card-desc">维护 recommend_comment_config（评论、最近读过）及主路径阅读记录调试分 read_record_unit_bonus。</p>
+        </div>
+        <div class="card-arrow">→</div>
+      </div>
+
+      <div class="config-card" @click="goRecommendMain">
+        <div class="card-icon">
+          <svg viewBox="0 0 1024 1024" width="48" height="48">
+            <path d="M512 64l448 224v448L512 960 64 736V288L512 64z m0 128L192 288v384l320 160 320-160V288L512 192z" fill="#E6A23C"/>
+            <path d="M512 320l192 96v192l-192 96-192-96V416l192-96z" fill="#E6A23C"/>
+          </svg>
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">个性化推荐 · 全局参数（物品协同）</h3>
+          <p class="card-desc">维护 recommend_main_config（热度、协同占比、种子上限、MMR 等）及协同共现调试分 cf_cooc_unit_bonus。</p>
+        </div>
+        <div class="card-arrow">→</div>
+      </div>
+
       <!-- 预留其他配置项 -->
       <div class="config-card disabled">
         <div class="card-icon">
@@ -70,6 +98,14 @@ const router = useRouter()
 
 const goToBannerManage = () => {
   router.push({ name: 'AdminBannerManage' })
+}
+
+const goRecommendBehavior = () => {
+  router.push({ name: 'RecommendBehaviorConfig' })
+}
+
+const goRecommendMain = () => {
+  router.push({ name: 'RecommendMainConfig' })
 }
 </script>
 

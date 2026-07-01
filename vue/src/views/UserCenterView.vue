@@ -46,6 +46,9 @@
             >
               自定义排序
             </button>
+            <button type="button" class="sort-btn sort-btn-link" @click="goTagWeightConfig">
+              标签权重配置
+            </button>
           </div>
         </div>
         <div class="preference-tags">
@@ -61,9 +64,8 @@
             + 添加标签
           </button>
         </div>
-        <div class="preference-actions">
-          <p v-if="sortMode === 'collection'" class="preference-hint">收藏排序根据您的收藏与阅读情况实时更新，无需保存</p>
-          <button v-else @click="savePreferenceTags" class="save-tags-btn">
+        <div v-if="sortMode === 'custom'" class="preference-actions">
+          <button type="button" @click="savePreferenceTags" class="save-tags-btn">
             保存偏好设置
           </button>
         </div>
@@ -87,6 +89,35 @@
         </div>
       </div>
 
+      <div class="reading-history-section">
+        <div class="section-header">
+          <h3>阅读历史</h3>
+          <button type="button" class="refresh-history-btn" @click="loadReadingHistoryDisplay">刷新</button>
+        </div>
+        <p class="reading-history-hint">从「开始阅读」或「继续阅读」进入阅读页后会记录进度；最近打开的书排在最前，<strong>仅保留最近 10 本</strong>。</p>
+        <div v-if="readingHistoryList.length > 0" class="reading-history-grid">
+          <div
+            v-for="item in readingHistoryList"
+            :key="String(item.novelId)"
+            class="history-card"
+            @click="openReadFromHistory(item)"
+          >
+            <img
+              v-if="item.cover"
+              class="history-cover"
+              :src="`${backendUrl('/novel/cover')}/${encodeURIComponent(item.cover)}`"
+              :alt="item.bookMainName || ''"
+            />
+            <div v-else class="history-cover placeholder">暂无封面</div>
+            <div class="history-title">{{ item.bookMainName || `书号${item.novelId}` }}</div>
+            <div class="history-progress">进度: {{ item.progressPct != null ? item.progressPct : 0 }}%</div>
+          </div>
+        </div>
+        <div v-else class="empty-reading-history">
+          <p>暂无阅读记录，在小说详情页点击「开始阅读」后会出现在这里。</p>
+        </div>
+      </div>
+
       <div class="user-books-section">
         <h3>我的书架</h3>
         <div class="bookshelf-tabs">
@@ -107,7 +138,7 @@
         </div>
         <div class="books-grid">
           <div v-for="book in displayBooks" :key="book.id" class="book-item" @click="goToBookDetail(book.id)">
-            <img :src="`http://localhost:8081/novel/cover/${encodeURIComponent(book.cover)}`" :alt="book.bookMainName" class="book-cover">
+            <img :src="`${backendUrl('/novel/cover')}/${encodeURIComponent(book.cover)}`" :alt="book.bookMainName" class="book-cover">
             <div class="book-info">
               <div class="book-name">{{ book.bookMainName }}</div>
               <div class="book-author">作者：{{ book.author }}</div>
@@ -196,11 +227,17 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
 import Navbar from '@/components/Navbar.vue'
-import { getCollectionList } from '@/api/novel'
+import { getCollectionList, getNovelDetailById } from '@/api/novel'
+import { getReadingHistoryList, touchReadingHistoryRecency } from '@/utils/readingHistoryLocal'
+import {
+  getFinishedNovelIdsFromLocal,
+  getBookshelfOrderStorageKey
+} from '@/utils/userBrowserCache'
 import { updateUserInfo, getUserInfo } from '@/api/auth'
-import { getFinishedNovels, markNovelAsFinished, getTotalReadingDuration } from '@/api/behavior'
+import { getFinishedNovels, getTotalReadingDuration } from '@/api/behavior'
+import request from '@/utils/request'
+import { backendUrl } from '@/config/env'
 
 const router = useRouter()
 const userInfo = ref({})
@@ -221,6 +258,7 @@ const pageSize = ref(10) // 初始显示10个，一行5个，显示2行
 const showAddTagDialog = ref(false)
 const newTag = ref('')
 const selectedTags = ref([])
+const readingHistoryList = ref([])
 
 // 定义标签分类
 const firstRowTags = ['日常', '奇幻', '校园', '冒险', '异世界'] // 五大标签
@@ -261,14 +299,14 @@ const filteredBooks = computed(() => {
 // 保存书架排序到 localStorage
 const saveBookshelfOrder = () => {
   const bookIds = sortedBooks.value.map(book => String(book.id))
-  localStorage.setItem('bookshelfOrder', JSON.stringify(bookIds))
+  localStorage.setItem(getBookshelfOrderStorageKey(), JSON.stringify(bookIds))
   console.log('书架排序已保存:', bookIds)
 }
 
 // 从 localStorage 加载书架排序
 const loadBookshelfOrder = () => {
   try {
-    const savedOrder = JSON.parse(localStorage.getItem('bookshelfOrder') || '[]')
+    const savedOrder = JSON.parse(localStorage.getItem(getBookshelfOrderStorageKey()) || '[]')
     if (savedOrder.length > 0 && collectedBooks.value.length > 0) {
       // 根据保存的顺序重新排序
       const orderedBooks = []
@@ -309,6 +347,7 @@ onMounted(async () => {
     // 加载用户偏好标签（从数据库加载）
     loadUserPreferenceTagsFromDB()
   })
+  await loadReadingHistoryDisplay()
 })
 
 // 检查最近点击的小说并调整排序
@@ -427,19 +466,19 @@ const savePreferenceTags = async () => {
     console.log('标签数据:', tagData)
     
     // 调用API保存标签，传递tagType参数
-    const response = await axios.post(
-      `http://localhost:8081/api/user/behavior/preference/tags?userId=${userId}&tagType=${currentMode}`, 
+    const response = await request.post(
+      `/user/behavior/preference/tags?userId=${userId}&tagType=${currentMode}`,
       tagData
     )
-    
-    if (response.data) {
+
+    if (response === true || Number(response?.code) === 200) {
       alert(`${currentMode === 'collection' ? '收藏排序' : '自定义排序'}标签保存成功！`)
     } else {
-      alert('保存失败，请重试')
+      alert(response?.msg || '保存失败，请重试')
     }
   } catch (error) {
     console.error('保存标签失败:', error)
-    alert('保存失败：' + (error.response?.data?.msg || error.message))
+    alert('保存失败：' + (error?.msg || error.message))
   }
 }
 
@@ -450,18 +489,16 @@ const loadUserPreferenceTagsFromDB = async () => {
     if (!userId) return
     
     // 加载收藏排序标签
-    const collectionResponse = await axios.get(
-      `http://localhost:8081/api/user/behavior/preference/tags?userId=${userId}`
-    )
-    
-    if (collectionResponse.data && Array.isArray(collectionResponse.data)) {
+    const collectionResponse = await request.get(`/user/behavior/preference/tags?userId=${userId}`)
+
+    if (collectionResponse && Array.isArray(collectionResponse)) {
       // 分离收藏标签和自定义标签
-      const collectionTags = collectionResponse.data
+      const collectionTags = collectionResponse
         .filter(tag => tag.tagType === 'collection')
         .sort((a, b) => a.tagOrder - b.tagOrder)
         .map(tag => tag.tagName)
       
-      const customTagsList = collectionResponse.data
+      const customTagsList = collectionResponse
         .filter(tag => tag.tagType === 'custom')
         .sort((a, b) => a.tagOrder - b.tagOrder)
         .map(tag => tag.tagName)
@@ -600,35 +637,17 @@ const getCurrentUserId = () => {
 const loadFinishedNovels = async () => {
   const userId = getCurrentUserId()
   if (!userId) {
-    try {
-      const list = JSON.parse(localStorage.getItem('finishedNovels') || '[]')
-      finishedNovels.value = list
-    } catch {
-      finishedNovels.value = []
-    }
+    finishedNovels.value = getFinishedNovelIdsFromLocal()
     return
   }
   try {
     const res = await getFinishedNovels(userId)
-    const list = (res.data || []).map((item) => String(item.novelId))
+    const rows = Array.isArray(res) ? res : (res?.data ?? [])
+    const list = rows.map((item) => String(item.novelId))
     finishedNovels.value = list
-    // 将本地已完读但尚未同步到后端的也写入后端（仅做一次迁移）
-    const localList = JSON.parse(localStorage.getItem('finishedNovels') || '[]')
-    for (const novelId of localList) {
-      if (!list.includes(String(novelId))) {
-        try {
-          await markNovelAsFinished(userId, novelId)
-          finishedNovels.value = [...finishedNovels.value, String(novelId)]
-        } catch (_) {}
-      }
-    }
   } catch (e) {
     console.error('加载完读列表失败', e)
-    try {
-      finishedNovels.value = JSON.parse(localStorage.getItem('finishedNovels') || '[]')
-    } catch {
-      finishedNovels.value = []
-    }
+    finishedNovels.value = getFinishedNovelIdsFromLocal()
   }
 }
 
@@ -665,7 +684,11 @@ const loadUserBehaviors = async () => {
 }
 
 const loadCollectedBooks = async () => {
-  const userId = JSON.parse(localStorage.getItem('userId') || '1')
+  const userId = getCurrentUserId()
+  if (!userId) {
+    collectedBooks.value = []
+    return collectedBooks.value
+  }
   try {
     const res = await getCollectionList(userId)
     if (res.code === 200) {
@@ -825,6 +848,51 @@ const formatDate = (dateString) => {
   return dateString
 }
 
+const goTagWeightConfig = () => {
+  router.push({ name: 'userTagWeights' })
+}
+
+const loadReadingHistoryDisplay = async () => {
+  const raw = getReadingHistoryList()
+  const enriched = await Promise.all(
+    raw.map(async (it) => {
+      if (it.bookMainName && it.cover) return { ...it }
+      try {
+        const res = await getNovelDetailById(Number(it.novelId))
+        if (res.code === 200 && res.data) {
+          return {
+            ...it,
+            bookMainName: it.bookMainName || res.data.bookMainName,
+            cover: it.cover || res.data.cover
+          }
+        }
+      } catch (_) {}
+      return { ...it, bookMainName: it.bookMainName || `书号${it.novelId}` }
+    })
+  )
+  readingHistoryList.value = enriched
+}
+
+const openReadFromHistory = async (item) => {
+  const id = item.novelId
+  touchReadingHistoryRecency(id, {
+    chapterId: item.chapterId,
+    page: item.page,
+    bookMainName: item.bookMainName,
+    cover: item.cover,
+    progressPct: item.progressPct
+  })
+  await loadReadingHistoryDisplay()
+  const q = {}
+  if (item.chapterId) q.chapterId = item.chapterId
+  if (item.page) q.page = item.page
+  router.push({
+    name: 'BookRead',
+    params: { id },
+    query: q
+  })
+}
+
 </script>
 
 <style scoped>
@@ -857,6 +925,7 @@ h3 {
 .user-info-section,
 .user-preference-section,
 .user-behavior-section,
+.reading-history-section,
 .user-books-section {
   background-color: #fff;
   border-radius: 8px;
@@ -973,7 +1042,13 @@ h3 {
 /* 排序按钮样式 */
 .sort-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
+  justify-content: flex-end;
+}
+
+.sort-btn-link {
+  text-decoration: none;
 }
 
 .sort-btn {
@@ -996,6 +1071,28 @@ h3 {
   background-color: #f8a555;
   color: #fff;
   border-color: #f8a555;
+}
+
+.preference-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.save-tags-btn {
+  padding: 10px 24px;
+  background-color: #f8a555;
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.save-tags-btn:hover {
+  background-color: #e79544;
 }
 
 /* 标签分类样式 */
@@ -1071,6 +1168,104 @@ h3 {
   font-size: 14px;
   color: #666;
   margin-top: 4px;
+}
+
+.reading-history-hint {
+  font-size: 13px;
+  color: #888;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.refresh-history-btn {
+  background-color: #f8a555;
+  color: #fff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.refresh-history-btn:hover {
+  background-color: #e79544;
+}
+
+.reading-history-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+}
+
+.history-card {
+  text-align: center;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.history-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+  border-color: #f0b075;
+}
+
+.history-cover {
+  width: 100%;
+  max-width: 120px;
+  height: 168px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.history-cover.placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  color: #9ca3af;
+  font-size: 12px;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.history-title {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.35;
+  margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.history-progress {
+  font-size: 13px;
+  color: #999;
+}
+
+.empty-reading-history {
+  text-align: center;
+  padding: 24px 12px;
+  color: #999;
+  font-size: 14px;
+}
+
+@media (max-width: 992px) {
+  .reading-history-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .reading-history-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .bookshelf-tabs {
@@ -1258,34 +1453,3 @@ h3 {
   font-size: 16px;
 }
 </style>
-
-
-
-.preference-actions {
-  margin-top: 20px;
-  text-align: center;
-}
-
-.preference-hint {
-  margin: 0;
-  font-size: 14px;
-  color: #909399;
-}
-
-.save-tags-btn {
-  padding: 10px 30px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 25px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-}
-
-.save-tags-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-}

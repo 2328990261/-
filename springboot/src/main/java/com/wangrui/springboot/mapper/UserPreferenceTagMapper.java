@@ -24,6 +24,12 @@ public interface UserPreferenceTagMapper {
     // 删除用户指定类型的偏好标签
     int deleteByUserIdAndTagType(@Param("userId") Integer userId, @Param("tagType") String tagType);
 
+    /**
+     * 按用户 + 标签名批量删除（不区分 tag_type）。用于消除历史上误写入的 collection 行与
+     * 当前 custom 在 (user_id, tag_name) 唯一约束下的冲突。
+     */
+    int deleteByUserIdAndTagNames(@Param("userId") Integer userId, @Param("tagNames") List<String> tagNames);
+
     // 删除指定偏好标签
     int deleteById(@Param("id") Integer id);
 

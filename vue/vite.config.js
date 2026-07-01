@@ -21,9 +21,14 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8081',
         changeOrigin: true,
-        // 仅对 /novel、/auth 去掉 /api 前缀；/api/user/behavior、/api/recommend、/api/admin 保留 /api
+        // 多数接口去掉 /api 前缀（与后端 /novel、/auth 等一致）；
+        // 以下路径后端本身带 /api 前缀，必须原样转发到 8081。
         rewrite: (path) => {
-          if (path.startsWith('/api/user/behavior') || path.startsWith('/api/recommend') || path.startsWith('/api/admin')) {
+          if (
+            path.startsWith('/api/user/') ||
+            path.startsWith('/api/recommend') ||
+            path.startsWith('/api/admin')
+          ) {
             return path
           }
           return path.replace(/^\/api/, '')

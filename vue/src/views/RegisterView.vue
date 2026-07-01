@@ -39,6 +39,7 @@
 import { useRouter } from 'vue-router'
 import { reactive, ref } from 'vue'
 import { register } from '@/api/auth'
+import { clearLegacyGlobalReadingCaches } from '@/utils/userBrowserCache'
 
 const userRegisterForm = reactive({
   username: "",
@@ -80,6 +81,7 @@ const userRegister = async () => {
       const res = await register(uname, userRegisterForm.password, '')
       if (res.code === 200) {
         const { token, user } = res.data
+        clearLegacyGlobalReadingCaches()
         localStorage.setItem('token', token)
         localStorage.setItem('userInfo', JSON.stringify(user))
         if (user && user.id != null) localStorage.setItem('userId', String(user.id))

@@ -27,12 +27,12 @@
         </button>
       </div>
 
-      <div v-else-if="!hasLoadedOnce && !loading" class="recommend-actions">
-        <button class="recommend-btn" @click="fetchRecommendByCollection">
-          <span class="btn-icon">🎯</span>
-          <span>获取推荐</span>
-        </button>
-      </div>
+      <p v-if="hasLoadedOnce && !loading && isLoggedIn" class="preference-summary">
+        当前推荐：<strong>{{ currentSortLabel }}</strong>
+        <template v-if="currentDisplayTags.length">
+          · 偏好标签（与个人中心同步）：{{ currentDisplayTags.join('、') }}
+        </template>
+      </p>
 
       <div v-if="recommendedBooks.length > 0" class="books-grid">
         <div
@@ -43,7 +43,7 @@
         >
           <div class="book-cover">
             <img
-              :src="`http://localhost:8081/novel/cover/${encodeURIComponent(book.cover)}`"
+              :src="`${backendUrl('/novel/cover')}/${encodeURIComponent(book.cover)}`"
               :alt="book.bookMainName"
               @error="handleImageError"
             />
@@ -63,6 +63,9 @@
                 {{ tag }}
               </span>
             </div>
+            <div class="book-badges">
+              <span v-if="bookOthersReading(book)" class="others-reading-badge">别人在看</span>
+            </div>
           </div>
         </div>
       </div>
@@ -73,12 +76,12 @@
       </div>
 
       <div v-else-if="!loading && !hasPreferenceTags" class="empty-state">
-        <p>请先在个人中心设置阅读偏好（收藏排序标签）</p>
+        <p>请先在个人中心设置阅读偏好（收藏排序或自定义排序标签）</p>
         <router-link to="/user/center" class="link-center">去个人中心设置</router-link>
       </div>
 
       <div v-if="loading" class="loading-state">
-        <p>正在为您推荐...</p>
+        <p>加载中...</p>
       </div>
     </div>
 
@@ -86,7 +89,7 @@
     <div v-if="showDialog" class="dialog-overlay" @click="closeDialog">
       <div class="dialog-content sort-dialog" @click.stop>
         <h2>选择推荐方式</h2>
-        <p class="dialog-desc">与个人中心阅读偏好一致，任选一种方式</p>
+        <p class="dialog-desc">任选一种方式</p>
 
         <div class="sort-options">
           <button class="sort-option sort-option-collection" @click="chooseCollectionSort">
@@ -118,7 +121,7 @@
     <div v-if="showTagDialog" class="dialog-overlay" @click="closeTagDialog">
       <div class="dialog-content tag-dialog" @click.stop>
         <h2>选择偏好标签</h2>
-        <p class="dialog-desc">与个人中心「自定义排序」同步，五大标签选1个，其他最多4个</p>
+        <p class="dialog-desc">五个主标签选1个，其他最多选4个</p>
 
         <div class="tag-categories">
           <div class="category-section">
@@ -173,7 +176,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import request from '@/utils/request'
+import { backendUrl } from '@/config/env'
 import Navbar from '@/components/Navbar.vue'
 import LibraryTagSearch from '@/components/LibraryTagSearch.vue'
 import DailyBooks from '@/components/DailyBooks.vue'
@@ -269,12 +273,151 @@ const getUserId = () => {
     const userInfoStr = localStorage.getItem('userInfo')
     if (userInfoStr && userInfoStr !== 'undefined') {
       const userInfo = JSON.parse(userInfoStr)
-      if (userInfo && userInfo.id) return userInfo.id
+      if (userInfo && userInfo.id != null) return Number(userInfo.id)
     }
     const uid = localStorage.getItem('userId')
-    if (uid) return Number(uid)
+    if (uid) return Number(JSON.parse(uid))
   } catch (e) {}
-  return 1
+  return null
+}
+
+const isRecommendResponseOk = (response) => {
+  const c = response?.code
+  return c === 200 || c === '200' || Number(c) === 200
+}
+
+/**
+ * 推荐调试：控制台只保留三块——①个人标签权重表 ②本次算分（Top5/覆盖/统计）③最终书单分项。
+ */
+const logRecommendationDebug = (userId, sortType, payload) => {
+  if (!payload || Array.isArray(payload)) {
+    console.info(
+      '[推荐调试]',
+      `用户${userId}，「${sortType === 'collection' ? '收藏排序' : '自定义排序'}」`,
+      '（接口未返回 debug，无法输出表格）'
+    )
+    return
+  }
+  const debug = payload.debug
+  if (!debug) return
+  const label = sortType === 'collection' ? '收藏排序' : '自定义排序'
+  const books = payload.books || []
+  console.groupCollapsed(`[推荐调试] 用户${userId}，「${label}」，共${books.length}本`)
+
+  // —— 一、个人标签权重（画像向量，与 /api/user/recommend/tag-weights 同源）——
+  const vec = debug.tagVectorTop
+  if (Array.isArray(vec) && vec.length > 0) {
+    console.log('【一】个人标签权重（含占比，按权重从高到低排）')
+    console.table(vec.map((row) => ({ 标签: row.tag, 权重: row.weight, 占比: row.pct })))
+  } else {
+    console.log('【一】个人标签权重：无数据')
+  }
+
+  // —— 二、本次算分：tagHit 只用「偏好顺序前 5 个标签名」+ 上表中的权重去匹配书的 label ——
+  const t = debug.tagFilterStats
+  if (t) {
+    console.log(
+      '【二】本次算分说明：下表「用于 tagHit 的 Top5」= 个人中心收藏/自定义排序里排在前面的 5 个标签名，每个标签的权重取自【一】里同名标签（与【一】表格前几行不是同一概念）。'
+    )
+    const sw = t.scoringTop5Weights && typeof t.scoringTop5Weights === 'object' ? t.scoringTop5Weights : {}
+    const top5Rows = Object.keys(sw).map((tag, i) => ({
+      偏好顺序: i + 1,
+      标签名: tag,
+      参与tagHit的权重: Number(sw[tag])
+    }))
+    console.table(top5Rows)
+
+    const cov = t.perScoringTagCoverInFiltered
+    if (cov && typeof cov === 'object' && Object.keys(cov).length > 0) {
+      console.log('【二·续】过滤后候选里，各「打分标签」在书本 label 中出现的本数')
+      console.table(Object.keys(cov).map((tag) => ({ 标签: tag, 覆盖本书数: cov[tag] })))
+    }
+
+    console.table([
+      {
+        项: '全库书本数',
+        值: t.allNovelsCount
+      },
+      {
+        项: '黑名单等过滤后',
+        值: t.filteredAfterBlacklistCount
+      },
+      {
+        项: '自定义排序被标签筛掉',
+        值: t.customTagExcludedCount
+      },
+      {
+        项: '进入打分的候选数',
+        值: t.candidateCount
+      },
+      {
+        项: '其中 tagHit>0',
+        值: t.candidateTagHitPositiveCount
+      },
+      {
+        项: '其中 tagHit=0',
+        值: t.candidateTagHitZeroCount
+      },
+      {
+        项: '过滤后至少命中任一打分标签的书',
+        值: t.filteredBooksHitAnyScoringTagOnLabelCount
+      }
+    ])
+
+    if (t.scoringTop5KeySetEqualsPersonalWeightTop5KeySet === false) {
+      console.warn(
+        '【提示】个人向量里「权重最高的 5 个标签」与上表「用于 tagHit 的 Top5」不是同一组名字；若首页按奇幻等筛得到的书在推荐里 tagHit 很低，请到个人中心看收藏排序前 5 个标签是否包含奇幻等。'
+      )
+    }
+
+    if (Array.isArray(t.sampleTagHitZeroBooks) && t.sampleTagHitZeroBooks.length > 0) {
+      console.log('【二·样例】部分 tagHit=0 的书（核对 label 是否与平台标签字面值一致）')
+      console.table(
+        t.sampleTagHitZeroBooks.map((r) => ({
+          书ID: r.novelId,
+          书名: r.bookMainName,
+          label原文: r.labelRaw
+        }))
+      )
+    }
+  } else if (Array.isArray(debug.top5PreferenceKeys) && debug.top5PreferenceKeys.length) {
+    console.log('【二】偏好 Top5 键（无 tagFilterStats 时的简略输出）', debug.top5PreferenceKeys)
+  }
+
+  // —— 三、最终推荐书单分项 ——
+  const rows = debug.candidates
+  if (Array.isArray(rows) && rows.length > 0) {
+    console.log(
+      '【三】最终推荐书单分项（「标签命中」= 上表 Top5 在本书 label 上的权重之和；「综合排序分」= 混合标签/协同/热度后的排序分）'
+    )
+    const mixVal = (r) => (r.S_mix != null ? r.S_mix : r.mix)
+    console.table(
+      rows.map((r) => ({
+        排名: r.rank,
+        书ID: r.novelId,
+        书名: r.name,
+        标签命中: r.tagHit,
+        行为加分: r.behavior,
+        评论加分: r.commentBonus,
+        最近读过加分: r.recentReadBonus,
+        阅读条数调试分: r.readDebugBonus,
+        原始标签分: r.rawTag,
+        协同分: r.cfScore,
+        标签分归一: r.normTag,
+        协同分归一: r.normCf,
+        热度加分: r.popBoost,
+        综合排序分: mixVal(r),
+        全站阅读量: r.readCount,
+        别人在看: r.othersReading ? '是' : '否',
+        换换口味: r.changeFlavor ? '是' : '否'
+      }))
+    )
+  }
+
+  if (Array.isArray(debug.warnings) && debug.warnings.length) {
+    console.warn('【后端提示】', debug.warnings)
+  }
+  console.groupEnd()
 }
 
 // 当前推荐依据文案
@@ -300,11 +443,13 @@ const hasPreferenceTags = computed(() => {
 // 加载个人中心阅读偏好（与个人中心同一接口）
 const loadPreferenceTagsFromCenter = async () => {
   const userId = getUserId()
+  if (userId == null || !Number.isFinite(userId)) {
+    preferenceTagsFromCenter.value = { collection: [], custom: [] }
+    return
+  }
   try {
-    const res = await axios.get(
-      `http://localhost:8081/api/user/behavior/preference/tags?userId=${userId}`
-    )
-    const list = res.data && Array.isArray(res.data) ? res.data : []
+    const res = await request.get(`/user/behavior/preference/tags?userId=${userId}`)
+    const list = Array.isArray(res) ? res : []
     const collection = list
       .filter((t) => t.tagType === 'collection')
       .sort((a, b) => (a.tagOrder || 0) - (b.tagOrder || 0))
@@ -333,18 +478,25 @@ const getRecommendations = async (sortType) => {
 
   try {
     const userId = getUserId()
-    const response = await axios.get('http://localhost:8081/api/recommend/books', {
-      params: { userId, sortType }
+    if (userId == null || !Number.isFinite(userId)) {
+      alert('未登录或用户信息无效，请重新登录')
+      return
+    }
+    const response = await request.get('/recommend/books', {
+      params: { userId, sortType, _t: Date.now() }
     })
 
-    if (response.data.code === 200) {
-      recommendedBooks.value = response.data.data || []
+    if (isRecommendResponseOk(response)) {
+      const payload = response.data
+      const list = Array.isArray(payload) ? payload : payload?.books ?? []
+      recommendedBooks.value = [...list]
       hasLoadedOnce.value = true
+      logRecommendationDebug(userId, sortType, payload)
       if (recommendedBooks.value.length === 0) {
         alert('没有找到匹配的书籍，请到个人中心调整阅读偏好标签')
       }
     } else {
-      const msg = response.data.msg || '推荐失败'
+      const msg = response.msg || '推荐失败'
       if (msg.includes('请先设置')) {
         if (confirm(msg + '，是否前往个人中心设置？')) {
           router.push('/user/center')
@@ -355,9 +507,7 @@ const getRecommendations = async (sortType) => {
     }
   } catch (error) {
     console.error('推荐错误：', error)
-    const msg =
-      (error.response && error.response.data && error.response.data.msg) ||
-      '推荐失败，请先在个人中心设置阅读偏好'
+    const msg = error?.msg || '推荐失败，请先在个人中心设置阅读偏好'
     if (String(msg).includes('请先设置') && confirm(msg + '，是否前往个人中心？')) {
       router.push('/user/center')
     } else {
@@ -391,6 +541,12 @@ const closeTagDialog = () => {
   customSelectedTags.value = []
 }
 
+/** 偏好标签保存接口：兼容旧版返回 true，新版统一 Result */
+const isPreferenceSaveOk = (res) => {
+  if (res === true) return true
+  return res != null && typeof res === 'object' && Number(res.code) === 200
+}
+
 const toggleCustomTag = (tag) => {
   const idx = customSelectedTags.value.indexOf(tag)
   if (firstRowTags.includes(tag)) {
@@ -414,35 +570,62 @@ const toggleCustomTag = (tag) => {
   }
 }
 
-// 确认自定义标签：保存到个人中心（与个人中心同一接口），再按自定义排序推荐
+// 确认自定义标签：保存到个人中心（与个人中心同一接口），再从服务端拉偏好并拉自定义排序推荐
 const confirmCustomTagsAndRecommend = async () => {
   if (customSelectedTags.value.length === 0) {
     alert('请至少选择一个标签')
     return
   }
 
+  const firstPicked = customSelectedTags.value.filter((t) => firstRowTags.includes(t))
+  const others = customSelectedTags.value.filter((t) => !firstRowTags.includes(t))
+  if (firstPicked.length > 1) {
+    alert('五大标签请只选 1 个')
+    return
+  }
+  if (others.length > 4) {
+    alert('其他标签最多选 4 个')
+    return
+  }
+
   const userId = getUserId()
+  if (userId == null || !Number.isFinite(userId)) {
+    alert('未登录或用户信息无效，请重新登录')
+    return
+  }
+
   const tagData = customSelectedTags.value.map((tagName, index) => ({
     userId,
     tagName,
     tagType: 'custom',
     tagOrder: index + 1,
-    isFirstRow: 0
+    isFirstRow: false
   }))
 
   try {
-    await axios.post(
-      `http://localhost:8081/api/user/behavior/preference/tags?userId=${userId}&tagType=custom`,
+    const saveRes = await request.post(
+      `/user/behavior/preference/tags?userId=${userId}&tagType=custom`,
       tagData
     )
-    preferenceTagsFromCenter.value.custom = [...customSelectedTags.value]
+    if (!isPreferenceSaveOk(saveRes)) {
+      alert(saveRes?.msg || '保存偏好失败，请检查网络或稍后重试')
+      return
+    }
+    await loadPreferenceTagsFromCenter()
+    if (!preferenceTagsFromCenter.value.custom.length) {
+      alert('保存后未从服务器读到自定义标签，请重试或到个人中心保存一次')
+      return
+    }
     closeTagDialog()
     await getRecommendations('custom')
   } catch (err) {
     console.error('保存自定义标签失败:', err)
-    alert('保存失败，请重试')
+    alert(err?.msg || err?.message || '保存失败，请重试')
   }
 }
+
+/** 与后端 book.othersReading 一致：最终推荐列表中协同分 Top5 才展示「别人在看」 */
+const bookOthersReading = (book) => !!(book && book.othersReading)
 
 const getBookTags = (label) => {
   if (!label) return []
@@ -465,9 +648,20 @@ onMounted(async () => {
     await libraryLoadAllNovels()
     return
   }
-  await loadPreferenceTagsFromCenter()
-  if (preferenceTagsFromCenter.value.collection.length > 0) {
-    await fetchRecommendByCollection()
+  loading.value = true
+  try {
+    await loadPreferenceTagsFromCenter()
+    const { collection, custom } = preferenceTagsFromCenter.value
+    if (collection.length > 0) {
+      await fetchRecommendByCollection()
+    } else if (custom.length > 0) {
+      await getRecommendations('custom')
+    } else {
+      loading.value = false
+    }
+  } catch (e) {
+    console.error('推荐页初始化失败:', e)
+    loading.value = false
   }
 })
 </script>
@@ -525,25 +719,17 @@ h1 {
   margin-bottom: 24px;
 }
 
-.recommend-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 15px 40px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 50px;
-  font-size: 18px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+.preference-summary {
+  text-align: center;
+  font-size: 14px;
+  color: #606266;
+  margin: -12px 0 20px;
+  line-height: 1.6;
 }
 
-.recommend-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+.preference-summary strong {
+  color: #f8a555;
+  font-weight: 600;
 }
 
 .dissatisfied-btn {
@@ -563,10 +749,6 @@ h1 {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(248, 165, 85, 0.55);
   background: linear-gradient(135deg, #e89544 0%, #d88534 100%);
-}
-
-.btn-icon {
-  font-size: 24px;
 }
 
 .books-grid {
@@ -622,7 +804,31 @@ h1 {
 }
 
 .book-info {
+  position: relative;
   padding: 15px;
+  padding-bottom: 42px;
+}
+
+.book-badges {
+  position: absolute;
+  left: 15px;
+  bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 30px);
+}
+
+.others-reading-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #c45c12;
+  background: linear-gradient(135deg, #ffe8d4 0%, #ffd4a8 100%);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(196, 92, 18, 0.2);
 }
 
 .book-title {

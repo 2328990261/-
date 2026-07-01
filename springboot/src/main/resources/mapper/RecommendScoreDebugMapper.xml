@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wangrui.springboot.mapper.RecommendScoreDebugMapper">
+
+    <resultMap id="RowMap" type="com.wangrui.springboot.pojo.RecommendScoreDebug">
+        <id column="id" property="id"/>
+        <result column="read_record_unit_bonus" property="readRecordUnitBonus"/>
+        <result column="cf_cooc_unit_bonus" property="cfCoocUnitBonus"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="RowMap">
+        SELECT id, read_record_unit_bonus, cf_cooc_unit_bonus, updated_at
+        FROM recommend_score_debug WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.wangrui.springboot.pojo.RecommendScoreDebug">
+        INSERT INTO recommend_score_debug (id, read_record_unit_bonus, cf_cooc_unit_bonus)
+        VALUES (#{id}, #{readRecordUnitBonus}, #{cfCoocUnitBonus})
+    </insert>
+
+    <update id="update" parameterType="com.wangrui.springboot.pojo.RecommendScoreDebug">
+        UPDATE recommend_score_debug
+        SET read_record_unit_bonus = #{readRecordUnitBonus},
+            cf_cooc_unit_bonus = #{cfCoocUnitBonus}
+        WHERE id = #{id}
+    </update>
+</mapper>

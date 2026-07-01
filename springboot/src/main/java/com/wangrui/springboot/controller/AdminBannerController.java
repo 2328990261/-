@@ -4,7 +4,9 @@ import com.wangrui.springboot.mapper.BannerCarouselMapper;
 import com.wangrui.springboot.pojo.BannerCarousel;
 import com.wangrui.springboot.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Repository;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,6 +22,7 @@ import java.util.UUID;
  * 后台轮播图管理控制器
  */
 @RestController
+@Qualifier
 @RequestMapping("/api/admin/banner")
 @CrossOrigin
 public class AdminBannerController {

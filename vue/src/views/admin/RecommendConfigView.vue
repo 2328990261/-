@@ -1,92 +1,131 @@
 <template>
-  <div class="recommend-config">
-    <h2 class="page-heading">推荐配置</h2>
-    <p class="lead">
-      推荐对各标签的权重由<strong>全站行为</strong>（收藏、阅读、评论、完读）计算，映射为约
-      <strong>0.1～1.0</strong> 的「映射权重」。
-      
-    </p>
-
-    <TagSiteHeatDashboard
-      :rows="heatRows"
-      :subtitle="heatSubtitle"
-      :description="heatMeta.description"
-      :last-computed-at="heatMeta.lastComputedAt"
-      :error="heatError"
-      scrollable
-      empty-text="暂无标签或尚无行为数据；请先在「系统设置」维护标签，并产生阅读/收藏等行为。"
-    />
+  <div class="recommend-hub">
+    <router-link to="/admin/recommend/dashboard" class="dash-entry">
+      <div class="dash-entry-glow" aria-hidden="true" />
+      <div class="dash-entry-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M21 21H4V4"/>
+          <path d="M21 9l-5 5-4-4-3 3"/>
+          <circle cx="9" cy="9" r="2"/>
+        </svg>
+      </div>
+      <div class="dash-entry-body">
+        <h2 class="dash-entry-title">仪表盘</h2>
+        <p class="dash-entry-desc">查看全站标签热度、推荐权重分布与 Top 排行</p>
+      </div>
+      <div class="dash-entry-action">
+        <span>进入</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </router-link>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import adminHttp from '@/utils/adminHttp'
-import TagSiteHeatDashboard from '@/components/admin/TagSiteHeatDashboard.vue'
-
-const heatRows = ref([])
-const heatMeta = ref({ description: '', lastComputedAt: 0, cacheTtlSeconds: 120 })
-const heatError = ref('')
-
-const heatSubtitle = computed(() => {
-  const ttl = heatMeta.value.cacheTtlSeconds || 120
-  return `以下为全部标签的实时「热度」与映射后的推荐权重；数据每约 ${ttl} 秒与后端缓存同步。`
-})
-
-const loadHeat = async () => {
-  try {
-    const res = await adminHttp.get('/admin/stats/tag-site-heat-rows')
-    if (res.data?.code === 200 && res.data?.data) {
-      const d = res.data.data
-      heatRows.value = Array.isArray(d.rows) ? d.rows : []
-      heatMeta.value = {
-        description: d.description || '',
-        lastComputedAt: d.lastComputedAt || 0,
-        cacheTtlSeconds: d.cacheTtlSeconds ?? 120
-      }
-      heatError.value = ''
-    } else {
-      heatError.value = res.data?.msg || '加载标签热度失败'
-    }
-  } catch (e) {
-    heatError.value = '加载标签热度失败（请确认已登录管理员且后端可访问）'
-    console.error(e)
-  }
-}
-
-onMounted(loadHeat)
 </script>
 
 <style scoped>
-.recommend-config {
-  padding: 0;
-  max-width: 960px;
+.recommend-hub {
+  max-width: 720px;
+  padding: 8px 0 24px;
 }
 
-.page-heading {
+.dash-entry {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 28px 30px;
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 12px 40px rgba(99, 102, 241, 0.08), 0 2px 8px rgba(15, 23, 42, 0.04);
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.dash-entry-glow {
+  position: absolute;
+  right: -40px;
+  top: -40px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.28) 0%, transparent 68%);
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+
+.dash-entry:hover {
+  transform: translateY(-3px);
+  border-color: rgba(167, 139, 250, 0.55);
+  box-shadow: 0 18px 48px rgba(124, 58, 237, 0.14), 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.dash-entry:hover .dash-entry-action {
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  color: #fff;
+  border-color: transparent;
+}
+
+.dash-entry-icon {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: linear-gradient(135deg, #6d28d9 0%, #a855f7 55%, #ec4899 100%);
+  box-shadow: 0 8px 22px rgba(109, 40, 217, 0.32);
+}
+
+.dash-entry-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.dash-entry-title {
   margin: 0 0 8px 0;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
   color: #312e81;
   letter-spacing: -0.02em;
 }
 
-.lead {
-  margin: 0 0 22px 0;
-  color: #475569;
+.dash-entry-desc {
+  margin: 0;
   font-size: 14px;
-  line-height: 1.65;
+  color: #64748b;
+  line-height: 1.55;
 }
 
-.lead strong {
-  color: #334155;
+.dash-entry-action {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: #f8fafc;
+  color: #6d28d9;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease;
 }
 
-.lead code {
-  font-size: 12px;
-  background: #f1f5f9;
-  padding: 2px 6px;
-  border-radius: 4px;
-  color: #475569;
+@media (max-width: 640px) {
+  .dash-entry {
+    flex-wrap: wrap;
+    padding: 22px 20px;
+  }
+
+  .dash-entry-action {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>

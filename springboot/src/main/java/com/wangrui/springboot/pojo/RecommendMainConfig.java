@@ -20,6 +20,11 @@ public class RecommendMainConfig {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime updatedAt;
 
+    /** 表 recommend_score_debug：Item-CF 每条共现边在 sim 之外再累加的调试分（不入 recommend_main_config） */
+    private BigDecimal cfCoocUnitBonus;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private LocalDateTime scoreDebugUpdatedAt;
+
     public Integer getId() {
         return id;
     }
@@ -82,6 +87,22 @@ public class RecommendMainConfig {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public BigDecimal getCfCoocUnitBonus() {
+        return cfCoocUnitBonus;
+    }
+
+    public void setCfCoocUnitBonus(BigDecimal cfCoocUnitBonus) {
+        this.cfCoocUnitBonus = cfCoocUnitBonus;
+    }
+
+    public LocalDateTime getScoreDebugUpdatedAt() {
+        return scoreDebugUpdatedAt;
+    }
+
+    public void setScoreDebugUpdatedAt(LocalDateTime scoreDebugUpdatedAt) {
+        this.scoreDebugUpdatedAt = scoreDebugUpdatedAt;
     }
 
     public static RecommendMainConfig defaultConfig() {

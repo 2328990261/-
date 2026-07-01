@@ -39,8 +39,8 @@
         VALUES (#{userId}, #{tagName}, #{tagOrder}, #{isFirstRow}, NOW(), NOW())
     </insert>
 
-    <!-- 批量保存用户偏好标签 -->
-    <insert id="insertBatch" parameterType="java.util.List">
+    <!-- 批量保存：接口为 @Param("tags")，此处不能用 parameterType=java.util.List，否则绑定错误会导致插入失败并返回 false -->
+    <insert id="insertBatch">
         INSERT INTO user_preference_tag (user_id, tag_name, tag_type, tag_order, is_first_row, created_at, updated_at)
         VALUES
         <foreach collection="tags" item="tag" separator=",">
@@ -58,6 +58,15 @@
     <delete id="deleteByUserIdAndTagType">
         DELETE FROM user_preference_tag
         WHERE user_id = #{userId} AND tag_type = #{tagType}
+    </delete>
+
+    <delete id="deleteByUserIdAndTagNames">
+        DELETE FROM user_preference_tag
+        WHERE user_id = #{userId}
+        AND tag_name IN
+        <foreach collection="tagNames" item="n" open="(" separator="," close=")">
+            #{n}
+        </foreach>
     </delete>
 
     <!-- 删除指定偏好标签 -->

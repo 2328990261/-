@@ -30,8 +30,10 @@ public interface UserMapper {
     void updateUserInfo(Map<String, Object> params);
 
     List<Map<String, Object>> selectUserPage(@Param("offset") int offset, @Param("pageSize") int pageSize,
-                                             @Param("keyword") String keyword, @Param("status") Integer status);
-    int selectUserCount(@Param("keyword") String keyword, @Param("status") Integer status);
+                                             @Param("keyword") String keyword, @Param("status") Integer status,
+                                             @Param("isAdmin") Integer isAdmin);
+    int selectUserCount(@Param("keyword") String keyword, @Param("status") Integer status,
+                        @Param("isAdmin") Integer isAdmin);
     void updateStatus(@Param("id") Integer id, @Param("status") Integer status);
     int selectCollectionCount();
 

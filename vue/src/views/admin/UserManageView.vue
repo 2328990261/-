@@ -2,7 +2,7 @@
   <div class="user-manage">
     <h2 class="page-heading">用户管理</h2>
     <p class="lead">
-      全部用户；在「编辑」中可将「角色」设为管理员，保存后该用户具备管理端权限。
+      仅展示<strong>普通用户</strong>（非管理员）；在编辑中可将「是否管理员」改为「是（管理员身份）」后保存，该账号将出现在「管理员管理」并拥有后台权限。
     </p>
     <div class="toolbar">
       <input v-model="keyword" type="text" placeholder="搜索用户名/邮箱" @keyup.enter="loadList" />
@@ -19,7 +19,6 @@
           <tr>
             <th>编号</th>
             <th>用户名</th>
-            <th>管理员</th>
             <th>邮箱</th>
             <th>手机</th>
             <th>状态</th>
@@ -31,11 +30,6 @@
           <tr v-for="row in list" :key="row.id">
             <td>{{ row.id }}</td>
             <td>{{ row.username }}</td>
-            <td>
-              <span class="admin-badge" :class="row.isAdmin === 1 ? 'yes' : 'no'">
-                {{ row.isAdmin === 1 ? '管理员' : '普通用户' }}
-              </span>
-            </td>
             <td>{{ row.email || '-' }}</td>
             <td>{{ row.phone || '-' }}</td>
             <td>
@@ -104,7 +98,7 @@
             ><span>是否管理员</span>
             <select v-model.number="editForm.isAdmin" class="inp admin-form-select">
               <option :value="0">否（普通用户）</option>
-              <option :value="1">是（管理员）</option>
+              <option :value="1">是（管理员身份）</option>
             </select>
           </label>
           <label
@@ -188,7 +182,8 @@ const loadList = async () => {
         page: page.value,
         pageSize,
         keyword: keyword.value || undefined,
-        status: filterStatus.value
+        status: filterStatus.value,
+        isAdmin: 0
       }
     })
     if (res.data?.code === 200 && res.data?.data) {
@@ -342,20 +337,6 @@ onMounted(loadList)
 }
 .cell-actions {
   white-space: nowrap;
-}
-.admin-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-}
-.admin-badge.no {
-  background: #f1f5f9;
-  color: #475569;
-}
-.admin-badge.yes {
-  background: #ede9fe;
-  color: #5b21b6;
 }
 .status-tag {
   padding: 2px 8px;

@@ -18,7 +18,7 @@
             <!-- 前2项显示封面 -->
             <img
               v-if="index < 2"
-              :src="`http://localhost:8081/novel/cover/${encodeURIComponent(item.cover)}`"
+              :src="`${backendUrl('/novel/cover')}/${encodeURIComponent(item.cover)}`"
               alt="榜单封面"
               class="rank-cover"
             >
@@ -48,6 +48,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { backendUrl } from '@/config/env'
 
 const router = useRouter()
 

@@ -16,8 +16,11 @@ public interface UserPreferenceService {
      */
     List<UserPreferenceTag> getCollectionBasedTags(Integer userId);
 
-    // 保存用户偏好标签
-    boolean saveUserPreferenceTags(Integer userId, String tagType, List<UserPreferenceTag> tags);
+    /**
+     * 保存用户偏好标签（custom 写入库；collection 不持久化）。
+     * @throws RuntimeException 数据库异常时抛出，由控制器转换为 Result
+     */
+    void saveUserPreferenceTags(Integer userId, String tagType, List<UserPreferenceTag> tags);
 
     // 删除用户偏好标签
     boolean deleteUserPreferenceTag(Integer id);

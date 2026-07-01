@@ -4,6 +4,7 @@ package com.wangrui.springboot;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
 
 // 扫描Mapper包（确保路径正确）
 @MapperScan("com.wangrui.springboot.mapper")

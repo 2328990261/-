@@ -8,7 +8,7 @@ spring:
   # 文件上传大小限制配置
   servlet:
     multipart:
-      max-file-size: 500MB
+      max-file-size: 50MB
       max-request-size: 500MB
 
 # 服务器端口（保持你的8081）
@@ -27,5 +27,5 @@ mybatis:
   configuration:
     # 驼峰命名自动转换
     map-underscore-to-camel-case: true
-    # 打印SQL日志
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 打印SQL日志（排查 SQL 时临时取消注释；日常/答辩建议保持关闭）
+    # log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

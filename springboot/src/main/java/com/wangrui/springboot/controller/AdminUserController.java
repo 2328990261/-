@@ -28,10 +28,11 @@ public class AdminUserController {
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Integer status) {
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer isAdmin) {
         int offset = (page - 1) * pageSize;
-        List<Map<String, Object>> list = userMapper.selectUserPage(offset, pageSize, keyword, status);
-        int total = userMapper.selectUserCount(keyword, status);
+        List<Map<String, Object>> list = userMapper.selectUserPage(offset, pageSize, keyword, status, isAdmin);
+        int total = userMapper.selectUserCount(keyword, status, isAdmin);
         Map<String, Object> data = new HashMap<>();
         data.put("list", list);
         data.put("total", total);

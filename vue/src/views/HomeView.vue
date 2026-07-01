@@ -55,6 +55,7 @@ import { ref, computed, onMounted } from 'vue'
 
 // 导入接口（修正：确保导入的接口与调用一致）
 import { getAllNovels, getNovelsByTag, getNovelsByLabels, getBannerList } from '@/api/novel'
+import { backendUrl } from '@/config/env'
 
 // ========== 数据定义 ==========
 // 1. 轮播图数据及错误信息
@@ -71,9 +72,10 @@ const currentTagName = computed(() => {
 
 const isLoggedIn = computed(() => !!localStorage.getItem('token'))
 
-// 4. 小说数据
+// 4. 小说数据（首页：首屏 12 本 = 4 列×3 行；每次「加载更多」再累加 12 本）
+const HOME_BOOKS_PAGE_STEP = 12
 const allBooks = ref([])
-const pageSize = ref(10)
+const pageSize = ref(HOME_BOOKS_PAGE_STEP)
 const displayBooks = computed(() => allBooks.value.slice(0, pageSize.value))
 
 // 5. 榜单数据
@@ -84,7 +86,7 @@ const rankList = ref([])
 const handleTagsSelect = async (tags) => {
   console.log('HomeView收到的标签:', tags) // 调试日志
   selectedTags.value = tags
-  pageSize.value = 10
+  pageSize.value = HOME_BOOKS_PAGE_STEP
 
   if (tags.length === 0) {
     await loadAllNovels()
@@ -121,7 +123,7 @@ const loadAllNovels = async () => {
 
 // 3. 加载更多
 const loadMore = () => {
-  pageSize.value += 10
+  pageSize.value += HOME_BOOKS_PAGE_STEP
 }
 
 // 不感兴趣保存后刷新当前列表（与后端屏蔽/降权一致）
@@ -161,7 +163,7 @@ onMounted(async () => {
       // 核心修复：使用完整的后端URL
       const tempBannerList = carouselData.map(item => ({
         id: item.id,
-        image: `http://localhost:8081/novel/cover/${encodeURIComponent(item.cover)}`,
+        image: `${backendUrl('/novel/cover')}/${encodeURIComponent(item.cover)}`,
         title: ''  // ←【留白处】在这里填写轮播图标题文字
       }))
       // 方式1：用数组解构强制更新（最稳妥）

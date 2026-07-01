@@ -1,7 +1,7 @@
 <template>
   <div class="admin-manage">
     <h2 class="page-heading">管理员管理</h2>
-    <p class="page-hint">仅展示管理员（is_admin = 1）。编辑中可将角色改为普通用户以取消后台权限。</p>
+    <p class="page-hint">仅展示已具备<strong>管理员身份</strong>的账号（is_admin = 1）。在此将角色改为普通用户后，账号只出现在「用户管理」；将普通用户升为管理员请在「用户管理」中编辑并保存。</p>
     <div class="toolbar">
       <input v-model="keyword" type="text" placeholder="搜索用户名/邮箱" @keyup.enter="loadList" />
       <select v-model="filterStatus" class="admin-select" @change="loadList">
@@ -17,7 +17,6 @@
           <tr>
             <th>id</th>
             <th>username</th>
-            <th>is_admin</th>
             <th>email</th>
             <th>phone</th>
             <th>status</th>
@@ -29,7 +28,6 @@
           <tr v-for="row in list" :key="row.id">
             <td>{{ row.id }}</td>
             <td>{{ row.username }}</td>
-            <td>{{ row.isAdmin === 1 ? '1（管理员）' : '0（普通）' }}</td>
             <td>{{ row.email || '-' }}</td>
             <td>{{ row.phone || '-' }}</td>
             <td><span :class="['status-tag', row.status === 0 ? 'normal' : 'disabled']">{{ row.status === 0 ? '0 正常' : '1 禁用' }}</span></td>
@@ -86,7 +84,7 @@
           <label>is_admin</label>
           <select v-model.number="editForm.isAdmin">
             <option :value="0">0 否（普通用户）</option>
-            <option :value="1">1 是（管理员）</option>
+            <option :value="1">1 是（管理员身份）</option>
           </select>
         </div>
         <div class="form-row">

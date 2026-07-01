@@ -44,10 +44,31 @@
       <p>请从左侧菜单选择要管理的功能</p>
     </div>
 
+    <section class="video-section">
+      <div class="video-container">
+        <iframe
+          src="//www.bilibili.com/blackboard/html5mobileplayer.html?isOutside=true&aid=115575305013120&bvid=BV1JjyEB8ET7&cid=34107426650&p=1&highQuality=1&danmaku=0&autoplay=0&hideCoverInfo=1"
+          autoplay="0"
+          scrolling="no"
+          border="0"
+          frameborder="no"
+          framespacing="0"
+          allowfullscreen="true"
+          class="bilibili-player"
+        ></iframe>
+      </div>
+      <a
+        class="video-jump-link"
+        :href="bilibiliVideoUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        前往 B 站观看完整视频 →
+      </a>
+    </section>
     <TagSiteHeatDashboard
       :rows="tagHeat.top5 || []"
       :subtitle="heatSubtitle"
-      :description="tagHeat.description"
       :last-computed-at="tagHeat.lastComputedAt"
       :error="tagHeatError"
     />
@@ -60,8 +81,9 @@ import adminHttp from '@/utils/adminHttp'
 import TagSiteHeatDashboard from '@/components/admin/TagSiteHeatDashboard.vue'
 
 const stats = ref({ totalBooks: 0, totalUsers: 0, totalViews: 0, totalCollections: 0 })
-const tagHeat = ref({ top5: [], lastComputedAt: 0, cacheTtlSeconds: 120, description: '' })
+const tagHeat = ref({ top5: [], lastComputedAt: 0, cacheTtlSeconds: 120 })
 const tagHeatError = ref('')
+const bilibiliVideoUrl = 'https://www.bilibili.com/video/BV1JjyEB8ET7'
 
 const heatSubtitle = computed(() => {
   const ttl = tagHeat.value.cacheTtlSeconds || 120
@@ -202,4 +224,57 @@ onMounted(async () => {
   line-height: 1.65;
   font-weight: 400;
 }
+
+.video-section {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto clamp(24px, 3vw, 32px);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
+}
+
+.video-container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+}
+
+.bilibili-player {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.video-jump-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  background: linear-gradient(90deg, #1a1a1a 0%, #252525 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.video-jump-link:hover {
+  color: #00a1d6;
+  background: linear-gradient(90deg, #1f1f1f 0%, #2a2a2a 100%);
+}
+
 </style>
+
+
+
+
+

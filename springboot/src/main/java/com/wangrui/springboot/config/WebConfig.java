@@ -29,11 +29,16 @@ public class WebConfig implements WebMvcConfigurer {
                 .addResourceLocations("classpath:/static/images/");
     }
 
-    // 新增：注册JWT拦截器（实现登录验证）
-//    @Override
-//    public void addInterceptors(InterceptorRegistry registry) {
-//        registry.addInterceptor(new JwtlInterceptor())
-//                .addPathPatterns("/api/novel/**", "/api/user/**", "/api/recommend/**")
-//                .excludePathPatterns("/api/user/login/**", "/api/user/register", "/api/novel/label/**");
-//    }
+    /**
+     * JWT 校验：管理端、用户行为/偏好、推荐接口需携带有效 Token；
+     * 管理接口额外要求 JWT 中 isAdmin = 1。
+     * 登录注册在 /auth/**，小说公开接口在 /novel/**，不在此拦截范围内。
+     */
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new JwtInterceptor())
+                .addPathPatterns("/api/admin/**", "/api/user/**", "/api/recommend/**")
+                .addPathPatterns("/novel/detail/**", "/novel/chapter/**", "/novel/volume");
+
+    }
 }

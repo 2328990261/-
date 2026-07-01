@@ -22,8 +22,12 @@ public interface RecommendCFMapper {
      * - coCount: 共现用户数
      * - cntI: i 的互动用户数
      * - cntJ: j 的互动用户数
+     *
+     * @param excludeUserId 非空时从共现与 cntI/cntJ 中排除该用户，使协同分仅反映「其他用户」与 i、j 的共现（避免自共现堆分）
      */
-    List<Map<String, Object>> selectCooccurItems(@Param("seedNovelId") Integer seedNovelId, @Param("limit") Integer limit);
+    List<Map<String, Object>> selectCooccurItems(@Param("seedNovelId") Integer seedNovelId,
+                                                  @Param("limit") Integer limit,
+                                                  @Param("excludeUserId") Integer excludeUserId);
 
     /**
      * 全站互动人数最多的小说 ID（用于无用户行为时的全局物品协同冷启动种子）。

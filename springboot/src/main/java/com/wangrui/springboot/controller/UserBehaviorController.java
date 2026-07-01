@@ -12,6 +12,9 @@ import com.wangrui.springboot.service.UserFinishedService;
 import com.wangrui.springboot.service.UserPreferenceService;
 import com.wangrui.springboot.service.UserReadingService;
 import com.wangrui.springboot.util.Result;
+import jakarta.annotation.Resources;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +29,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/user/behavior")
 public class UserBehaviorController {
+
+    private static final Logger log = LoggerFactory.getLogger(UserBehaviorController.class);
 
     @Autowired
     private UserPreferenceService userPreferenceService;
@@ -56,13 +61,24 @@ public class UserBehaviorController {
     /**
      * 保存用户偏好标签
      * POST /api/user/behavior/preference/tags
+     * 统一返回 Result，便于前端展示具体失败原因（如缺 tag_type 字段、MyBatis 绑定错误等）。
      */
     @PostMapping("/preference/tags")
-    public boolean saveUserPreferenceTags(
-            @RequestParam("userId") Integer userId, 
+    public Result<Void> saveUserPreferenceTags(
+            @RequestParam("userId") Integer userId,
             @RequestParam(value = "tagType", required = false, defaultValue = "collection") String tagType,
             @RequestBody List<UserPreferenceTag> tags) {
-        return userPreferenceService.saveUserPreferenceTags(userId, tagType, tags);
+        try {
+            userPreferenceService.saveUserPreferenceTags(userId, tagType, tags);
+            return Result.success(null);
+        } catch (Exception e) {
+            log.error("saveUserPreferenceTags userId={} tagType={}", userId, tagType, e);
+            String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            if (msg.contains("Unknown column") && msg.contains("tag_type")) {
+                msg += "；请执行项目根目录下的 update_user_preference_tag.sql 为表 user_preference_tag 增加 tag_type 字段。";
+            }
+            return Result.error("保存失败：" + msg);
+        }
     }
 
     /**

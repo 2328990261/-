@@ -138,36 +138,45 @@ const closeTab = (name) => {
   }
 }
 
-const isTabActive = (name) => route.name === name
+const isTabActive = (name) => {
+  if (name === 'adminRecommend') {
+    return route.name === 'adminRecommend' || route.name === 'adminRecommendDashboard'
+  }
+  return route.name === name
+}
 
 watch(
   () => route.name,
   (newName) => {
-    if (newName && newName.startsWith('admin') && newName !== 'admin') {
-      activeTab.value = newName
+    if (!newName || newName === 'admin') return
+    if (!route.path.startsWith('/admin')) return
 
-      const existingTab = tabs.value.find((t) => t.name === newName)
-      if (!existingTab) {
-        const tabConfig = {
-          adminDashboard: { title: '概览', path: '/admin/dashboard' },
-          adminPublish: { title: '书籍上架', path: '/admin/publish' },
-          adminBooks: { title: '书籍管理', path: '/admin/books' },
-          adminUsers: { title: '用户管理', path: '/admin/users' },
-          adminManage: { title: '管理员管理', path: '/admin/admins' },
-          adminRecommend: { title: '推荐配置', path: '/admin/recommend' },
-          adminConfig: { title: '配置管理', path: '/admin/config' },
-          AdminBannerManage: { title: '轮播图管理', path: '/admin/config/banner' },
-          adminSettings: { title: '系统设置', path: '/admin/settings' }
-        }
+    const tabConfig = {
+      adminDashboard: { title: '概览', path: '/admin/dashboard' },
+      adminPublish: { title: '书籍上架', path: '/admin/publish' },
+      adminBooks: { title: '书籍管理', path: '/admin/books' },
+      adminUsers: { title: '用户管理', path: '/admin/users' },
+      adminManage: { title: '管理员管理', path: '/admin/admins' },
+      adminRecommend: { title: '推荐配置', path: '/admin/recommend' },
+      adminRecommendDashboard: { title: '仪表盘', path: '/admin/recommend/dashboard' },
+      adminConfig: { title: '配置管理', path: '/admin/config' },
+      AdminBannerManage: { title: '轮播图管理', path: '/admin/config/banner' },
+      RecommendBehaviorConfig: { title: '行为与阅读计分', path: '/admin/config/recommend-behavior' },
+      RecommendMainConfig: { title: '推荐全局参数', path: '/admin/config/recommend-main' },
+      adminSettings: { title: '系统设置', path: '/admin/settings' }
+    }
 
-        if (tabConfig[newName]) {
-          tabs.value.push({
-            name: newName,
-            title: tabConfig[newName].title,
-            path: tabConfig[newName].path
-          })
-        }
-      }
+    if (!tabConfig[newName]) return
+
+    activeTab.value = newName
+
+    const existingTab = tabs.value.find((t) => t.name === newName)
+    if (!existingTab) {
+      tabs.value.push({
+        name: newName,
+        title: tabConfig[newName].title,
+        path: tabConfig[newName].path
+      })
     }
   },
   { immediate: true }

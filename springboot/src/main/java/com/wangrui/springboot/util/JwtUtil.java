@@ -15,7 +15,7 @@ import java.util.Map;
 public class JwtUtil {
 
     // 过期时间，默认7天
-    private static final long EXPIRATION_TIME = 7 * 24 * 60 * 60 * 1000;
+    private static final long EXPIRATION_TIME =7 * 60 * 60 * 1000;
 
     // 签名密钥，实际应用中应该从配置文件获取
     private static final Key SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);

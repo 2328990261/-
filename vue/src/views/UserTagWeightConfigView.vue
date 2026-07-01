@@ -7,12 +7,11 @@
         <h2>标签权重配置（个人）</h2>
         <div class="header-actions">
           <button class="btn" @click="goBack">返回个人中心</button>
-          <button class="btn btn-primary" @click="save">保存</button>
         </div>
       </div>
 
       <div class="desc">
-        不配置时，系统会根据你的 <b>评论/阅读/收藏</b> 动态计算标签占比；你在这里保存的标签将作为“覆盖项”优先生效，未配置的标签仍会用动态值补齐。
+        以下为系统根据你的 <b>收藏、阅读、评论</b> 等行为计算并归一化后的<strong>个人标签占比</strong>（与推荐画像一致）。推荐以该画像为主；下方可调整协同、解释与多样性等开关。
       </div>
 
       <section v-if="!loading" class="rec-strategy card-block">
@@ -51,35 +50,16 @@
       <div v-else class="table">
         <div class="row row-head">
           <div class="cell">标签名</div>
-          <div class="cell">当前权重(%)</div>
-          <div class="cell">自定义权重(%)</div>
-          <div class="cell">操作</div>
+          <div class="cell">个人占比(%)</div>
         </div>
 
         <div v-for="r in rows" :key="r.tagName" class="row">
           <div class="cell tag">{{ r.tagName }}</div>
           <div class="cell">{{ (r.weight * 100).toFixed(2) }}</div>
-          <div class="cell">
-            <input
-              class="input"
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              v-model.number="r.customPct"
-              :placeholder="(r.weight * 100).toFixed(2)"
-            />
-          </div>
-          <div class="cell">
-            <button class="btn btn-small" @click="clearOne(r)">清除</button>
-          </div>
         </div>
       </div>
 
-      <div class="footer">
-        <button class="btn" @click="clearAll">清空全部自定义</button>
-        <div class="hint">提示：保存后会自动归一化（总和=100%）。</div>
-      </div>
+      <div v-if="!loading && rows.length === 0" class="empty-hint">暂无标签画像数据，先去书库阅读或收藏几本小说吧。</div>
     </div>
   </div>
 </template>
@@ -88,7 +68,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Navbar from '@/components/Navbar.vue'
-import { getUserTagWeights, saveUserTagWeights, getRecommendProfile, saveRecommendProfile } from '@/api/recommendProfile'
+import { getUserTagWeights, getRecommendProfile, saveRecommendProfile } from '@/api/recommendProfile'
 
 const router = useRouter()
 const loading = ref(false)
@@ -152,16 +132,29 @@ const load = async () => {
   const userId = getUserId()
   if (!userId) return
   loading.value = true
+  rows.value = []
   try {
-    const [tw, pr] = await Promise.all([getUserTagWeights(userId), getRecommendProfile(userId)])
+    let tw = null
+    let pr = null
+    try {
+      tw = await getUserTagWeights(userId)
+    } catch (e) {
+      console.warn('加载标签占比失败', e)
+    }
+    try {
+      pr = await getRecommendProfile(userId)
+    } catch (e) {
+      console.warn('加载推荐策略失败', e)
+    }
     const list = Array.isArray(tw?.data) ? tw.data : []
     rows.value = list.map((x) => ({
       tagName: x.tagName,
-      weight: Number(x.weight || 0),
-      overridden: !!x.overridden,
-      customPct: x.overridden ? Number(x.weight || 0) * 100 : null
+      weight: Number(x.weight || 0)
     }))
     recProfile.value = mergeRecProfile(pr?.data)
+  } catch (e) {
+    console.error(e)
+    recProfile.value = defaultRecProfile()
   } finally {
     loading.value = false
   }
@@ -181,42 +174,6 @@ const saveRecProfile = async () => {
       e?.message ||
         '保存失败，请确认已执行 user_recommend_profile 建表脚本；若缺 mmr_enabled 列请执行 sql/alter_user_recommend_profile_mmr.sql'
     )
-  }
-}
-
-const clearOne = (r) => {
-  r.customPct = null
-}
-
-const clearAll = () => {
-  for (const r of rows.value) r.customPct = null
-}
-
-const save = async () => {
-  const userId = getUserId()
-  if (!userId) return
-
-  // 只提交有自定义值的行；后端会“先清空再写入”
-  const selected = rows.value
-    .filter((r) => r.customPct != null && !Number.isNaN(Number(r.customPct)) && Number(r.customPct) >= 0)
-    .map((r) => ({
-      tagName: r.tagName,
-      weight: Number(r.customPct) / 100
-    }))
-
-  const totalPct = selected.reduce((acc, x) => acc + Number(x.weight || 0), 0) * 100
-  if (totalPct > 100.0001) {
-    alert(`自定义权重总和不能超过 100%。当前总和：${totalPct.toFixed(2)}%`)
-    return
-  }
-
-  try {
-    await saveUserTagWeights(userId, selected)
-    alert('保存成功')
-    await load()
-  } catch (e) {
-    console.error('保存失败', e)
-    alert('保存失败，请确认已执行 sql/user_tag_weight.sql 建表脚本')
   }
 }
 
@@ -271,7 +228,7 @@ onMounted(load)
 }
 .row {
   display: grid;
-  grid-template-columns: 200px 160px 200px 120px;
+  grid-template-columns: 1fr 200px;
   border-bottom: 1px solid #eef2f7;
 }
 .row:last-child {
@@ -292,13 +249,6 @@ onMounted(load)
 .tag {
   font-weight: 600;
 }
-.input {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
-}
 .btn {
   padding: 8px 14px;
   border: 1px solid #e5e7eb;
@@ -318,21 +268,6 @@ onMounted(load)
 }
 .btn-primary:hover {
   background: #e79544;
-}
-.btn-small {
-  padding: 6px 10px;
-  font-size: 13px;
-}
-.footer {
-  margin-top: 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 14px;
-}
-.hint {
-  color: #6b7280;
-  font-size: 13px;
 }
 .card-block {
   background: #fff;
@@ -375,6 +310,11 @@ onMounted(load)
 .strategy-actions {
   margin-top: 8px;
 }
+.empty-hint {
+  margin-top: 12px;
+  color: #6b7280;
+  font-size: 14px;
+}
 
 @media (max-width: 991px) {
   .page {
@@ -395,11 +335,6 @@ onMounted(load)
     flex-wrap: wrap;
   }
 
-  .footer {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .table {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -407,7 +342,7 @@ onMounted(load)
 
   .row,
   .row-head {
-    min-width: 600px;
+    min-width: 320px;
   }
 }
 
@@ -427,4 +362,3 @@ onMounted(load)
   }
 }
 </style>
-

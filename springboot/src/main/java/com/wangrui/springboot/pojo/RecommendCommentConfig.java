@@ -22,6 +22,11 @@ public class RecommendCommentConfig {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime updatedAt;
 
+    /** 表 recommend_score_debug：主路径最近窗口内每条阅读记录在 rawTag 侧的调试加分（仅管理端读写，不入 recommend_comment_config） */
+    private BigDecimal readRecordUnitBonus;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private LocalDateTime scoreDebugUpdatedAt;
+
     public Integer getId() {
         return id;
     }
@@ -84,5 +89,21 @@ public class RecommendCommentConfig {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public BigDecimal getReadRecordUnitBonus() {
+        return readRecordUnitBonus;
+    }
+
+    public void setReadRecordUnitBonus(BigDecimal readRecordUnitBonus) {
+        this.readRecordUnitBonus = readRecordUnitBonus;
+    }
+
+    public LocalDateTime getScoreDebugUpdatedAt() {
+        return scoreDebugUpdatedAt;
+    }
+
+    public void setScoreDebugUpdatedAt(LocalDateTime scoreDebugUpdatedAt) {
+        this.scoreDebugUpdatedAt = scoreDebugUpdatedAt;
     }
 }

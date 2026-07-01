@@ -118,6 +118,7 @@
 import { useRouter } from 'vue-router'
 import { reactive, ref, computed } from 'vue'
 import { login, sendCode as apiSendCode, loginByPhone } from '@/api/auth'
+import { clearLegacyGlobalReadingCaches } from '@/utils/userBrowserCache'
 
 const loginType = ref('account')
 const accountForm = reactive({ username: '', password: '' })
@@ -169,6 +170,7 @@ async function doAccountLogin() {
     const res = await login(accountForm.username.trim(), accountForm.password)
     if (res.code === 200) {
       const { token, user } = res.data
+      clearLegacyGlobalReadingCaches()
       localStorage.setItem('token', token)
       localStorage.setItem('userInfo', JSON.stringify(user))
       if (user && user.id != null) localStorage.setItem('userId', String(user.id))
@@ -209,6 +211,7 @@ async function doPhoneLogin() {
     const res = await loginByPhone(phoneForm.phone.trim(), phoneForm.code.trim())
     if (res.code === 200) {
       const { token, user } = res.data
+      clearLegacyGlobalReadingCaches()
       localStorage.setItem('token', token)
       localStorage.setItem('userInfo', JSON.stringify(user))
       if (user && user.id != null) localStorage.setItem('userId', String(user.id))

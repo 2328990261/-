@@ -102,24 +102,52 @@ public class UserPreferenceServiceImpl implements UserPreferenceService {
     }
 
     @Override
-    public boolean saveUserPreferenceTags(Integer userId, String tagType, List<UserPreferenceTag> tags) {
+    public void saveUserPreferenceTags(Integer userId, String tagType, List<UserPreferenceTag> tags) {
         if ("collection".equals(tagType)) {
             // 收藏排序由收藏与阅读数据实时计算，不保存
-            return true;
+            return;
         }
-        try {
-            // 只删除指定类型的旧标签（仅 custom 会写入）
-            userPreferenceTagMapper.deleteByUserIdAndTagType(userId, tagType);
-            
-            // 批量保存新的偏好标签
-            if (tags != null && !tags.isEmpty()) {
-                userPreferenceTagMapper.insertBatch(tags);
+        List<UserPreferenceTag> toSave = dedupeTagsForSave(userId, tagType, tags);
+        userPreferenceTagMapper.deleteByUserIdAndTagType(userId, tagType);
+        if (!toSave.isEmpty()) {
+            // 库表若对 (user_id, tag_name) 有唯一约束，历史上误写入的 collection 行会挡住同名 custom；按名再删一遍
+            List<String> names = toSave.stream().map(UserPreferenceTag::getTagName).collect(Collectors.toList());
+            userPreferenceTagMapper.deleteByUserIdAndTagNames(userId, names);
+            userPreferenceTagMapper.insertBatch(toSave);
+        }
+    }
+
+    /** 按标签名字去重（保序），并统一 userId、tagType、tagOrder */
+    private List<UserPreferenceTag> dedupeTagsForSave(Integer userId, String tagType, List<UserPreferenceTag> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Map<String, UserPreferenceTag> ordered = new LinkedHashMap<>();
+        for (UserPreferenceTag t : tags) {
+            if (t == null || t.getTagName() == null) {
+                continue;
             }
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+            String name = t.getTagName().trim();
+            if (name.isEmpty()) {
+                continue;
+            }
+            ordered.putIfAbsent(name, buildTagRow(userId, tagType, name, t));
         }
+        List<UserPreferenceTag> out = new ArrayList<>(ordered.values());
+        for (int i = 0; i < out.size(); i++) {
+            out.get(i).setTagOrder(i + 1);
+        }
+        return out;
+    }
+
+    private UserPreferenceTag buildTagRow(Integer userId, String tagType, String tagName, UserPreferenceTag src) {
+        UserPreferenceTag x = new UserPreferenceTag();
+        x.setUserId(userId);
+        x.setTagName(tagName);
+        x.setTagType(tagType);
+        Boolean fr = src.getIsFirstRow();
+        x.setIsFirstRow(fr != null && fr);
+        return x;
     }
 
     @Override

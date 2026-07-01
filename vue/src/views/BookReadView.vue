@@ -67,14 +67,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, defineProps, watch, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, defineProps, watch, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getNovelDetailById, getChapterContentById, addCollection, removeCollection, checkCollection } from '@/api/novel'
 import { markNovelAsFinished as apiMarkFinished, saveReadingHistory, getNovelComments, addComment } from '@/api/behavior'
+import { upsertReadingHistoryProgress, getReadingHistoryList } from '@/utils/readingHistoryLocal'
+import { appendFinishedNovelIdToLocal } from '@/utils/userBrowserCache'
 import BookReader from '@/components/BookReader.vue'
 import NavigationBar from '@/components/NavigationBar.vue'
 import LeftNavigationBar from '@/components/LeftNavigationBar.vue'
 import Navbar from "@/components/Navbar.vue";
+import { backendUrl } from '@/config/env'
 
 /**
  * 路由和路由器实例
@@ -289,6 +292,7 @@ const handleReturnDetail = () => {
  * @param {number} page - 当前页码
  */
 const handlePageChange = async (page) => {
+  await saveReadingProgress()
   // 检查是否到达第5页
   if (page === 5) {
     // 检查localStorage，避免重复增加阅读量
@@ -297,7 +301,7 @@ const handlePageChange = async (page) => {
     
     if (!hasIncreased) {
       try {
-        const response = await fetch(`http://localhost:8081/novel/increaseReadCount/${props.id}`, {
+        const response = await fetch(backendUrl(`/novel/increaseReadCount/${props.id}`), {
           method: 'POST'
         })
         
@@ -403,6 +407,10 @@ const loadChapter = async (chapterId) => {
   } finally {
     // 清除加载状态
     loading.value = false
+    await nextTick()
+    setTimeout(() => {
+      saveReadingProgress()
+    }, 120)
   }
 }
 
@@ -648,9 +656,9 @@ const handleNextChapter = async () => {
  * 切换收藏状态
  */
 const toggleFavorite = async () => {
-  // 从localStorage获取用户ID
-  const userId = JSON.parse(localStorage.getItem('userId') || '1')
-  
+  const userId = getUserId()
+  if (!userId) return
+
   try {
     if (isFavorited.value) {
       // 取消收藏
@@ -674,9 +682,12 @@ const toggleFavorite = async () => {
  * 检查收藏状态
  */
 const checkFavoriteStatus = async () => {
-  // 从localStorage获取用户ID
-  const userId = JSON.parse(localStorage.getItem('userId') || '1')
-  
+  const userId = getUserId()
+  if (!userId) {
+    isFavorited.value = false
+    return
+  }
+
   try {
     // 调用API检查收藏状态
     const res = await checkCollection(userId, props.id)
@@ -691,39 +702,38 @@ const checkFavoriteStatus = async () => {
 /**
  * 保存阅读进度
  */
+const computeReadingProgressPct = (detail, chapterId, currentPage, totalPages) => {
+  const vol = detail?.volumeList
+  if (!vol?.length || !chapterId) return 0
+  const chIdx = vol.findIndex((v) => String(v.id) === String(chapterId))
+  if (chIdx < 0) return 0
+  const tc = vol.length
+  const tp = Math.max(1, Number(totalPages) || 1)
+  const cp = Math.max(1, Number(currentPage) || 1)
+  const v = (chIdx + (cp - 1) / tp) / tc
+  return Math.min(100, Math.max(0, Math.round(v * 100)))
+}
+
 const saveReadingProgress = async () => {
-  // 获取小说ID
   const novelId = props.id
-  
-  // 验证必要参数
   if (!novelId || !currentChapterId.value) return
-  
-  // 构建进度数据
-  const progressData = {
-    novelId: novelId,
+  const br = bookReaderRef.value
+  const page = br?.currentPage || 1
+  const totalPages = br?.totalPages || 1
+  const progressPct = computeReadingProgressPct(
+    novelDetail.value,
+    currentChapterId.value,
+    page,
+    totalPages
+  )
+  upsertReadingHistoryProgress({
+    novelId,
     chapterId: currentChapterId.value,
-    page: bookReaderRef.value?.currentPage || 1,
-    timestamp: new Date().getTime()
-  }
-  
-  // 获取现有的阅读记录
-  const readingHistory = JSON.parse(localStorage.getItem('readingHistory') || '[]')
-  
-  // 查找是否已有该小说的记录
-  const existingIndex = readingHistory.findIndex(item => item.novelId === novelId)
-  
-  if (existingIndex >= 0) {
-    // 更新现有记录
-    readingHistory[existingIndex] = progressData
-  } else {
-    // 添加新记录
-    readingHistory.push(progressData)
-  }
-  
-  // 保存到localStorage
-  localStorage.setItem('readingHistory', JSON.stringify(readingHistory))
-  
-  // 检查是否已读完
+    page,
+    progressPct,
+    bookMainName: novelDetail.value?.bookMainName,
+    cover: novelDetail.value?.cover
+  })
   await checkIfFinished()
 }
 
@@ -772,13 +782,8 @@ const markAsFinished = async (novelId) => {
       // 静默失败，保留本地标记
     }
   }
-  
-  // 同步到本地，便于离线或接口失败时仍能展示
-  const finishedNovels = JSON.parse(localStorage.getItem('finishedNovels') || '[]')
-  if (!finishedNovels.includes(String(novelId))) {
-    finishedNovels.push(String(novelId))
-    localStorage.setItem('finishedNovels', JSON.stringify(finishedNovels))
-  }
+
+  appendFinishedNovelIdToLocal(novelId)
 }
 
 /**
@@ -787,9 +792,9 @@ const markAsFinished = async (novelId) => {
  * @returns {boolean} 是否已收藏
  */
 const checkIfCollected = async (novelId) => {
-  // 从localStorage获取用户ID
-  const userId = JSON.parse(localStorage.getItem('userId') || '1')
-  
+  const userId = getUserId()
+  if (!userId) return false
+
   try {
     // 调用API检查收藏状态
     const res = await checkCollection(userId, novelId)
@@ -806,11 +811,8 @@ const checkIfCollected = async (novelId) => {
  * @returns {object|null} 阅读进度数据
  */
 const getReadingProgress = (novelId) => {
-  // 获取阅读历史
-  const readingHistory = JSON.parse(localStorage.getItem('readingHistory') || '[]')
-  
-  // 查找指定小说的进度
-  return readingHistory.find(item => item.novelId === novelId) || null
+  const readingHistory = getReadingHistoryList()
+  return readingHistory.find((item) => String(item.novelId) === String(novelId)) || null
 }
 
 /**

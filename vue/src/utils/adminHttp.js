@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { clearReadingCachesForLogout } from '@/utils/userBrowserCache'
 
 /**
  * 管理端专用 HTTP 客户端：与 {@link ./request.js} 相同地附加 JWT、走同源 `/api`（Vite/Nginx 代理），
@@ -24,6 +25,7 @@ adminHttp.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      clearReadingCachesForLogout()
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')
       localStorage.removeItem('userId')
