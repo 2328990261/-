@@ -15,6 +15,7 @@
           <router-link to="/" class="nav-link" @click="closeMobileMenu">首页</router-link>
           <router-link to="/library" class="nav-link" @click="closeMobileMenu">书库</router-link>
           <router-link to="/recommend" class="nav-link" @click="closeMobileMenu">推荐</router-link>
+          <router-link to="/customer-service" class="nav-link" @click="closeMobileMenu">联系客服</router-link>
         </div>
       </div>
 
@@ -78,6 +79,7 @@
             <router-link to="/" class="mobile-nav-link nav-link" @click="closeMobileMenu">首页</router-link>
             <router-link to="/library" class="mobile-nav-link nav-link" @click="closeMobileMenu">书库</router-link>
             <router-link to="/recommend" class="mobile-nav-link nav-link" @click="closeMobileMenu">推荐</router-link>
+            <router-link to="/customer-service" class="mobile-nav-link nav-link" @click="closeMobileMenu">联系客服</router-link>
           </div>
 
           <div class="mobile-drawer-divider"></div>

@@ -12,6 +12,9 @@ public interface UserReadingHistoryMapper {
     // 获取用户指定小说的阅读历史
     UserReadingHistory selectByUserIdAndNovelId(@Param("userId") Integer userId, @Param("novelId") Integer novelId);
 
+    // 获取指定阅读历史
+    UserReadingHistory selectById(@Param("id") Integer id);
+
     // 保存用户阅读历史
     int insert(UserReadingHistory userReadingHistory);
 

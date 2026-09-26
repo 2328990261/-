@@ -4,6 +4,7 @@ import com.wangrui.springboot.mapper.RecommendCommentConfigMapper;
 import com.wangrui.springboot.mapper.RecommendScoreDebugMapper;
 import com.wangrui.springboot.pojo.RecommendCommentConfig;
 import com.wangrui.springboot.pojo.RecommendScoreDebug;
+import com.wangrui.springboot.service.CacheInvalidationService;
 import com.wangrui.springboot.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +23,8 @@ public class AdminRecommendCommentConfigController {
     private RecommendCommentConfigMapper recommendCommentConfigMapper;
     @Autowired
     private RecommendScoreDebugMapper recommendScoreDebugMapper;
+    @Autowired
+    private CacheInvalidationService cacheInvalidationService;
 
     private static RecommendCommentConfig defaultConfig() {
         RecommendCommentConfig c = new RecommendCommentConfig();
@@ -89,6 +92,7 @@ public class AdminRecommendCommentConfigController {
                 return Result.error("保存阅读计分调试失败（请确认已执行 novel_db 中 recommend_score_debug 表）：" + e.getMessage());
             }
         }
+        cacheInvalidationService.invalidateRecommendCommentConfig();
         return Result.success(null);
     }
 

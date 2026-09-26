@@ -1,5 +1,6 @@
 package com.wangrui.springboot.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.wangrui.springboot.mapper.UserCommentMapper;
 import com.wangrui.springboot.mapper.UserDislikeMapper;
 import com.wangrui.springboot.mapper.UserReadingHistoryMapper;
@@ -13,6 +14,7 @@ import com.wangrui.springboot.service.NovelBookMainService;
 import com.wangrui.springboot.service.TagService;
 import com.wangrui.springboot.service.UserEffectiveTagWeightService;
 import com.wangrui.springboot.service.UserService;
+import com.wangrui.springboot.service.RedisCacheService;
 import com.wangrui.springboot.util.RecommendTagDislikeConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.BadSqlGrammarException;
@@ -22,6 +24,7 @@ import java.util.*;
 
 @Service
 public class UserEffectiveTagWeightServiceImpl implements UserEffectiveTagWeightService {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(UserEffectiveTagWeightServiceImpl.class);
 
     @Autowired
     private UserService userService;
@@ -43,6 +46,9 @@ public class UserEffectiveTagWeightServiceImpl implements UserEffectiveTagWeight
 
     @Autowired
     private TagService tagService;
+
+    @Autowired
+    private RedisCacheService redisCacheService;
 
     @Override
     public Map<String, Double> effectiveWeightsByTagName(Integer userId) {
@@ -66,6 +72,24 @@ public class UserEffectiveTagWeightServiceImpl implements UserEffectiveTagWeight
 
     @Override
     public List<UserTagWeight> computeEffectiveUserTagWeights(Integer userId) {
+        long version = redisCacheService.getUserRecommendationVersion(userId);
+        String cacheKey = version > 0 ? "novel:rec:weights:" + userId + ":" + version : null;
+        if (cacheKey != null) {
+            List<UserTagWeight> cached = redisCacheService.get(
+                    cacheKey, new TypeReference<List<UserTagWeight>>() {});
+            if (cached != null) {
+                return cached;
+            }
+        }
+        List<UserTagWeight> computed = computeEffectiveUserTagWeightsFromDatabase(userId);
+        if (cacheKey != null) {
+            redisCacheService.set(cacheKey, computed,
+                    redisCacheService.properties().getRecommendTtl());
+        }
+        return computed;
+    }
+
+    private List<UserTagWeight> computeEffectiveUserTagWeightsFromDatabase(Integer userId) {
         List<UserTagWeight> dynamic = computeDynamicUserTagWeights(userId);
         Map<String, Double> dynamicMap = new HashMap<>();
         for (UserTagWeight d : dynamic) {

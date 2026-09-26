@@ -1,5 +1,6 @@
 package com.wangrui.springboot.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.wangrui.springboot.mapper.RecommendCFMapper;
 import com.wangrui.springboot.mapper.RecommendCommentConfigMapper;
 import com.wangrui.springboot.mapper.RecommendMainConfigMapper;
@@ -23,16 +24,29 @@ import com.wangrui.springboot.service.RecommendMixService;
 import com.wangrui.springboot.service.UserDislikeService;
 import com.wangrui.springboot.service.UserEffectiveTagWeightService;
 import com.wangrui.springboot.service.UserPreferenceService;
+import com.wangrui.springboot.service.RedisCacheService;
 import com.wangrui.springboot.service.UserService;
+import com.wangrui.springboot.util.CacheEntry;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 @Service
 public class RecommendMixServiceImpl implements RecommendMixService {
+    private static final Logger log = LoggerFactory.getLogger(RecommendMixServiceImpl.class);
 
     private static final double EPS = 1e-9;
     /** 候选池内按 S_mix 排名 ≤ 该名次的不打「换换口味」，避免前几名高分书被误标 */
@@ -66,9 +80,50 @@ public class RecommendMixServiceImpl implements RecommendMixService {
     private UserRecommendProfileMapper userRecommendProfileMapper;
     @Autowired
     private RecommendScoreDebugMapper recommendScoreDebugMapper;
+    @Autowired
+    private RedisCacheService redisCacheService;
+    @Autowired
+    @Qualifier("recommendExecutor")
+    private Executor recommendExecutor;
 
     @Override
     public RecommendBooksResponse recommend(Integer userId, String sortType) {
+        long startedAt = System.currentTimeMillis();
+        long recommendationVersion = redisCacheService.getUserRecommendationVersion(userId);
+        String resultKey = recommendationVersion > 0
+                ? "novel:rec:result:" + userId + ":" + sortType + ":" + recommendationVersion
+                : null;
+        if (resultKey != null) {
+            CacheEntry<RecommendBooksResponse> cached = redisCacheService.getEntry(
+                    resultKey, new TypeReference<CacheEntry<RecommendBooksResponse>>() {});
+            if (cached != null && cached.getValue() != null) {
+                RecommendBooksResponse value = cached.getValue();
+                value.getDebug().put("cacheStatus", "HIT");
+                value.getDebug().put("cachedAt", cached.getCachedAt() != null ? cached.getCachedAt().toString() : null);
+                value.getDebug().put("elapsedMs", System.currentTimeMillis() - startedAt);
+                log.info("recommendation request userId={} sortType={} cacheStatus=HIT elapsedMs={}",
+                        userId, sortType, System.currentTimeMillis() - startedAt);
+                return value;
+            }
+        }
+
+        RecommendBooksResponse response = computeRecommendation(userId, sortType);
+        String cacheStatus = resultKey != null ? "MISS" : "DISABLED_OR_UNAVAILABLE";
+        long elapsedMs = System.currentTimeMillis() - startedAt;
+        response.getDebug().put("cacheStatus", cacheStatus);
+        response.getDebug().put("elapsedMs", elapsedMs);
+        if (resultKey != null) {
+            Instant cachedAt = Instant.now();
+            response.getDebug().put("cachedAt", cachedAt.toString());
+            redisCacheService.setEntry(resultKey, response,
+                    redisCacheService.properties().getRecommendTtl());
+        }
+        log.info("recommendation request userId={} sortType={} cacheStatus={} elapsedMs={}",
+                userId, sortType, cacheStatus, elapsedMs);
+        return response;
+    }
+
+    private RecommendBooksResponse computeRecommendation(Integer userId, String sortType) {
         RecommendBooksResponse out = new RecommendBooksResponse();
         Map<String, Object> debug = new LinkedHashMap<>();
         List<String> warnings = new ArrayList<>();
@@ -85,33 +140,30 @@ public class RecommendMixServiceImpl implements RecommendMixService {
             return out;
         }
 
-        RecommendMainConfig mainCfg = loadMainConfig(warnings);
-        RecommendCommentConfig behCfg = loadBehaviorConfig(warnings);
-        UserRecommendProfile profile = loadProfile(userId, warnings);
+        RecommendationData data = loadRecommendationData(userId, warnings);
+        RecommendMainConfig mainCfg = data.mainConfig;
+        RecommendCommentConfig behCfg = data.behaviorConfig;
+        UserRecommendProfile profile = data.profile;
 
-        Map<String, Double> personalWeights = userEffectiveTagWeightService.effectiveWeightsByTagName(userId);
+        Map<String, Double> personalWeights = data.personalWeights;
         final boolean isCustomSort = "custom".equals(sortType);
         // 收藏排序：仍用偏好顺序前 5 个键参与 tagHit；自定义排序：仅标签（+书名）模糊匹配得分，无协同/热度/行为/MMR，未命中任意勾选标签的书不进候选
         Map<String, Double> tagWeights = isCustomSort
             ? buildAllSelectedTagWeights(userTags, personalWeights)
             : buildTop5TagWeights(userTags, personalWeights);
 
-        Set<Integer> blockedNovelIds = new HashSet<>();
-        Set<String> dislikedAuthorsLc = new HashSet<>();
-        Set<String> dislikedTags = new HashSet<>();
-        loadBlacklist(userId, blockedNovelIds, dislikedAuthorsLc, dislikedTags, warnings);
+        Set<Integer> blockedNovelIds = data.blockedNovelIds;
+        Set<String> dislikedAuthorsLc = data.dislikedAuthorsLc;
+        Set<String> dislikedTags = data.dislikedTags;
 
-        Map<Integer, Integer> commentCntByNovel = loadCommentCounts(warnings);
-        Map<Integer, Integer> recentReadWindowCounts = loadRecentReadWindowCounts(userId, behCfg, warnings);
+        Map<Integer, Integer> commentCntByNovel = data.commentCounts;
+        Map<Integer, Integer> recentReadWindowCounts = data.recentReadCounts;
         Set<Integer> recentReadNovelIds = new HashSet<>(recentReadWindowCounts.keySet());
-        RecommendScoreDebug scoreDebug = loadScoreDebug(warnings);
+        RecommendScoreDebug scoreDebug = data.scoreDebug;
         double readRecordUnit = scoreDebug.getReadRecordUnitBonus() != null ? scoreDebug.getReadRecordUnitBonus().doubleValue() : 0.0;
         double cfCoocUnit = scoreDebug.getCfCoocUnitBonus() != null ? scoreDebug.getCfCoocUnitBonus().doubleValue() : 0.0;
 
-        List<Map<String, Object>> all = novelBookMainService.getAllNovels();
-        if (all == null) {
-            all = Collections.emptyList();
-        }
+        List<Map<String, Object>> all = data.allNovels != null ? data.allNovels : Collections.emptyList();
 
         List<Map<String, Object>> filtered = new ArrayList<>();
         /** 自定义排序：因与所选标签（含书名模糊）无任何匹配而未进入候选的数量 */
@@ -292,6 +344,122 @@ public class RecommendMixServiceImpl implements RecommendMixService {
         debug.put("candidates", buildCandidateDebugRows(finalList, othersReadingIds, listFromMmr, mmrDiversityPickIds));
 
         return out;
+    }
+
+    private RecommendationData loadRecommendationData(Integer userId, List<String> warnings) {
+        try {
+            List<String> mainWarnings = new ArrayList<>();
+            List<String> behaviorWarnings = new ArrayList<>();
+            List<String> profileWarnings = new ArrayList<>();
+            List<String> weightsWarnings = new ArrayList<>();
+            List<String> blacklistWarnings = new ArrayList<>();
+            List<String> commentWarnings = new ArrayList<>();
+            List<String> recentWarnings = new ArrayList<>();
+            List<String> scoreWarnings = new ArrayList<>();
+
+            CompletableFuture<RecommendMainConfig> mainFuture =
+                    CompletableFuture.supplyAsync(() -> loadMainConfig(mainWarnings), recommendExecutor);
+            CompletableFuture<RecommendCommentConfig> behaviorFuture =
+                    CompletableFuture.supplyAsync(() -> loadBehaviorConfig(behaviorWarnings), recommendExecutor);
+            CompletableFuture<UserRecommendProfile> profileFuture =
+                    CompletableFuture.supplyAsync(() -> loadProfile(userId, profileWarnings), recommendExecutor);
+            CompletableFuture<Map<String, Double>> weightsFuture =
+                    CompletableFuture.supplyAsync(() -> userEffectiveTagWeightService.effectiveWeightsByTagName(userId), recommendExecutor);
+            CompletableFuture<RecommendationData.Blacklist> blacklistFuture =
+                    CompletableFuture.supplyAsync(() -> {
+                        RecommendationData.Blacklist blacklist = new RecommendationData.Blacklist();
+                        loadBlacklist(userId, blacklist.blockedNovelIds, blacklist.dislikedAuthorsLc,
+                                blacklist.dislikedTags, blacklistWarnings);
+                        return blacklist;
+                    }, recommendExecutor);
+            CompletableFuture<Map<Integer, Integer>> commentsFuture =
+                    CompletableFuture.supplyAsync(() -> loadCommentCounts(commentWarnings), recommendExecutor);
+            CompletableFuture<Map<Integer, Integer>> recentFuture = behaviorFuture.thenCompose(behaviorConfig ->
+                    CompletableFuture.supplyAsync(() -> loadRecentReadWindowCounts(userId, behaviorConfig, recentWarnings), recommendExecutor));
+            CompletableFuture<RecommendScoreDebug> scoreFuture =
+                    CompletableFuture.supplyAsync(() -> loadScoreDebug(scoreWarnings), recommendExecutor);
+            CompletableFuture<List<Map<String, Object>>> novelsFuture =
+                    CompletableFuture.supplyAsync(novelBookMainService::getAllNovels, recommendExecutor);
+
+            CompletableFuture.allOf(mainFuture, behaviorFuture, profileFuture, weightsFuture,
+                    blacklistFuture, commentsFuture, recentFuture, scoreFuture, novelsFuture)
+                    .get(5, TimeUnit.SECONDS);
+
+            RecommendationData data = new RecommendationData();
+            data.mainConfig = mainFuture.get();
+            data.behaviorConfig = behaviorFuture.get();
+            data.profile = profileFuture.get();
+            data.personalWeights = weightsFuture.get();
+            RecommendationData.Blacklist blacklist = blacklistFuture.get();
+            data.blockedNovelIds = blacklist.blockedNovelIds;
+            data.dislikedAuthorsLc = blacklist.dislikedAuthorsLc;
+            data.dislikedTags = blacklist.dislikedTags;
+            data.commentCounts = commentsFuture.get();
+            data.recentReadCounts = recentFuture.get();
+            data.scoreDebug = scoreFuture.get();
+            data.allNovels = novelsFuture.get();
+
+            warnings.addAll(mainWarnings);
+            warnings.addAll(behaviorWarnings);
+            warnings.addAll(profileWarnings);
+            warnings.addAll(blacklistWarnings);
+            warnings.addAll(commentWarnings);
+            warnings.addAll(recentWarnings);
+            warnings.addAll(scoreWarnings);
+            return data;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("recommendation parallel loading interrupted userId={} thread={}, falling back to sequential loading",
+                    userId, Thread.currentThread().getName(), e);
+            return loadRecommendationDataSequentially(userId, warnings);
+        } catch (ExecutionException | TimeoutException e) {
+            log.warn("recommendation parallel loading failed userId={} thread={}, falling back to sequential loading",
+                    userId, Thread.currentThread().getName(), e);
+            return loadRecommendationDataSequentially(userId, warnings);
+        } catch (RejectedExecutionException e) {
+            log.warn("recommendation executor rejected parallel loading userId={} thread={}, falling back to sequential loading",
+                    userId, Thread.currentThread().getName(), e);
+            return loadRecommendationDataSequentially(userId, warnings);
+        }
+    }
+
+    private RecommendationData loadRecommendationDataSequentially(Integer userId, List<String> warnings) {
+        RecommendationData data = new RecommendationData();
+        data.mainConfig = loadMainConfig(warnings);
+        data.behaviorConfig = loadBehaviorConfig(warnings);
+        data.profile = loadProfile(userId, warnings);
+        data.personalWeights = userEffectiveTagWeightService.effectiveWeightsByTagName(userId);
+        RecommendationData.Blacklist blacklist = new RecommendationData.Blacklist();
+        loadBlacklist(userId, blacklist.blockedNovelIds, blacklist.dislikedAuthorsLc,
+                blacklist.dislikedTags, warnings);
+        data.blockedNovelIds = blacklist.blockedNovelIds;
+        data.dislikedAuthorsLc = blacklist.dislikedAuthorsLc;
+        data.dislikedTags = blacklist.dislikedTags;
+        data.commentCounts = loadCommentCounts(warnings);
+        data.recentReadCounts = loadRecentReadWindowCounts(userId, data.behaviorConfig, warnings);
+        data.scoreDebug = loadScoreDebug(warnings);
+        data.allNovels = novelBookMainService.getAllNovels();
+        return data;
+    }
+
+    private static final class RecommendationData {
+        private RecommendMainConfig mainConfig;
+        private RecommendCommentConfig behaviorConfig;
+        private UserRecommendProfile profile;
+        private Map<String, Double> personalWeights;
+        private Set<Integer> blockedNovelIds;
+        private Set<String> dislikedAuthorsLc;
+        private Set<String> dislikedTags;
+        private Map<Integer, Integer> commentCounts;
+        private Map<Integer, Integer> recentReadCounts;
+        private RecommendScoreDebug scoreDebug;
+        private List<Map<String, Object>> allNovels;
+
+        private static final class Blacklist {
+            private final Set<Integer> blockedNovelIds = new HashSet<>();
+            private final Set<String> dislikedAuthorsLc = new HashSet<>();
+            private final Set<String> dislikedTags = new HashSet<>();
+        }
     }
 
     private Map<String, Object> buildStrategyMap(boolean isCustomSort, boolean cfOn, boolean mmrOn, int recLimit, int poolCap,
@@ -570,27 +738,43 @@ public class RecommendMixServiceImpl implements RecommendMixService {
     }
 
     private RecommendMainConfig loadMainConfig(List<String> warnings) {
+        String cacheKey = "novel:config:recommend-main";
+        RecommendMainConfig cached = redisCacheService.get(cacheKey, RecommendMainConfig.class);
+        if (cached != null) {
+            return cached;
+        }
         try {
             RecommendMainConfig c = recommendMainConfigMapper != null ? recommendMainConfigMapper.selectById(1) : null;
             if (c != null) {
+                redisCacheService.set(cacheKey, c, redisCacheService.properties().getConfigTtl());
                 return c;
             }
         } catch (Exception e) {
             warnings.add("recommend_main_config 读取失败，使用默认：" + e.getMessage());
         }
-        return RecommendMainConfig.defaultConfig();
+        RecommendMainConfig config = RecommendMainConfig.defaultConfig();
+        redisCacheService.set(cacheKey, config, redisCacheService.properties().getConfigTtl());
+        return config;
     }
 
     private RecommendCommentConfig loadBehaviorConfig(List<String> warnings) {
+        String cacheKey = "novel:config:recommend-comment";
+        RecommendCommentConfig cached = redisCacheService.get(cacheKey, RecommendCommentConfig.class);
+        if (cached != null) {
+            return cached;
+        }
         try {
             RecommendCommentConfig c = recommendCommentConfigMapper != null ? recommendCommentConfigMapper.selectById(1) : null;
             if (c != null) {
+                redisCacheService.set(cacheKey, c, redisCacheService.properties().getConfigTtl());
                 return c;
             }
         } catch (Exception e) {
             warnings.add("recommend_comment_config 读取失败，使用默认：" + e.getMessage());
         }
-        return defaultBehaviorConfig();
+        RecommendCommentConfig config = defaultBehaviorConfig();
+        redisCacheService.set(cacheKey, config, redisCacheService.properties().getConfigTtl());
+        return config;
     }
 
     private static RecommendCommentConfig defaultBehaviorConfig() {

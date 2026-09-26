@@ -30,6 +30,11 @@
               <span class="menu-text">用户管理</span>
               <svg class="menu-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </li>
+            <li class="menu-item" :class="{ active: isTabActive('adminCustomerService') }" @click="openTab('adminCustomerService', '客服工作台', '/admin/customer-service')">
+              <div class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></div>
+              <span class="menu-text">客服工作台</span>
+              <svg class="menu-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </li>
             <li class="menu-item" :class="{ active: isTabActive('adminManage') }" @click="openTab('adminManage', '管理员管理', '/admin/admins')">
               <div class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
               <span class="menu-text">管理员管理</span>
@@ -156,6 +161,7 @@ watch(
       adminPublish: { title: '书籍上架', path: '/admin/publish' },
       adminBooks: { title: '书籍管理', path: '/admin/books' },
       adminUsers: { title: '用户管理', path: '/admin/users' },
+      adminCustomerService: { title: '客服工作台', path: '/admin/customer-service' },
       adminManage: { title: '管理员管理', path: '/admin/admins' },
       adminRecommend: { title: '推荐配置', path: '/admin/recommend' },
       adminRecommendDashboard: { title: '仪表盘', path: '/admin/recommend/dashboard' },

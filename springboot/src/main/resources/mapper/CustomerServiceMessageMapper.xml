@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wangrui.springboot.mapper.CustomerServiceMessageMapper">
+
+    <resultMap id="CustomerServiceMessageResultMap" type="com.wangrui.springboot.pojo.CustomerServiceMessage">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="sender" column="sender"/>
+        <result property="content" column="content"/>
+        <result property="readAt" column="read_at"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.wangrui.springboot.pojo.CustomerServiceMessage"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO customer_service_message (user_id, sender, content, read_at, created_at)
+        VALUES (#{userId}, #{sender}, #{content}, #{readAt}, #{createdAt})
+    </insert>
+
+    <select id="selectByUserId" parameterType="java.lang.Integer" resultMap="CustomerServiceMessageResultMap">
+        SELECT id, user_id, sender, content, read_at, created_at
+        FROM customer_service_message
+        WHERE user_id = #{userId}
+        ORDER BY id ASC
+    </select>
+
+    <select id="selectConversations" resultType="java.util.HashMap">
+        SELECT
+            latest.user_id AS userId,
+            u.username AS username,
+            message.content AS lastContent,
+            message.sender AS lastSender,
+            message.created_at AS lastMessageTime,
+            (SELECT COUNT(*)
+             FROM customer_service_message unread
+             WHERE unread.user_id = latest.user_id
+               AND unread.sender = 'USER'
+               AND unread.read_at IS NULL) AS unreadCount
+        FROM (
+            SELECT user_id, MAX(id) AS maxId
+            FROM customer_service_message
+            GROUP BY user_id
+        ) latest
+        INNER JOIN customer_service_message message ON message.id = latest.maxId
+        INNER JOIN `user` u ON u.id = latest.user_id
+        ORDER BY message.id DESC
+    </select>
+
+    <update id="markUserMessagesRead" parameterType="java.lang.Integer">
+        UPDATE customer_service_message
+        SET read_at = NOW()
+        WHERE user_id = #{userId}
+          AND sender = 'USER'
+          AND read_at IS NULL
+    </update>
+
+    <update id="markServiceMessagesRead" parameterType="java.lang.Integer">
+        UPDATE customer_service_message
+        SET read_at = NOW()
+        WHERE user_id = #{userId}
+          AND sender = 'SERVICE'
+          AND read_at IS NULL
+    </update>
+</mapper>

@@ -2,6 +2,7 @@ package com.wangrui.springboot.service.impl;
 
 import com.wangrui.springboot.mapper.UserMapper;
 import com.wangrui.springboot.pojo.User;
+import com.wangrui.springboot.service.RedisCacheService;
 import com.wangrui.springboot.service.UserService;
 import com.wangrui.springboot.util.JwtUtil;
 import com.wangrui.springboot.util.SmsCodeStore;
@@ -22,6 +23,8 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private RedisCacheService redisCacheService;
 
     @Override
     public Map<String, Object> login(String username, String password) {
@@ -179,6 +182,7 @@ public class UserServiceImpl implements UserService {
         params.put("userId", userId);
         params.put("novelId", novelId);
         userMapper.addCollection(params);
+        redisCacheService.incrementUserRecommendationVersion(userId);
         return true;
     }
 
@@ -188,6 +192,7 @@ public class UserServiceImpl implements UserService {
         params.put("userId", userId);
         params.put("novelId", novelId);
         userMapper.removeCollection(params);
+        redisCacheService.incrementUserRecommendationVersion(userId);
         return true;
     }
 

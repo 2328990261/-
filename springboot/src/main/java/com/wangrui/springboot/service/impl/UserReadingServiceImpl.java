@@ -2,6 +2,7 @@ package com.wangrui.springboot.service.impl;
 
 import com.wangrui.springboot.mapper.UserReadingHistoryMapper;
 import com.wangrui.springboot.pojo.UserReadingHistory;
+import com.wangrui.springboot.service.RedisCacheService;
 import com.wangrui.springboot.service.UserReadingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,8 @@ public class UserReadingServiceImpl implements UserReadingService {
 
     @Autowired
     private UserReadingHistoryMapper userReadingHistoryMapper;
+    @Autowired
+    private RedisCacheService redisCacheService;
 
     @Override
     public List<UserReadingHistory> getUserReadingHistory(Integer userId) {
@@ -40,6 +43,7 @@ public class UserReadingServiceImpl implements UserReadingService {
                 // 保存新的阅读历史
                 userReadingHistoryMapper.insert(history);
             }
+            redisCacheService.incrementUserRecommendationVersion(history.getUserId());
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -50,7 +54,11 @@ public class UserReadingServiceImpl implements UserReadingService {
     @Override
     public boolean deleteUserReadingHistory(Integer id) {
         try {
+            UserReadingHistory history = userReadingHistoryMapper.selectById(id);
             userReadingHistoryMapper.deleteById(id);
+            if (history != null) {
+                redisCacheService.incrementUserRecommendationVersion(history.getUserId());
+            }
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -62,6 +70,7 @@ public class UserReadingServiceImpl implements UserReadingService {
     public boolean deleteUserReadingHistoryByNovelId(Integer userId, Integer novelId) {
         try {
             userReadingHistoryMapper.deleteByUserIdAndNovelId(userId, novelId);
+            redisCacheService.incrementUserRecommendationVersion(userId);
             return true;
         } catch (Exception e) {
             e.printStackTrace();

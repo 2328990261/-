@@ -29,6 +29,13 @@
         WHERE user_id = #{userId} AND novel_id = #{novelId}
     </select>
 
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="UserFinishedNovelResultMap">
+        SELECT id, user_id, novel_id, finished_time, created_at
+        FROM user_finished_novel
+        WHERE id = #{id}
+    </select>
+
+    <!-- 获取指定完读记录 -->
     <!-- 保存用户完读记录 -->
     <insert id="insert" parameterType="com.wangrui.springboot.pojo.UserFinishedNovel">
         INSERT INTO user_finished_novel (user_id, novel_id, finished_time, created_at)

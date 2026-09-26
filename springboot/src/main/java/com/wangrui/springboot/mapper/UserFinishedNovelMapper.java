@@ -12,6 +12,9 @@ public interface UserFinishedNovelMapper {
     // 检查用户是否已完读指定小说
     UserFinishedNovel selectByUserIdAndNovelId(@Param("userId") Integer userId, @Param("novelId") Integer novelId);
 
+    // 获取指定完读记录
+    UserFinishedNovel selectById(@Param("id") Integer id);
+
     // 保存用户完读记录
     int insert(UserFinishedNovel userFinishedNovel);
 

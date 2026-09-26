@@ -4,6 +4,7 @@ import com.wangrui.springboot.mapper.NovelBookMainMapper;
 import com.wangrui.springboot.mapper.NovelVolumeMapper;
 import com.wangrui.springboot.pojo.NovelBook;
 import com.wangrui.springboot.pojo.NovelBookVolume;
+import com.wangrui.springboot.service.CacheInvalidationService;
 import com.wangrui.springboot.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,8 @@ public class AdminNovelController {
     private NovelBookMainMapper novelBookMainMapper;
     @Autowired
     private NovelVolumeMapper novelVolumeMapper;
+    @Autowired
+    private CacheInvalidationService cacheInvalidationService;
 
     /** 后台分页列表，status 可选：null=全部 0=下架 1=上架，支持标签和关键词筛选 */
     @GetMapping("/novels")
@@ -81,6 +84,7 @@ public class AdminNovelController {
         n.setCover(body.get("cover") != null ? body.get("cover").toString() : existing.getCover());
         n.setStatus(body.get("status") != null ? Integer.parseInt(body.get("status").toString()) : existing.getStatus());
         novelBookMainMapper.updateNovel(n);
+        cacheInvalidationService.invalidateBook(id);
         return Result.success(null);
     }
 
@@ -89,6 +93,7 @@ public class AdminNovelController {
         Integer status = body.get("status");
         if (status == null || (status != 0 && status != 1)) return Result.error("status 须为 0 或 1");
         novelBookMainMapper.updateNovelStatus(id, status);
+        cacheInvalidationService.invalidateBook(id);
         return Result.success(null);
     }
 
@@ -116,6 +121,7 @@ public class AdminNovelController {
         if (existing == null) return Result.error("书籍不存在");
         int n = novelVolumeMapper.deleteVolumeByIdAndMainBook(volumeId, novelId);
         if (n == 0) return Result.error("分卷不存在或不属于该书");
+        cacheInvalidationService.invalidateBookDetail(novelId);
         return Result.success(null);
     }
 }

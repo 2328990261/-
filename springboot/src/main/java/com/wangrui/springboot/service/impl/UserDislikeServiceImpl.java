@@ -5,6 +5,7 @@ import com.wangrui.springboot.mapper.UserDislikeMapper;
 import com.wangrui.springboot.pojo.NovelBook;
 import com.wangrui.springboot.pojo.UserDislikeRequest;
 import com.wangrui.springboot.pojo.UserDislikeSnapshot;
+import com.wangrui.springboot.service.RedisCacheService;
 import com.wangrui.springboot.service.UserDislikeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.BadSqlGrammarException;
@@ -22,6 +23,8 @@ public class UserDislikeServiceImpl implements UserDislikeService {
 
     @Autowired
     private NovelBookMainMapper novelBookMainMapper;
+    @Autowired
+    private RedisCacheService redisCacheService;
 
     private static void splitLabels(String label, Set<String> out) {
         if (label == null || label.trim().isEmpty()) {
@@ -88,6 +91,7 @@ public class UserDislikeServiceImpl implements UserDislikeService {
             for (String tag : tagsToAdd) {
                 userDislikeMapper.insertTag(userId, tag);
             }
+            redisCacheService.incrementUserRecommendationVersion(userId);
             return true;
         } catch (BadSqlGrammarException e) {
             return false;

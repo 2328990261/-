@@ -1,14 +1,17 @@
 package com.wangrui.springboot.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.wangrui.springboot.mapper.NovelBookMainMapper;
 import com.wangrui.springboot.mapper.NovelVolumeMapper;
 import com.wangrui.springboot.pojo.NovelBook;
 import com.wangrui.springboot.pojo.NovelBookVolume;
+import com.wangrui.springboot.service.RedisCacheService;
 import com.wangrui.springboot.service.NovelBookMainService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 @Service
 public class NovelBookMainServiceImpl implements NovelBookMainService {
@@ -18,6 +21,8 @@ public class NovelBookMainServiceImpl implements NovelBookMainService {
 
     @Autowired
     private NovelVolumeMapper novelVolumeMapper;
+    @Autowired
+    private RedisCacheService redisCacheService;
 
     @Override
     public List<Map<String, Object>> getAllNovels() {
@@ -59,149 +64,49 @@ public class NovelBookMainServiceImpl implements NovelBookMainService {
     }
 
     @Override
-    public List<Map<String, Object>> getNovelsByDaily() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByDaily());
+    public List<Map<String, Object>> getNovelsByLabel(String label) {
+        String cacheKey = "novel:public:label:" + LABEL_CODE_MAP.getOrDefault(label, label);
+        List<Map<String, Object>> cached = redisCacheService.get(
+                cacheKey, new TypeReference<List<Map<String, Object>>>() {});
+        if (cached != null) {
+            return cached;
+        }
+        List<Map<String, Object>> result = convertToMapList(novelBookMainMapper.selectNovelsByLabel(label));
+        redisCacheService.set(cacheKey, result, redisCacheService.properties().getPublicTtl());
+        return result;
     }
 
-    @Override
-    public List<Map<String, Object>> getNovelsByFantasy() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByFantasy());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsBySchool() {
-        return convertToMapList(novelBookMainMapper.selectNovelsBySchool());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByAdventure() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByAdventure());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByIsekai() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByIsekai());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByRelax() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByRelax());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByFunny() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByFunny());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByHealing() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByHealing());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByDepressing() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByDepressing());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsBySweet() {
-        return convertToMapList(novelBookMainMapper.selectNovelsBySweet());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByHotblood() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByHotblood());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByLove() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByLove());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByGrowth() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByGrowth());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByIntellect() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByIntellect());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsBySuspense() {
-        return convertToMapList(novelBookMainMapper.selectNovelsBySuspense());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByDeduction() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByDeduction());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByPsychological() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByPsychological());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByBattle() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByBattle());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByCompetition() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByCompetition());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByConstruction() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByConstruction());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByPalace() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByPalace());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByVirtualGame() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByVirtualGame());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByRealistic() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByRealistic());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByFarming() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByFarming());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByReincarnation() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByReincarnation());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByTransmigration() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByTransmigration());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByMagic() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByMagic());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByAllAges() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByAllAges());
-    }
-
-    @Override
-    public List<Map<String, Object>> getNovelsByLightYuri() {
-        return convertToMapList(novelBookMainMapper.selectNovelsByLightYuri());
-    }
+    private static final Map<String, String> LABEL_CODE_MAP = Map.ofEntries(
+            Map.entry("日常", "daily"),
+            Map.entry("奇幻", "fantasy"),
+            Map.entry("校园", "school"),
+            Map.entry("冒险", "adventure"),
+            Map.entry("异世界", "isekai"),
+            Map.entry("轻松", "relax"),
+            Map.entry("搞笑", "funny"),
+            Map.entry("治愈", "healing"),
+            Map.entry("致郁", "depressing"),
+            Map.entry("甜宠", "sweet"),
+            Map.entry("热血", "hotblood"),
+            Map.entry("恋爱", "love"),
+            Map.entry("成长", "growth"),
+            Map.entry("智斗", "intellect"),
+            Map.entry("悬疑", "suspense"),
+            Map.entry("推理", "deduction"),
+            Map.entry("心理惊悚", "psychological"),
+            Map.entry("战斗", "battle"),
+            Map.entry("竞技", "competition"),
+            Map.entry("基建", "construction"),
+            Map.entry("宫廷", "palace"),
+            Map.entry("虚拟网游", "virtual-game"),
+            Map.entry("现实题材", "realistic"),
+            Map.entry("种田文", "farming"),
+            Map.entry("转生", "reincarnation"),
+            Map.entry("穿越", "transmigration"),
+            Map.entry("魔法", "magic"),
+            Map.entry("全年龄", "all-ages"),
+            Map.entry("轻百", "light-yuri")
+    );
 
     private List<Map<String, Object>> convertToMapList(List<NovelBook> novels) {
         List<Map<String, Object>> result = new ArrayList<>();

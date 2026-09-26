@@ -13,45 +13,8 @@ public interface NovelBookMainMapper {
     // 新增：按多个标签查询小说
     List<NovelBook> selectNovelsByLabels(@Param("labels") List<String> labels);
 
-    // 按标签查询小说（为每个标签单独写方法）
-    // 第1行标签
-    List<NovelBook> selectNovelsByDaily();
-    List<NovelBook> selectNovelsByFantasy();
-    List<NovelBook> selectNovelsBySchool();
-    List<NovelBook> selectNovelsByAdventure();
-    List<NovelBook> selectNovelsByIsekai();
-
-    // 第2行标签
-    List<NovelBook> selectNovelsByRelax();
-    List<NovelBook> selectNovelsByFunny();
-    List<NovelBook> selectNovelsByHealing();
-    List<NovelBook> selectNovelsByDepressing();
-    List<NovelBook> selectNovelsBySweet();
-    List<NovelBook> selectNovelsByHotblood();
-    List<NovelBook> selectNovelsByLove();
-    List<NovelBook> selectNovelsByGrowth();
-
-    // 第3行标签
-    List<NovelBook> selectNovelsByIntellect();
-    List<NovelBook> selectNovelsBySuspense();
-    List<NovelBook> selectNovelsByDeduction();
-    List<NovelBook> selectNovelsByPsychological();
-    List<NovelBook> selectNovelsByBattle();
-    List<NovelBook> selectNovelsByCompetition();
-    List<NovelBook> selectNovelsByConstruction();
-
-    // 第4行标签
-    List<NovelBook> selectNovelsByPalace();
-    List<NovelBook> selectNovelsByVirtualGame();
-    List<NovelBook> selectNovelsByRealistic();
-    List<NovelBook> selectNovelsByFarming();
-    List<NovelBook> selectNovelsByReincarnation();
-    List<NovelBook> selectNovelsByTransmigration();
-    List<NovelBook> selectNovelsByMagic();
-
-    // 第5行标签
-    List<NovelBook> selectNovelsByAllAges();
-    List<NovelBook> selectNovelsByLightYuri();
+    // 按标签查询小说
+    List<NovelBook> selectNovelsByLabel(@Param("label") String label);
 
     // 根据ID查单本小说
     NovelBook selectNovelById(@Param("id") Integer id);

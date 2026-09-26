@@ -2,6 +2,7 @@ package com.wangrui.springboot.service.impl;
 
 import com.wangrui.springboot.mapper.UserPreferenceTagMapper;
 import com.wangrui.springboot.pojo.UserPreferenceTag;
+import com.wangrui.springboot.service.RedisCacheService;
 import com.wangrui.springboot.service.UserPreferenceService;
 import com.wangrui.springboot.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,8 @@ public class UserPreferenceServiceImpl implements UserPreferenceService {
 
     @Autowired
     private UserService userService;
+    @Autowired
+    private RedisCacheService redisCacheService;
 
     @Override
     public List<UserPreferenceTag> getUserPreferenceTags(Integer userId) {
@@ -115,6 +118,7 @@ public class UserPreferenceServiceImpl implements UserPreferenceService {
             userPreferenceTagMapper.deleteByUserIdAndTagNames(userId, names);
             userPreferenceTagMapper.insertBatch(toSave);
         }
+        redisCacheService.incrementUserRecommendationVersion(userId);
     }
 
     /** 按标签名字去重（保序），并统一 userId、tagType、tagOrder */
@@ -153,7 +157,11 @@ public class UserPreferenceServiceImpl implements UserPreferenceService {
     @Override
     public boolean deleteUserPreferenceTag(Integer id) {
         try {
+            UserPreferenceTag preferenceTag = userPreferenceTagMapper.selectById(id);
             userPreferenceTagMapper.deleteById(id);
+            if (preferenceTag != null) {
+                redisCacheService.incrementUserRecommendationVersion(preferenceTag.getUserId());
+            }
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -165,6 +173,7 @@ public class UserPreferenceServiceImpl implements UserPreferenceService {
     public boolean deleteAllUserPreferenceTags(Integer userId) {
         try {
             userPreferenceTagMapper.deleteByUserId(userId);
+            redisCacheService.incrementUserRecommendationVersion(userId);
             return true;
         } catch (Exception e) {
             e.printStackTrace();

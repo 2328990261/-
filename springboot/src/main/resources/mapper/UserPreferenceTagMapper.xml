@@ -33,6 +33,13 @@
         ORDER BY tag_order ASC
     </select>
 
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="UserPreferenceTagResultMap">
+        SELECT id, user_id, tag_name, tag_type, tag_order, is_first_row, created_at, updated_at
+        FROM user_preference_tag
+        WHERE id = #{id}
+    </select>
+
+    <!-- 获取指定偏好标签 -->
     <!-- 保存用户偏好标签 -->
     <insert id="insert" parameterType="com.wangrui.springboot.pojo.UserPreferenceTag">
         INSERT INTO user_preference_tag (user_id, tag_name, tag_order, is_first_row, created_at, updated_at)

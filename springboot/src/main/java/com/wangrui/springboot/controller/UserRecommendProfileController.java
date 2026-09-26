@@ -5,6 +5,7 @@ import com.wangrui.springboot.mapper.UserTagWeightMapper;
 import com.wangrui.springboot.pojo.UserTagWeight;
 import com.wangrui.springboot.pojo.UserTagWeightOverride;
 import com.wangrui.springboot.pojo.UserRecommendProfile;
+import com.wangrui.springboot.service.RedisCacheService;
 import com.wangrui.springboot.service.UserEffectiveTagWeightService;
 import com.wangrui.springboot.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,8 @@ public class UserRecommendProfileController {
 
     @Autowired
     private UserEffectiveTagWeightService userEffectiveTagWeightService;
+    @Autowired
+    private RedisCacheService redisCacheService;
 
     @GetMapping("/profile")
     public Result<UserRecommendProfile> getProfile(@RequestParam("userId") Integer userId) {
@@ -82,6 +85,7 @@ public class UserRecommendProfileController {
                 x.setWeight(r.getWeight());
                 userTagWeightMapper.upsert(x);
             }
+            redisCacheService.incrementUserRecommendationVersion(userId);
             return Result.success(null);
         } catch (BadSqlGrammarException e) {
             return Result.error("用户标签权重表不存在，请先执行 sql/user_tag_weight.sql 建表脚本");
@@ -106,6 +110,7 @@ public class UserRecommendProfileController {
             } else {
                 userRecommendProfileMapper.update(body);
             }
+            redisCacheService.incrementUserRecommendationVersion(userId);
         } catch (BadSqlGrammarException e) {
             return Result.error("推荐配置表不存在，请先执行 sql/user_recommend_profile.sql 建表脚本");
         }
@@ -143,4 +148,3 @@ public class UserRecommendProfileController {
         return v;
     }
 }
-

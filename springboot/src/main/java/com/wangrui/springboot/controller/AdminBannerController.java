@@ -2,6 +2,7 @@ package com.wangrui.springboot.controller;
 
 import com.wangrui.springboot.mapper.BannerCarouselMapper;
 import com.wangrui.springboot.pojo.BannerCarousel;
+import com.wangrui.springboot.service.CacheInvalidationService;
 import com.wangrui.springboot.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -29,9 +30,11 @@ public class AdminBannerController {
 
     @Autowired
     private BannerCarouselMapper bannerCarouselMapper;
+    @Autowired
+    private CacheInvalidationService cacheInvalidationService;
 
-    @Value("${upload.covers-dir:}")
-    private String uploadCoversDir;
+    @Value("${upload.banners-dir:}")
+    private String uploadBannersDir;
 
     /**
      * 获取所有轮播图列表（后台管理用）
@@ -86,11 +89,10 @@ public class AdminBannerController {
 
             // 确定保存路径
             String savePath;
-            if (uploadCoversDir != null && !uploadCoversDir.isEmpty()) {
-                savePath = uploadCoversDir;
+            if (uploadBannersDir != null && !uploadBannersDir.isEmpty()) {
+                savePath = uploadBannersDir;
             } else {
-                // 默认保存到项目的 resources/static/images/covers 目录
-                savePath = "src/main/resources/static/images/covers";
+                savePath = System.getProperty("user.dir") + "/../uploads/banners";
             }
 
             // 创建目录（如果不存在）
@@ -128,6 +130,7 @@ public class AdminBannerController {
             
             int rows = bannerCarouselMapper.insert(banner);
             if (rows > 0) {
+                cacheInvalidationService.invalidateCarousel();
                 return Result.success(null);
             }
             return Result.error("新增轮播图失败");
@@ -149,6 +152,7 @@ public class AdminBannerController {
             
             int rows = bannerCarouselMapper.update(banner);
             if (rows > 0) {
+                cacheInvalidationService.invalidateCarousel();
                 return Result.success(null);
             }
             return Result.error("更新轮播图失败");
@@ -166,6 +170,7 @@ public class AdminBannerController {
         try {
             int rows = bannerCarouselMapper.deleteById(id);
             if (rows > 0) {
+                cacheInvalidationService.invalidateCarousel();
                 return Result.success(null);
             }
             return Result.error("删除轮播图失败");
@@ -191,6 +196,7 @@ public class AdminBannerController {
             int rows = bannerCarouselMapper.update(banner);
             
             if (rows > 0) {
+                cacheInvalidationService.invalidateCarousel();
                 return Result.success(null);
             }
             return Result.error("切换状态失败");

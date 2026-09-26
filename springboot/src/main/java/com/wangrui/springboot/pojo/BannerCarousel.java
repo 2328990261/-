@@ -1,7 +1,9 @@
 package com.wangrui.springboot.pojo;
 
-import java.time.LocalDateTime;
+import lombok.Data;
 
+import java.time.LocalDateTime;
+@Data
 public class BannerCarousel {
     private Integer id;
     private Integer novelId;

@@ -1,199 +1,164 @@
 <template>
   <div class="home-page">
-    <!-- 1. 导航栏组件 -->
+    <!-- 1. 导航栏 -->
     <Navbar />
 
-    <!-- 2. 轮播图组件 -->
+    <!-- 2. 轮播图 -->
     <div class="banner-container">
       <Banner :bannerList="bannerList" :errorMsg="bannerErrorMsg" />
     </div>
 
-    <!-- 3. 标签栏组件（使用 LibraryTagSearch 支持多标签选择） -->
-    <div class="tag-bar-container">
-      <LibraryTagSearch @selectTags="handleTagsSelect" />
-    </div>
-
-    <!-- 4. 核心内容：书籍列表 + 榜单 -->
-    <div class="container">
-      <div class="tag-content">
-        <!-- 左侧：书籍列表区域 -->
-        <div class="books-section">
-          <DailyBooks
-            :bookList="displayBooks"
-            :title="currentTagName"
-            :total-count="allBooks.length"
-            :columns="4"
-            :enable-dislike="isLoggedIn"
-            @load-more="loadMore"
-            @dislike-saved="reloadBooksAfterDislike"
-          />
+    <!-- 3. 五个分类模块 -->
+    <div class="modules-container">
+      <section
+        v-for="cat in categoryModules"
+        :key="cat.name"
+        class="category-module"
+        :style="{ '--cat-accent': cat.color }"
+      >
+        <!-- 左：书籍卡片 -->
+        <div class="module-left">
+          <h2 class="module-title">
+            <span class="title-dot"></span>
+            {{ cat.name }}
+            <span class="title-count">更多</span>
+          </h2>
+          <div class="module-books">
+            <NovelGridCard
+              v-for="book in cat.books"
+              :key="book.id"
+              :book="book"
+              @select="onCardSelect"
+            />
+          </div>
         </div>
 
-        <!-- 右侧：榜单区域（核心修改：只传rankList和tagName） -->
-        <div class="rank-section">
-          <RankList
-            :rankList="rankList"
-            :tagName="currentTagName"
-            :fixedOffset="500"
-          />
+        <!-- 右：人气榜单 -->
+        <div class="module-right">
+          <div class="mini-rank">
+            <h3 class="rank-title">{{ cat.name }} · 人气榜</h3>
+            <div
+              v-for="(item, idx) in cat.rankBooks"
+              :key="item.id"
+              class="rank-row"
+              @click="goToDetail(item.id)"
+            >
+              <span class="rank-num" :class="'top' + (idx + 1)">{{ idx + 1 }}</span>
+              <span class="rank-book-name">{{ item.bookMainName }}</span>
+              <span class="rank-read">{{ formatReadCount(item.readCount) }}</span>
+            </div>
+            <div v-if="cat.rankBooks.length === 0" class="rank-empty">暂无数据</div>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup>
-// 导入组件
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import Navbar from '@/components/Navbar.vue'
 import Banner from '@/components/Banner.vue'
-import LibraryTagSearch from '@/components/LibraryTagSearch.vue'
-import DailyBooks from '@/components/DailyBooks.vue'
-import RankList from '@/components/RankList.vue'
-
-// Vue核心API
-import { ref, computed, onMounted } from 'vue'
-
-// 导入接口（修正：确保导入的接口与调用一致）
-import { getAllNovels, getNovelsByTag, getNovelsByLabels, getBannerList } from '@/api/novel'
+import NovelGridCard from '@/components/NovelGridCard.vue'
+import { getAllNovels, getBannerList } from '@/api/novel'
 import { backendUrl } from '@/config/env'
 
-// ========== 数据定义 ==========
-// 1. 轮播图数据及错误信息
+const router = useRouter()
+
+// ========== 五个固定分类 ==========
+const CATEGORIES = [
+  { name: '日常', color: '#e91e8c' },
+  { name: '奇幻', color: '#7c3aed' },
+  { name: '校园', color: '#0891b2' },
+  { name: '冒险', color: '#ea580c' },
+  { name: '异世界', color: '#16a34a' }
+]
+
+// ========== 轮播图 ==========
 const bannerList = ref([])
 const bannerErrorMsg = ref('')
 
-// 2. 当前选中的标签列表（支持多标签）
-const selectedTags = ref([])
+// ========== 所有小说数据 ==========
+const allBooks = ref([])
 
-// 3. 当前选中的标签名称（用于显示）
-const currentTagName = computed(() => {
-  return selectedTags.value.length > 0 ? selectedTags.value.join('、') : '全部'
+/**
+ * 判断某本书是否属于指定分类
+ * label 字段为逗号分隔的标签字符串，如 "日常,轻松,治愈"
+ */
+function bookHasLabel(book, labelName) {
+  if (!book || !book.label) return false
+  const labels = book.label.split(',').map(s => s.trim())
+  return labels.includes(labelName)
+}
+
+// ========== 五大分类模块（响应式） ==========
+const categoryModules = computed(() => {
+  return CATEGORIES.map(cat => {
+    const sorted = allBooks.value
+      .filter(b => bookHasLabel(b, cat.name))
+      .sort((a, b) => (b.readCount || 0) - (a.readCount || 0))
+    return {
+      name: cat.name,
+      color: cat.color,
+      books: sorted.slice(0, 10),
+      rankBooks: sorted.slice(0, 8)
+    }
+  })
 })
 
-const isLoggedIn = computed(() => !!localStorage.getItem('token'))
-
-// 4. 小说数据（首页：首屏 12 本 = 4 列×3 行；每次「加载更多」再累加 12 本）
-const HOME_BOOKS_PAGE_STEP = 12
-const allBooks = ref([])
-const pageSize = ref(HOME_BOOKS_PAGE_STEP)
-const displayBooks = computed(() => allBooks.value.slice(0, pageSize.value))
-
-// 5. 榜单数据
-const rankList = ref([])
-
-// ========== 方法定义 ==========
-// 1. 标签切换方法（支持多标签筛选）
-const handleTagsSelect = async (tags) => {
-  console.log('HomeView收到的标签:', tags) // 调试日志
-  selectedTags.value = tags
-  pageSize.value = HOME_BOOKS_PAGE_STEP
-
-  if (tags.length === 0) {
-    await loadAllNovels()
-    return
-  }
-
-  try {
-    console.log('准备调用getNovelsByLabels，参数:', tags) // 调试日志
-    const res = await getNovelsByLabels(tags)
-    console.log('getNovelsByLabels返回结果:', res) // 调试日志
-    const novelData = res.code === 200 ? res.data : []
-    allBooks.value = Array.isArray(novelData) ? novelData.sort((a, b) => b.readCount - a.readCount) : []
-    rankList.value = allBooks.value.slice(0, 10)
-  } catch (err) {
-    console.error('获取标签小说失败', err)
-    allBooks.value = []
-    rankList.value = []
-  }
+// ========== 格式化阅读量 ==========
+function formatReadCount(count) {
+  if (!count) return '0'
+  if (count >= 10000) return (count / 10000).toFixed(1) + '万'
+  return String(count)
 }
 
-// 2. 加载所有小说
-const loadAllNovels = async () => {
-  try {
-    const res = await getAllNovels()
-    const novelData = res.code === 200 ? res.data : []
-    allBooks.value = Array.isArray(novelData) ? novelData.sort((a, b) => b.readCount - a.readCount) : []
-    rankList.value = allBooks.value.slice(0, 10)
-  } catch (err) {
-    console.error('加载所有小说失败', err)
-    allBooks.value = []
-    rankList.value = []
-  }
+// ========== 跳转详情 ==========
+function onCardSelect(book) {
+  if (book?.id != null) goToDetail(book.id)
 }
 
-// 3. 加载更多
-const loadMore = () => {
-  pageSize.value += HOME_BOOKS_PAGE_STEP
+function goToDetail(bookId) {
+  localStorage.setItem('lastClickedNovelId', String(bookId))
+  router.push({ name: 'BookDetail', params: { id: bookId } })
 }
 
-// 不感兴趣保存后刷新当前列表（与后端屏蔽/降权一致）
-const reloadBooksAfterDislike = async () => {
-  if (selectedTags.value.length === 0) {
-    await loadAllNovels()
-  } else {
-    await handleTagsSelect([...selectedTags.value])
-  }
-}
-
-// 4. 加载轮播图
-const loadBanner = async () => {
-  try {
-    const res = await getBannerList()
-    const bannerData = res.code === 200 ? res.data : []
-    bannerList.value = Array.isArray(bannerData) ? bannerData : []
-  } catch (err) {
-    console.error('轮播图加载失败:', err)
-    bannerErrorMsg.value = err.message || '轮播图数据加载失败'
-    bannerList.value = [
-      {id: 1, image: 'https://picsum.photos/1200/400?random=1', title: '兜底小说1'},
-      {id: 2, image: 'https://picsum.photos/1200/400?random=2', title: '兜底小说2'}
-    ]
-  }
-}
-
-// ========== 页面初始化 ==========
+// ========== 初始化加载 ==========
 onMounted(async () => {
-  // 1. 加载轮播图数据
+  // 加载轮播图
   try {
     const carouselRes = await getBannerList()
-    // console.log('后端返回的轮播数据:', carouselRes)
     const carouselData = carouselRes.code === 200 ? carouselRes.data : carouselRes
-
     if (Array.isArray(carouselData) && carouselData.length > 0) {
-      // 核心修复：使用完整的后端URL
-      const tempBannerList = carouselData.map(item => ({
+      bannerList.value = carouselData.map(item => ({
         id: item.id,
         image: `${backendUrl('/novel/cover')}/${encodeURIComponent(item.cover)}`,
-        title: ''  // ←【留白处】在这里填写轮播图标题文字
+        title: ''
       }))
-      // 方式1：用数组解构强制更新（最稳妥）
-      bannerList.value = [...tempBannerList]
-      console.log('轮播图最终数据:', bannerList.value)
     } else {
       bannerList.value = [
-        {id: 1, image: 'https://picsum.photos/1200/400?random=1', title: ''},
-        {id: 2, image: 'https://picsum.photos/1200/400?random=2', title: ''}
+        { id: 1, image: 'https://picsum.photos/1200/400?random=1', title: '' },
+        { id: 2, image: 'https://picsum.photos/1200/400?random=2', title: '' }
       ]
     }
   } catch (err) {
     console.error('轮播图加载失败:', err)
     bannerErrorMsg.value = err.message || '轮播图数据加载失败'
     bannerList.value = [
-      {id: 1, image: 'https://picsum.photos/1200/400?random=1', title: ''},
-      {id: 2, image: 'https://picsum.photos/1200/400?random=2', title: ''}
+      { id: 1, image: 'https://picsum.photos/1200/400?random=1', title: '' },
+      { id: 2, image: 'https://picsum.photos/1200/400?random=2', title: '' }
     ]
   }
 
-  // 2. 加载所有小说
+  // 加载所有小说（一次加载，前端按分类筛选）
   try {
     const novelRes = await getAllNovels()
     const novelData = novelRes.code === 200 ? novelRes.data : novelRes
-    allBooks.value = Array.isArray(novelData) ? novelData.sort((a, b) => b.readCount - a.readCount) : []
-    rankList.value = allBooks.value.slice(0, 10)
+    allBooks.value = Array.isArray(novelData) ? novelData : []
   } catch (err) {
-    console.error('加载所有小说失败', err)
+    console.error('加载小说失败', err)
     allBooks.value = []
-    rankList.value = []
   }
 })
 </script>
@@ -205,117 +170,225 @@ onMounted(async () => {
   padding-top: 60px;
 }
 
-/* 轮播图容器 */
+/* ========== 轮播图 ========== */
 .banner-container {
   max-width: 1400px;
-  margin: 0 auto 16px;
+  margin: 0 auto 20px;
   padding: 0 20px;
   height: 380px;
   position: relative;
   z-index: 1;
 }
 
-/* 标签栏容器 */
-.tag-bar-container {
-  max-width: 1400px;
-  margin: 0 auto 16px;
-  padding: 0 20px;
-  position: relative;
-  z-index: 2;
-}
-
-/* 核心内容容器 */
-.container {
+/* ========== 分类模块容器 ========== */
+.modules-container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 20px 40px;
-  position: relative;
 }
 
-.tag-content {
+.category-module {
   display: flex;
-  gap: 16px;
-  position: relative;
-  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 32px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px 28px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.3s ease;
 }
 
-/* 书籍列表区域 */
-.books-section {
+.category-module:hover {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* ========== 左：书籍卡片区 ========== */
+.module-left {
   flex: 1;
   min-width: 0;
-  background: #fff;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
-/* 解决 flex 布局下卡片变形问题 */
-.books-section, .rank-section {
-  overflow: visible;
+.module-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-/* 榜单区域 */
-.rank-section {
-  width: 300px;
+.title-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cat-accent);
+  box-shadow: 0 0 8px var(--cat-accent);
+}
+
+.title-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: #999;
+  background: #f5f5f5;
+  padding: 2px 10px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.module-books {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* ========== 右：人气榜单 ========== */
+.module-right {
+  width: 240px;
   flex-shrink: 0;
-  background: linear-gradient(135deg, #fff 0%, #fafbfc 100%);
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(248, 165, 85, 0.1);
-  position: sticky;
-  top: 76px;
-  align-self: flex-start;
 }
 
-/* 响应式适配 */
-@media (max-width: 1024px) {
-  .tag-content {
+.mini-rank {
+  background: linear-gradient(135deg, #fafbfc 0%, #f8f9fc 100%);
+  border-radius: 12px;
+  padding: 16px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  height: 100%;
+}
+
+.rank-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--cat-accent);
+}
+
+.rank-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.rank-row:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.rank-num {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #999;
+  background: #f0f0f0;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.rank-num.top1 { background: #e91e8c; color: #fff; }
+.rank-num.top2 { background: #f472b6; color: #fff; }
+.rank-num.top3 { background: #f9a8d4; color: #fff; }
+
+.rank-book-name {
+  flex: 1;
+  font-size: 13px;
+  color: #444;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rank-read {
+  font-size: 11px;
+  color: #bbb;
+  flex-shrink: 0;
+}
+
+.rank-empty {
+  text-align: center;
+  color: #ccc;
+  font-size: 13px;
+  padding: 20px 0;
+}
+
+/* ========== 响应式 ========== */
+@media (max-width: 1200px) {
+  .category-module {
     flex-direction: column;
+    padding: 20px;
   }
 
-  .rank-section {
+  .module-right {
     width: 100%;
-    position: static;
-    max-height: none;
+  }
+
+  .mini-rank {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .mini-rank .rank-title {
+    width: 100%;
+    margin-bottom: 6px;
+  }
+
+  .mini-rank .rank-row {
+    flex: 1;
+    min-width: 160px;
+  }
+}
+
+@media (max-width: 900px) {
+  .module-books {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .banner-container {
-    height: 240px;
-  }
-
-  .container {
-    max-width: 100%;
+    height: 260px;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .home-page {
     padding-top: 50px;
   }
 
   .banner-container {
     height: 200px;
-    margin-bottom: 12px;
     padding: 0 12px;
-  }
-
-  .tag-bar-container {
     margin-bottom: 12px;
-    padding: 12px;
   }
 
-  .container {
+  .modules-container {
     padding: 0 12px 30px;
   }
 
-  .tag-content {
-    gap: 12px;
+  .category-module {
+    padding: 16px;
+    margin-bottom: 20px;
   }
 
-  .books-section, .rank-section {
-    padding: 16px;
+  .module-books {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .module-title {
+    font-size: 18px;
+    margin-bottom: 14px;
   }
 }
 </style>

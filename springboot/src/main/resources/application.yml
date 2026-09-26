@@ -10,14 +10,31 @@ spring:
     multipart:
       max-file-size: 50MB
       max-request-size: 500MB
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:123456}
+      timeout: ${REDIS_TIMEOUT:1s}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:500ms}
 
 # 服务器端口（保持你的8081）
 server:
   port: 8081
 
-# 封面上传目录（相对项目根或绝对路径，开发可用 classpath 下 static）
+# 图片上传目录（统一放在项目根目录下的 uploads 文件夹）
 upload:
-  covers-dir: ${user.dir}/uploads/covers
+  covers-dir: ${user.dir}/../uploads/covers
+  banners-dir: ${user.dir}/../uploads/banners
+
+app:
+  cache:
+    enabled: ${APP_CACHE_ENABLED:true}
+    recommend-ttl: ${CACHE_RECOMMEND_TTL:5m}
+    public-ttl: ${CACHE_PUBLIC_TTL:5m}
+    config-ttl: ${CACHE_CONFIG_TTL:10m}
+    tag-heat-ttl: ${CACHE_TAG_HEAT_TTL:5m}
+    version-ttl: ${CACHE_VERSION_TTL:7d}
 
 mybatis:
   # Mapper XML文件路径

@@ -4,6 +4,7 @@ import com.wangrui.springboot.mapper.RecommendMainConfigMapper;
 import com.wangrui.springboot.mapper.RecommendScoreDebugMapper;
 import com.wangrui.springboot.pojo.RecommendMainConfig;
 import com.wangrui.springboot.pojo.RecommendScoreDebug;
+import com.wangrui.springboot.service.CacheInvalidationService;
 import com.wangrui.springboot.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +23,8 @@ public class AdminRecommendMainConfigController {
     private RecommendMainConfigMapper recommendMainConfigMapper;
     @Autowired
     private RecommendScoreDebugMapper recommendScoreDebugMapper;
+    @Autowired
+    private CacheInvalidationService cacheInvalidationService;
 
     @GetMapping("/recommend-main-config")
     public Result<RecommendMainConfig> get() {
@@ -70,6 +73,7 @@ public class AdminRecommendMainConfigController {
                 return Result.error("保存协同计分调试失败（请确认已执行 novel_db 中 recommend_score_debug 表）：" + e.getMessage());
             }
         }
+        cacheInvalidationService.invalidateRecommendMainConfig();
         return Result.success(null);
     }
 

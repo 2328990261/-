@@ -1,5 +1,5 @@
 // 只需要一次导入核心方法
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
 // 导入页面组件
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
@@ -10,9 +10,15 @@ import BookReadView from '@/views/BookReadView.vue'
 import RecommendView from '@/views/RecommendView.vue'
 import UserCenterView from '@/views/UserCenterView.vue'
 
+// Electron 使用 file:// 协议，history 模式会白屏，改用 hash
+const isElectron =
+  typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('electron')
+
 // 保留原有AboutView的懒加载写法（更优，按需加载）
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: isElectron
+    ? createWebHashHistory(import.meta.env.BASE_URL)
+    : createWebHistory(import.meta.env.BASE_URL),
   routes: [
     // 首页路由（原有）
     {
@@ -67,6 +73,7 @@ const router = createRouter({
         { path: 'publish', name: 'adminPublish', component: () => import('@/views/admin/PublishView.vue') },
         { path: 'books', name: 'adminBooks', component: () => import('@/views/admin/BookManageView.vue') },
         { path: 'users', name: 'adminUsers', component: () => import('@/views/admin/UserManageView.vue') },
+        { path: 'customer-service', name: 'adminCustomerService', component: () => import('@/views/admin/CustomerServiceConsoleView.vue') },
         { path: 'admins', name: 'adminManage', component: () => import('@/views/admin/AdminManageView.vue') },
         { path: 'recommend', name: 'adminRecommend', component: () => import('@/views/admin/RecommendConfigView.vue') },
         { path: 'recommend/dashboard', name: 'adminRecommendDashboard', component: () => import('@/views/admin/RecommendTagDashboardView.vue') },
@@ -87,6 +94,11 @@ const router = createRouter({
       path: '/user/tag-weights',
       name: 'userTagWeights',
       component: () => import('@/views/UserTagWeightConfigView.vue')
+    },
+    {
+      path: '/customer-service',
+      name: 'customerService',
+      component: () => import('@/views/CustomerServiceView.vue')
     }
 
   ]
@@ -134,6 +146,7 @@ router.beforeEach((to, from, next) => {
     'adminPublish',
     'adminBooks',
     'adminUsers',
+    'adminCustomerService',
     'adminManage',
     'adminRecommend',
     'adminRecommendDashboard',

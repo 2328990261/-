@@ -31,19 +31,6 @@ novel_db.sql
 # 测试/评估脚本与输出
 scripts/
 
-# 毕设文档、软著材料与截图（非源代码）
-轻小说页面图片/
-*.pdf
-*.docx
-~$*
-润色后的论文摘要.md
-签章页.pdf
-微信图片_*.jpg
-王睿论文.txt
-上传代码.txt
-待完成事项.md
-BookUploadController_TEMP.txt
-*_TEMP.txt
 
 # 论文流程图与 ER 图（本地保留即可）
 flowcharts/

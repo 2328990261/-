@@ -1,5 +1,6 @@
 package com.wangrui.springboot.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.wangrui.springboot.mapper.TagMapper;
 import com.wangrui.springboot.mapper.UserCommentMapper;
 import com.wangrui.springboot.mapper.UserFinishedNovelMapper;
@@ -8,17 +9,27 @@ import com.wangrui.springboot.mapper.UserReadingHistoryMapper;
 import com.wangrui.springboot.pojo.Tag;
 import com.wangrui.springboot.pojo.UserReadingHistory;
 import com.wangrui.springboot.service.NovelBookMainService;
+import com.wangrui.springboot.service.RedisCacheService;
 import com.wangrui.springboot.service.SiteTagHeatService;
+import com.wangrui.springboot.util.CacheEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Service
 public class SiteTagHeatServiceImpl implements SiteTagHeatService {
-
-    private static final long CACHE_TTL_MS = 120_000;
+    private static final Logger log = LoggerFactory.getLogger(SiteTagHeatServiceImpl.class);
+    private static final String TAG_HEAT_KEY = "novel:stats:tag-heat";
+    private static final String STALE_TAG_HEAT_KEY = "novel:stats:tag-heat:stale";
 
     private static final double W_COLLECTION = 1.0;
     private static final double W_READ_PROGRESS = 0.55;
@@ -39,49 +50,88 @@ public class SiteTagHeatServiceImpl implements SiteTagHeatService {
     private UserFinishedNovelMapper userFinishedNovelMapper;
     @Autowired
     private TagMapper tagMapper;
+    @Autowired
+    private RedisCacheService redisCacheService;
+    @Autowired
+    @Qualifier("statsExecutor")
+    private Executor statsExecutor;
 
-    private final Object lock = new Object();
-    private volatile long lastComputedAt;
-    private volatile Map<String, Double> cachedWeights = Collections.emptyMap();
-    private volatile List<Map<String, Object>> cachedTop5 = Collections.emptyList();
-    private volatile List<Map<String, Object>> cachedAllRows = Collections.emptyList();
+    private final AtomicBoolean refreshInProgress = new AtomicBoolean(false);
 
     @Override
     public Map<String, Double> getGlobalRecommendWeights() {
-        ensureFresh();
-        return cachedWeights;
+        return getSnapshot().weights;
     }
 
     @Override
     public List<Map<String, Object>> getTop5HotTags() {
-        ensureFresh();
-        return cachedTop5;
+        return getSnapshot().top5;
     }
 
     @Override
     public List<Map<String, Object>> getAllTagHeatRows() {
-        ensureFresh();
-        return cachedAllRows;
+        return getSnapshot().allRows;
     }
 
     @Override
     public long getLastComputedAtMillis() {
-        return lastComputedAt;
+        return getSnapshot().computedAt;
     }
 
-    private void ensureFresh() {
-        if (System.currentTimeMillis() - lastComputedAt < CACHE_TTL_MS && !cachedWeights.isEmpty()) {
+    private TagHeatSnapshot getSnapshot() {
+        CacheEntry<TagHeatSnapshot> fresh = redisCacheService.getEntry(
+                TAG_HEAT_KEY, new TypeReference<CacheEntry<TagHeatSnapshot>>() {});
+        if (fresh != null && fresh.getValue() != null) {
+            return fresh.getValue();
+        }
+
+        CacheEntry<TagHeatSnapshot> stale = redisCacheService.getEntry(
+                STALE_TAG_HEAT_KEY, new TypeReference<CacheEntry<TagHeatSnapshot>>() {});
+        if (stale != null && stale.getValue() != null) {
+            triggerAsyncRefresh();
+            return stale.getValue();
+        }
+
+        return recomputeAndCache();
+    }
+
+    private void triggerAsyncRefresh() {
+        if (!refreshInProgress.compareAndSet(false, true)) {
             return;
         }
-        synchronized (lock) {
-            if (System.currentTimeMillis() - lastComputedAt < CACHE_TTL_MS && !cachedWeights.isEmpty()) {
-                return;
-            }
-            recompute();
+        try {
+            CompletableFuture.runAsync(this::refreshAndCache, statsExecutor)
+                    .whenComplete((ignored, throwable) -> {
+                        if (throwable != null) {
+                            log.warn("tag-heat async refresh failed thread={}",
+                                    Thread.currentThread().getName(), throwable);
+                        }
+                        refreshInProgress.set(false);
+                    });
+        } catch (RejectedExecutionException e) {
+            refreshInProgress.set(false);
+            log.warn("tag-heat refresh rejected by stats executor thread={}",
+                    Thread.currentThread().getName(), e);
+            throw e;
         }
     }
 
-    private void recompute() {
+    private TagHeatSnapshot refreshAndCache() {
+        try {
+            log.info("tag-heat recomputation started thread={}",
+                    Thread.currentThread().getName());
+            TagHeatSnapshot snapshot = recomputeAndCache();
+            log.info("tag-heat recomputation completed thread={}",
+                    Thread.currentThread().getName());
+            return snapshot;
+        } catch (Exception e) {
+            log.warn("tag-heat recomputation failed thread={}",
+                    Thread.currentThread().getName(), e);
+            throw e;
+        }
+    }
+
+    private TagHeatSnapshot recomputeAndCache() {
         Map<Integer, String> novelLabels = buildNovelLabelMap();
         Map<String, Double> raw = new HashMap<>();
 
@@ -143,10 +193,17 @@ public class SiteTagHeatServiceImpl implements SiteTagHeatService {
 
         List<Map<String, Object>> allRows = buildAllTagRows(raw, weights);
 
-        this.cachedWeights = weights;
-        this.cachedTop5 = top5;
-        this.cachedAllRows = allRows;
-        this.lastComputedAt = System.currentTimeMillis();
+        TagHeatSnapshot snapshot = new TagHeatSnapshot();
+        snapshot.weights = weights;
+        snapshot.top5 = top5;
+        snapshot.allRows = allRows;
+        snapshot.computedAt = System.currentTimeMillis();
+
+        redisCacheService.setEntry(TAG_HEAT_KEY, snapshot,
+                redisCacheService.properties().getTagHeatTtl());
+        redisCacheService.setEntry(STALE_TAG_HEAT_KEY, snapshot,
+                redisCacheService.properties().getTagHeatTtl().multipliedBy(2));
+        return snapshot;
     }
 
     private Map<Integer, String> buildNovelLabelMap() {
@@ -331,5 +388,44 @@ public class SiteTagHeatServiceImpl implements SiteTagHeatService {
 
     private static double round2(double v) {
         return Math.round(v * 100.0) / 100.0;
+    }
+
+    public static final class TagHeatSnapshot {
+        private Map<String, Double> weights = Collections.emptyMap();
+        private List<Map<String, Object>> top5 = Collections.emptyList();
+        private List<Map<String, Object>> allRows = Collections.emptyList();
+        private long computedAt;
+
+        public Map<String, Double> getWeights() {
+            return weights;
+        }
+
+        public void setWeights(Map<String, Double> weights) {
+            this.weights = weights != null ? weights : Collections.emptyMap();
+        }
+
+        public List<Map<String, Object>> getTop5() {
+            return top5;
+        }
+
+        public void setTop5(List<Map<String, Object>> top5) {
+            this.top5 = top5 != null ? top5 : Collections.emptyList();
+        }
+
+        public List<Map<String, Object>> getAllRows() {
+            return allRows;
+        }
+
+        public void setAllRows(List<Map<String, Object>> allRows) {
+            this.allRows = allRows != null ? allRows : Collections.emptyList();
+        }
+
+        public long getComputedAt() {
+            return computedAt;
+        }
+
+        public void setComputedAt(long computedAt) {
+            this.computedAt = computedAt;
+        }
     }
 }

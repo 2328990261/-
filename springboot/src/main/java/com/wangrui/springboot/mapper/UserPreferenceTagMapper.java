@@ -12,6 +12,9 @@ public interface UserPreferenceTagMapper {
     // 根据类型获取用户偏好标签列表
     List<UserPreferenceTag> selectByUserIdAndTagType(@Param("userId") Integer userId, @Param("tagType") String tagType);
 
+    // 获取指定偏好标签
+    UserPreferenceTag selectById(@Param("id") Integer id);
+
     // 保存用户偏好标签
     int insert(UserPreferenceTag userPreferenceTag);
 

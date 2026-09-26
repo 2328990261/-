@@ -32,6 +32,13 @@
         WHERE user_id = #{userId} AND novel_id = #{novelId}
     </select>
 
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="UserReadingHistoryResultMap">
+        SELECT id, user_id, novel_id, chapter_id, read_duration, read_progress, last_read_time, created_at
+        FROM user_reading_history
+        WHERE id = #{id}
+    </select>
+
+    <!-- 获取指定阅读历史 -->
     <!-- 保存用户阅读历史 -->
     <insert id="insert" parameterType="com.wangrui.springboot.pojo.UserReadingHistory">
         INSERT INTO user_reading_history (user_id, novel_id, chapter_id, read_duration, read_progress, last_read_time, created_at)

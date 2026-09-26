@@ -2,7 +2,6 @@
   <div class="daily-books">
     <h2 class="title">{{ title }}</h2>
 
-    <!-- 小说列表，使用动态列数 -->
     <div class="books-grid" :style="{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }">
       <NovelGridCard
         v-for="book in bookList"
@@ -14,14 +13,18 @@
       />
     </div>
 
-    <!-- 加载更多按钮 -->
-    <button
-      class="load-more-btn"
-      @click="$emit('load-more')"
+    <!-- 滚动触发哨兵元素 -->
+    <div
+      ref="sentinelRef"
+      class="scroll-sentinel"
       v-if="bookList.length < totalCount"
-    >
-      加载更多
-    </button>
+    ></div>
+
+    <!-- 加载状态指示器 -->
+    <div class="loading-indicator" v-if="loading">
+      <span class="loading-spinner"></span>
+      <span>加载中...</span>
+    </div>
 
     <DislikeBookDialog
       v-model="dislikeVisible"
@@ -34,7 +37,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import DislikeBookDialog from '@/components/DislikeBookDialog.vue'
 import NovelGridCard from '@/components/NovelGridCard.vue'
@@ -47,6 +50,8 @@ const props = defineProps({
   enableDislike: { type: Boolean, default: false }
 })
 
+const emit = defineEmits(['load-more', 'dislike-saved'])
+
 const viewportW = ref(typeof window !== 'undefined' ? window.innerWidth : 1200)
 function onResize() {
   viewportW.value = window.innerWidth
@@ -57,7 +62,6 @@ onMounted(() => {
 })
 onUnmounted(() => window.removeEventListener('resize', onResize))
 
-/** 大屏用 props.columns，窄屏自动减少列数避免卡片挤成一团 */
 const gridColumns = computed(() => {
   const c = props.columns
   const w = viewportW.value
@@ -68,7 +72,53 @@ const gridColumns = computed(() => {
   return c
 })
 
-const emit = defineEmits(['load-more', 'dislike-saved'])
+// ========== 无限滚动 ==========
+const sentinelRef = ref(null)
+const loading = ref(false)
+let observer = null
+
+const hasMore = computed(() => props.bookList.length < props.totalCount)
+
+function setupObserver() {
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
+  if (!sentinelRef.value) return
+
+  observer = new IntersectionObserver(
+    (entries) => {
+      const entry = entries[0]
+      if (entry.isIntersecting && hasMore.value && !loading.value) {
+        loading.value = true
+        emit('load-more')
+        nextTick(() => {
+          loading.value = false
+        })
+      }
+    },
+    { rootMargin: '200px' }
+  )
+  observer.observe(sentinelRef.value)
+}
+
+// 书籍列表变化或哨兵DOM变化时重新绑定
+watch([() => props.bookList.length, sentinelRef], () => {
+  nextTick(() => setupObserver())
+})
+
+onMounted(() => {
+  nextTick(() => setupObserver())
+})
+
+onUnmounted(() => {
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
+})
+
+// ========== 不感兴趣 ==========
 
 const dislikeVisible = ref(false)
 const dislikeBook = ref(null)
@@ -132,30 +182,34 @@ const onCardSelect = (book) => {
   align-items: stretch;
 }
 
-/* 加载更多按钮 */
-.load-more-btn {
-  margin-top: 32px;
-  padding: 14px 40px;
-  background: linear-gradient(135deg, #e91e8c 0%, #f472b6 100%);
-  color: #fff;
-  border: none;
-  border-radius: 24px;
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 600;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(233, 30, 140, 0.35);
-  letter-spacing: 0.5px;
+/* 滚动哨兵元素（不可见，仅用于检测） */
+.scroll-sentinel {
+  height: 1px;
+  width: 100%;
 }
 
-.load-more-btn:hover {
-  background: linear-gradient(135deg, #db2777 0%, #e91e8c 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(233, 30, 140, 0.45);
+/* 加载状态指示器 */
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px 0;
+  color: #999;
+  font-size: 14px;
 }
 
-.load-more-btn:active {
-  transform: translateY(0);
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #e91e8c;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 @media (max-width: 768px) {

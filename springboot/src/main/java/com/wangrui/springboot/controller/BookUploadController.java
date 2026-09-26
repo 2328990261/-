@@ -1,5 +1,6 @@
 package com.wangrui.springboot.controller;
 
+import com.wangrui.springboot.service.CacheInvalidationService;
 import com.wangrui.springboot.pojo.NovelBook;
 import com.wangrui.springboot.pojo.NovelBookVolume;
 import com.wangrui.springboot.mapper.NovelBookMainMapper;
@@ -7,23 +8,36 @@ import com.wangrui.springboot.mapper.NovelVolumeMapper;
 import com.wangrui.springboot.util.Result;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @RestController
 @RequestMapping("/api/admin")
 @CrossOrigin
 public class BookUploadController {
+    private static final Logger log = LoggerFactory.getLogger(BookUploadController.class);
+
     @Value("${upload.covers-dir:}")
     private String coversDir;
 
@@ -31,6 +45,11 @@ public class BookUploadController {
     private NovelBookMainMapper novelBookMainMapper;
     @Autowired
     private NovelVolumeMapper novelVolumeMapper;
+    @Autowired
+    private CacheInvalidationService cacheInvalidationService;
+    @Autowired
+    @Qualifier("uploadExecutor")
+    private Executor uploadExecutor;
 
     /** 封面上传：保存到后端专门目录，返回文件名供数据库存储 */
     @PostMapping("/uploadCover")
@@ -45,7 +64,7 @@ public class BookUploadController {
         try {
             String ext = originalFilename.contains(".") ? originalFilename.substring(originalFilename.lastIndexOf('.')) : ".jpg";
             String saveName = UUID.randomUUID().toString().replace("-", "") + ext;
-            Path dir = Paths.get(coversDir != null && !coversDir.isEmpty() ? coversDir : System.getProperty("user.dir") + "/uploads/covers");
+            Path dir = Paths.get(coversDir != null && !coversDir.isEmpty() ? coversDir : System.getProperty("user.dir") + "/../uploads/covers");
             Files.createDirectories(dir);
             Path target = dir.resolve(saveName);
             file.transferTo(target.toFile());
@@ -68,6 +87,7 @@ public class BookUploadController {
             novelBook.setStatus(1);
             novelBook.setCreateTime(new Date());
             novelBookMainMapper.insertNovel(novelBook);
+            cacheInvalidationService.invalidateCategories();
             return Result.success(novelBook.getId());
         } catch (Exception e) {
             e.printStackTrace();
@@ -77,34 +97,119 @@ public class BookUploadController {
 
     @PostMapping("/uploadVolumes")
     public Result uploadVolumes(@RequestParam("files") MultipartFile[] files, @RequestParam("mainBookId") Integer mainBookId) {
+        if (files == null || files.length == 0 || mainBookId == null) {
+            return Result.error("请选择要上传的 EPUB 文件");
+        }
+
+        List<CompletableFuture<Boolean>> futures = new ArrayList<>();
+        boolean rejected = false;
         try {
-            int total = 0;
             for (MultipartFile file : files) {
-                if (file.isEmpty()) continue;
-                Map<String, byte[]> contents = extractEpubContents(file.getInputStream());
-                String volumeName = file.getOriginalFilename().replace(".epub", "");
-                StringBuilder fullContent = new StringBuilder();
-                for (String contentFile : extractContentFiles(contents)) {
-                    byte[] data = contents.get(contentFile);
-                    if (data != null) {
-                        String content = cleanHtmlContent(new String(data, StandardCharsets.UTF_8));
-                        if (!content.trim().isEmpty()) fullContent.append(content).append("\n\n");
-                    }
-                }
-                if (fullContent.length() > 0) {
-                    NovelBookVolume volume = new NovelBookVolume();
-                    volume.setMainBookId(mainBookId);
-                    volume.setVolumeName(volumeName);
-                    volume.setContent(fullContent.toString().trim());
-                    volume.setCreateTime(new Date());
-                    novelVolumeMapper.insertVolume(volume);
-                    total++;
+                if (file == null || file.isEmpty()) continue;
+
+                String originalFilename = file.getOriginalFilename();
+                String volumeName = originalFilename != null
+                        ? originalFilename.replace(".epub", "")
+                        : "未命名分卷";
+                File tempFile = null;
+                try {
+                    tempFile = File.createTempFile("novel-epub-", ".epub");
+                    file.transferTo(tempFile);
+                    File workerFile = tempFile;
+                    futures.add(CompletableFuture.supplyAsync(
+                            () -> processVolume(workerFile, mainBookId, volumeName), uploadExecutor));
+                } catch (RejectedExecutionException e) {
+                    log.warn("upload executor rejected file={} thread={} queueSaturated=true",
+                            volumeName, Thread.currentThread().getName(), e);
+                    deleteTempFile(tempFile, volumeName);
+                    rejected = true;
+                } catch (Exception e) {
+                    log.warn("EPUB upload dispatch failed file={} mainBookId={} thread={}",
+                            volumeName, mainBookId, Thread.currentThread().getName(), e);
+                    deleteTempFile(tempFile, volumeName);
                 }
             }
+
+            if (futures.isEmpty()) {
+                return Result.error("没有可处理的 EPUB 文件");
+            }
+
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .get(10, TimeUnit.MINUTES);
+            long total = futures.stream().filter(CompletableFuture::join).count();
+            if (total > 0) {
+                cacheInvalidationService.invalidateBookDetail(mainBookId);
+            }
+            if (rejected) {
+                return Result.error("上传队列已满，请稍后重试");
+            }
             return Result.success("成功上传 " + total + " 个分卷");
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return Result.error("上传被中断");
+        } catch (TimeoutException e) {
+            log.warn("upload processing timed out mainBookId={} thread={}",
+                    mainBookId, Thread.currentThread().getName(), e);
+            return Result.error("上传处理超时");
+        } catch (ExecutionException e) {
+            log.warn("upload processing failed mainBookId={} thread={}",
+                    mainBookId, Thread.currentThread().getName(), e);
             return Result.error("上传失败");
+        } catch (Exception e) {
+            log.warn("upload failed mainBookId={} thread={}",
+                    mainBookId, Thread.currentThread().getName(), e);
+            return Result.error("上传失败");
+        }
+    }
+
+    private boolean processVolume(File tempFile, Integer mainBookId, String volumeName) {
+        try (InputStream inputStream = Files.newInputStream(tempFile.toPath())) {
+            log.info("EPUB processing started file={} mainBookId={} thread={}",
+                    volumeName, mainBookId, Thread.currentThread().getName());
+            Map<String, byte[]> contents = extractEpubContents(inputStream);
+            StringBuilder fullContent = new StringBuilder();
+            for (String contentFile : extractContentFiles(contents)) {
+                byte[] data = contents.get(contentFile);
+                if (data != null) {
+                    String content = cleanHtmlContent(new String(data, StandardCharsets.UTF_8));
+                    if (!content.trim().isEmpty()) fullContent.append(content).append("\n\n");
+                }
+            }
+            if (fullContent.length() > 0) {
+                NovelBookVolume volume = new NovelBookVolume();
+                volume.setMainBookId(mainBookId);
+                volume.setVolumeName(volumeName);
+                volume.setContent(fullContent.toString().trim());
+                volume.setCreateTime(new Date());
+                int insertedRows = novelVolumeMapper.insertVolume(volume);
+                if (insertedRows <= 0) {
+                    log.warn("EPUB volume insert returned no rows file={} mainBookId={} volumeId={} thread={}",
+                            volumeName, mainBookId, volume.getId(), Thread.currentThread().getName());
+                    return false;
+                }
+                log.info("EPUB processing completed file={} mainBookId={} volumeId={} insertedRows={} thread={}",
+                        volumeName, mainBookId, volume.getId(), insertedRows, Thread.currentThread().getName());
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            log.warn("EPUB file processing failed file={} thread={}",
+                    volumeName, Thread.currentThread().getName(), e);
+            return false;
+        } finally {
+            deleteTempFile(tempFile, volumeName);
+        }
+    }
+
+    private void deleteTempFile(File tempFile, String volumeName) {
+        if (tempFile == null) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(tempFile.toPath());
+        } catch (IOException cleanupException) {
+            log.warn("EPUB temporary file cleanup failed file={} thread={}",
+                    volumeName, Thread.currentThread().getName(), cleanupException);
         }
     }
 

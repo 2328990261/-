@@ -2,6 +2,7 @@ package com.wangrui.springboot.service.impl;
 
 import com.wangrui.springboot.mapper.UserFinishedNovelMapper;
 import com.wangrui.springboot.pojo.UserFinishedNovel;
+import com.wangrui.springboot.service.RedisCacheService;
 import com.wangrui.springboot.service.UserFinishedService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,8 @@ public class UserFinishedServiceImpl implements UserFinishedService {
 
     @Autowired
     private UserFinishedNovelMapper userFinishedNovelMapper;
+    @Autowired
+    private RedisCacheService redisCacheService;
 
     @Override
     public List<UserFinishedNovel> getUserFinishedNovels(Integer userId) {
@@ -39,6 +42,7 @@ public class UserFinishedServiceImpl implements UserFinishedService {
             finishedNovel.setUserId(userId);
             finishedNovel.setNovelId(novelId);
             userFinishedNovelMapper.insert(finishedNovel);
+            redisCacheService.incrementUserRecommendationVersion(userId);
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -49,7 +53,11 @@ public class UserFinishedServiceImpl implements UserFinishedService {
     @Override
     public boolean cancelFinishedNovel(Integer id) {
         try {
+            UserFinishedNovel finishedNovel = userFinishedNovelMapper.selectById(id);
             userFinishedNovelMapper.deleteById(id);
+            if (finishedNovel != null) {
+                redisCacheService.incrementUserRecommendationVersion(finishedNovel.getUserId());
+            }
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -61,6 +69,7 @@ public class UserFinishedServiceImpl implements UserFinishedService {
     public boolean cancelFinishedNovelByNovelId(Integer userId, Integer novelId) {
         try {
             userFinishedNovelMapper.deleteByUserIdAndNovelId(userId, novelId);
+            redisCacheService.incrementUserRecommendationVersion(userId);
             return true;
         } catch (Exception e) {
             e.printStackTrace();

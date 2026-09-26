@@ -2,6 +2,7 @@ package com.wangrui.springboot.service.impl;
 
 import com.wangrui.springboot.mapper.UserCommentMapper;
 import com.wangrui.springboot.pojo.UserComment;
+import com.wangrui.springboot.service.RedisCacheService;
 import com.wangrui.springboot.service.UserCommentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,8 @@ public class UserCommentServiceImpl implements UserCommentService {
 
     @Autowired
     private UserCommentMapper userCommentMapper;
+    @Autowired
+    private RedisCacheService redisCacheService;
 
     @Override
     public List<UserComment> getUserComments(Integer userId) {
@@ -33,6 +36,7 @@ public class UserCommentServiceImpl implements UserCommentService {
     public boolean addComment(UserComment comment) {
         try {
             userCommentMapper.insert(comment);
+            redisCacheService.incrementUserRecommendationVersion(comment.getUserId());
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -44,6 +48,7 @@ public class UserCommentServiceImpl implements UserCommentService {
     public boolean updateComment(UserComment comment) {
         try {
             userCommentMapper.update(comment);
+            redisCacheService.incrementUserRecommendationVersion(comment.getUserId());
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -54,7 +59,11 @@ public class UserCommentServiceImpl implements UserCommentService {
     @Override
     public boolean deleteComment(Integer id) {
         try {
+            UserComment comment = userCommentMapper.selectById(id);
             userCommentMapper.deleteById(id);
+            if (comment != null) {
+                redisCacheService.incrementUserRecommendationVersion(comment.getUserId());
+            }
             return true;
         } catch (Exception e) {
             e.printStackTrace();

@@ -8,144 +8,18 @@ export function getAllNovels() {
   })
 }
 
-// 2. 按标签获取小说（为每个标签单独写方法）
-// 第1行标签
-export function getNovelsByDaily() {
-  return request({ url: '/novel/listByDaily', method: 'get' })
-}
-export function getNovelsByFantasy() {
-  return request({ url: '/novel/listByFantasy', method: 'get' })
-}
-export function getNovelsBySchool() {
-  return request({ url: '/novel/listBySchool', method: 'get' })
-}
-export function getNovelsByAdventure() {
-  return request({ url: '/novel/listByAdventure', method: 'get' })
-}
-export function getNovelsByIsekai() {
-  return request({ url: '/novel/listByIsekai', method: 'get' })
+// 2. 按标签查询小说（统一参数化接口）
+export function getNovelsByLabel(label) {
+  return request({
+    url: '/novel/listByLabel',
+    method: 'get',
+    params: { label }
+  })
 }
 
-// 第2行标签
-export function getNovelsByRelax() {
-  return request({ url: '/novel/listByRelax', method: 'get' })
-}
-export function getNovelsByFunny() {
-  return request({ url: '/novel/listByFunny', method: 'get' })
-}
-export function getNovelsByHealing() {
-  return request({ url: '/novel/listByHealing', method: 'get' })
-}
-export function getNovelsByDepressing() {
-  return request({ url: '/novel/listByDepressing', method: 'get' })
-}
-export function getNovelsBySweet() {
-  return request({ url: '/novel/listBySweet', method: 'get' })
-}
-export function getNovelsByHotblood() {
-  return request({ url: '/novel/listByHotblood', method: 'get' })
-}
-export function getNovelsByLove() {
-  return request({ url: '/novel/listByLove', method: 'get' })
-}
-export function getNovelsByGrowth() {
-  return request({ url: '/novel/listByGrowth', method: 'get' })
-}
-
-// 第3行标签
-export function getNovelsByIntellect() {
-  return request({ url: '/novel/listByIntellect', method: 'get' })
-}
-export function getNovelsBySuspense() {
-  return request({ url: '/novel/listBySuspense', method: 'get' })
-}
-export function getNovelsByDeduction() {
-  return request({ url: '/novel/listByDeduction', method: 'get' })
-}
-export function getNovelsByPsychological() {
-  return request({ url: '/novel/listByPsychological', method: 'get' })
-}
-export function getNovelsByBattle() {
-  return request({ url: '/novel/listByBattle', method: 'get' })
-}
-export function getNovelsByCompetition() {
-  return request({ url: '/novel/listByCompetition', method: 'get' })
-}
-export function getNovelsByConstruction() {
-  return request({ url: '/novel/listByConstruction', method: 'get' })
-}
-
-// 第4行标签
-export function getNovelsByPalace() {
-  return request({ url: '/novel/listByPalace', method: 'get' })
-}
-export function getNovelsByVirtualGame() {
-  return request({ url: '/novel/listByVirtualGame', method: 'get' })
-}
-export function getNovelsByRealistic() {
-  return request({ url: '/novel/listByRealistic', method: 'get' })
-}
-export function getNovelsByFarming() {
-  return request({ url: '/novel/listByFarming', method: 'get' })
-}
-export function getNovelsByReincarnation() {
-  return request({ url: '/novel/listByReincarnation', method: 'get' })
-}
-export function getNovelsByTransmigration() {
-  return request({ url: '/novel/listByTransmigration', method: 'get' })
-}
-export function getNovelsByMagic() {
-  return request({ url: '/novel/listByMagic', method: 'get' })
-}
-
-// 第5行标签
-export function getNovelsByAllAges() {
-  return request({ url: '/novel/listByAllAges', method: 'get' })
-}
-export function getNovelsByLightYuri() {
-  return request({ url: '/novel/listByLightYuri', method: 'get' })
-}
-
-// 标签到API方法的映射
-const tagApiMap = {
-  '日常': getNovelsByDaily,
-  '奇幻': getNovelsByFantasy,
-  '校园': getNovelsBySchool,
-  '冒险': getNovelsByAdventure,
-  '异世界': getNovelsByIsekai,
-  '轻松': getNovelsByRelax,
-  '搞笑': getNovelsByFunny,
-  '治愈': getNovelsByHealing,
-  '致郁': getNovelsByDepressing,
-  '甜宠': getNovelsBySweet,
-  '热血': getNovelsByHotblood,
-  '恋爱': getNovelsByLove,
-  '成长': getNovelsByGrowth,
-  '智斗': getNovelsByIntellect,
-  '悬疑': getNovelsBySuspense,
-  '推理': getNovelsByDeduction,
-  '心理惊悚': getNovelsByPsychological,
-  '战斗': getNovelsByBattle,
-  '竞技': getNovelsByCompetition,
-  '基建': getNovelsByConstruction,
-  '宫廷': getNovelsByPalace,
-  '虚拟网游': getNovelsByVirtualGame,
-  '现实题材': getNovelsByRealistic,
-  '种田文': getNovelsByFarming,
-  '转生': getNovelsByReincarnation,
-  '穿越': getNovelsByTransmigration,
-  '魔法': getNovelsByMagic,
-  '全年龄': getNovelsByAllAges,
-  '轻百': getNovelsByLightYuri
-}
-
-// 根据标签获取小说（通用方法）
+// 根据标签获取小说（通用方法，兼容旧调用方式）
 export function getNovelsByTag(tag) {
-  const apiFunc = tagApiMap[tag]
-  if (apiFunc) {
-    return apiFunc()
-  }
-  return Promise.resolve({ code: 404, data: [], msg: '未知标签' })
+  return getNovelsByLabel(tag)
 }
 
 /** 获取标签列表（供前台标签栏渲染，与后台 tag 表同步） */
@@ -275,5 +149,3 @@ export function getCollectionList(userId) {
     params: { userId }
   })
 }
-
-

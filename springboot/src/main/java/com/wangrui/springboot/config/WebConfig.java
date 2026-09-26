@@ -37,7 +37,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new JwtInterceptor())
-                .addPathPatterns("/api/admin/**", "/api/user/**", "/api/recommend/**")
+                .addPathPatterns("/api/admin/**", "/api/user/**", "/api/recommend/**", "/api/customer-service/**")
                 .addPathPatterns("/novel/detail/**", "/novel/chapter/**", "/novel/volume");
 
     }

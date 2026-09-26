@@ -12,45 +12,8 @@ public interface NovelBookMainService {
     // 新增：按多个标签查询小说
     List<Map<String, Object>> getNovelsByLabels(List<String> labels);
 
-    // 按标签查询小说（为每个标签单独写方法）
-    // 第1行标签
-    List<Map<String, Object>> getNovelsByDaily();
-    List<Map<String, Object>> getNovelsByFantasy();
-    List<Map<String, Object>> getNovelsBySchool();
-    List<Map<String, Object>> getNovelsByAdventure();
-    List<Map<String, Object>> getNovelsByIsekai();
-
-    // 第2行标签
-    List<Map<String, Object>> getNovelsByRelax();
-    List<Map<String, Object>> getNovelsByFunny();
-    List<Map<String, Object>> getNovelsByHealing();
-    List<Map<String, Object>> getNovelsByDepressing();
-    List<Map<String, Object>> getNovelsBySweet();
-    List<Map<String, Object>> getNovelsByHotblood();
-    List<Map<String, Object>> getNovelsByLove();
-    List<Map<String, Object>> getNovelsByGrowth();
-
-    // 第3行标签
-    List<Map<String, Object>> getNovelsByIntellect();
-    List<Map<String, Object>> getNovelsBySuspense();
-    List<Map<String, Object>> getNovelsByDeduction();
-    List<Map<String, Object>> getNovelsByPsychological();
-    List<Map<String, Object>> getNovelsByBattle();
-    List<Map<String, Object>> getNovelsByCompetition();
-    List<Map<String, Object>> getNovelsByConstruction();
-
-    // 第4行标签
-    List<Map<String, Object>> getNovelsByPalace();
-    List<Map<String, Object>> getNovelsByVirtualGame();
-    List<Map<String, Object>> getNovelsByRealistic();
-    List<Map<String, Object>> getNovelsByFarming();
-    List<Map<String, Object>> getNovelsByReincarnation();
-    List<Map<String, Object>> getNovelsByTransmigration();
-    List<Map<String, Object>> getNovelsByMagic();
-
-    // 第5行标签
-    List<Map<String, Object>> getNovelsByAllAges();
-    List<Map<String, Object>> getNovelsByLightYuri();
+    // 按标签查询小说（参数化，支持所有标签）
+    List<Map<String, Object>> getNovelsByLabel(String label);
 
     // 增加阅读量
     void increaseReadCount(Integer id);
