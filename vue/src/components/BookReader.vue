@@ -591,4 +591,64 @@ defineExpose({
   opacity: 0.5;
   box-shadow: none;
 }
+/* ========== 阅读组件移动端响应式 ========== */
+@media (max-width: 768px) {
+  .reader-header {
+    padding: 20px 16px 14px;
+  }
+
+  .book-title {
+    font-size: 22px;
+  }
+
+  .chapter-title {
+    font-size: 18px;
+  }
+
+  .reader-meta {
+    padding: 12px 16px 16px;
+    font-size: 14px;
+  }
+
+  .reader-content {
+    padding: 20px 16px;
+    min-height: 320px;
+  }
+
+  .content-area {
+    font-size: 17px;
+    line-height: 2;
+  }
+
+  .book-reader.font-size-large .content-area {
+    font-size: 18px;
+  }
+
+  .pagination {
+    padding: 16px 16px 24px;
+  }
+
+  .page-jump {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .book-title {
+    font-size: 20px;
+  }
+
+  .chapter-title {
+    font-size: 16px;
+  }
+
+  .pagination-buttons {
+    gap: 10px;
+  }
+
+  .page-btn {
+    padding: 10px 18px;
+  }
+}
 </style>

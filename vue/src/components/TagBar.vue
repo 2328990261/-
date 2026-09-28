@@ -83,4 +83,22 @@ const switchTag = (tagId) => {
   color: #f8a555;
 }
 
+/* ========== 移动端响应式 ========== */
+@media (max-width: 768px) {
+  .tag-bar {
+    padding: 12px;
+  }
+
+  .tag-nav {
+    gap: 8px;
+  }
+
+  .tag-nav button {
+    padding: 10px 14px;
+    font-size: 14px;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+}
+
 </style>

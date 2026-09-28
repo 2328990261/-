@@ -8,6 +8,33 @@
       </button>
     </div>
 
+    <div class="tag-search-box">
+      <img src="../assets/搜索.png" alt="搜索" class="tag-search-icon" />
+      <input
+        v-model="searchInput"
+        type="text"
+        class="tag-search-input"
+        placeholder="输入关键词搜索标签"
+        @focus="showSuggestions = true"
+        @blur="hideSuggestions"
+        @input="showSuggestions = true"
+        @keydown.enter.prevent="selectFirstSuggestion"
+      />
+      <button v-if="searchInput" type="button" class="tag-search-clear" @click="clearSearchInput" title="清空">×</button>
+      <div v-if="showSuggestions" class="tag-suggestions">
+        <div v-if="suggestionTags.length === 0" class="suggestion-empty">没有匹配的标签</div>
+        <button
+          v-for="tag in suggestionTags"
+          :key="tag"
+          type="button"
+          class="suggestion-item"
+          @mousedown.prevent="pickSuggestion(tag)"
+        >
+          {{ tag }}
+        </button>
+      </div>
+    </div>
+
     <div class="tags-container" :class="{ expanded: isExpanded }">
       <div v-if="tagRows.length === 0" class="tag-loading">加载标签中…</div>
       <div class="tag-row" v-for="(row, rowIndex) in tagRows" :key="rowIndex">
@@ -39,15 +66,57 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { getTags } from '@/api/novel'
 
+const props = defineProps({
+  /** 落地时由 URL label 参数带入的预选标签 */
+  initialTags: { type: Array, default: () => [] }
+})
 const emit = defineEmits(['selectTags'])
 
 const isExpanded = ref(false)
 const selectedTags = ref([])
+const searchInput = ref('')
+const showSuggestions = ref(false)
+const pendingInitial = ref([])
+let blurTimer = null
 /** 标签行数据：从后端 tag 表拉取，按 sort_order 排序后按行分组，后台修改后前台同步 */
 const tagRows = ref([])
+
+/** 可搜索标签：排除第一行（第一行已以按钮展示，避免重复） */
+const searchableTags = computed(() => {
+  const firstRow = tagRows.value[0] || []
+  return tagRows.value.flat().filter(t => !firstRow.includes(t))
+})
+
+/** 搜索建议：按输入过滤、排除已选，最多显示 20 条 */
+const suggestionTags = computed(() => {
+  const kw = searchInput.value.trim().toLowerCase()
+  const base = searchableTags.value.filter(t => !selectedTags.value.includes(t))
+  const matched = kw ? base.filter(t => t.toLowerCase().includes(kw)) : base
+  return matched.slice(0, 20)
+})
+
+/** 应用外部预选（URL label 落地 / 前进后退），与按钮选择规则一致 */
+function applyInitialTags(tags) {
+  if (!Array.isArray(tags) || tags.length === 0) return
+  const allNames = tagRows.value.flat()
+  if (allNames.length === 0) return // 标签行尚未加载完，等 loadTags 后再应用
+  const firstRow = tagRows.value[0] || []
+  const first = tags.filter(t => firstRow.includes(t)).slice(0, 1)
+  const others = tags.filter(t => !firstRow.includes(t)).slice(0, 4)
+  const next = [...first, ...others]
+  const same = next.length === selectedTags.value.length && next.every((t, i) => selectedTags.value[i] === t)
+  if (same) return
+  selectedTags.value = next
+  emit('selectTags', next)
+}
+
+watch(() => props.initialTags, (tags) => {
+  pendingInitial.value = Array.isArray(tags) ? tags : []
+  applyInitialTags(pendingInitial.value)
+}, { immediate: true })
 
 /** 将扁平的标签列表按每行个数拆成多行（与原先 5 行布局一致：5,8,7,7, 其余） */
 function buildTagRows(tagList) {
@@ -73,8 +142,13 @@ async function loadTags() {
     const allNames = newRows.flat()
     tagRows.value = newRows
     // 若已选中有被后台删掉的标签，从已选里移除
-    selectedTags.value = selectedTags.value.filter(t => allNames.includes(t))
-    if (selectedTags.value.length > 0) emit('selectTags', selectedTags.value)
+    const kept = selectedTags.value.filter(t => allNames.includes(t))
+    if (kept.length !== selectedTags.value.length) {
+      selectedTags.value = kept
+      emit('selectTags', kept)
+    }
+    // 标签行就绪后再应用 URL 预选
+    applyInitialTags(pendingInitial.value)
   } catch (e) {
     console.error('获取标签失败，使用空标签栏', e)
     tagRows.value = []
@@ -92,6 +166,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('focus', onWindowFocus)
+  if (blurTimer) clearTimeout(blurTimer)
 })
 
 const toggleTags = () => {
@@ -136,23 +211,67 @@ const clearTags = () => {
   selectedTags.value = []
   emit('selectTags', [])
 }
+
+/** 从搜索建议中选取标签：选中后清空输入，下拉保持展开便于连续选择 */
+const pickSuggestion = (tag) => {
+  selectTag(tag)
+  searchInput.value = ''
+}
+
+const selectFirstSuggestion = () => {
+  if (suggestionTags.value.length > 0) pickSuggestion(suggestionTags.value[0])
+}
+
+const clearSearchInput = () => {
+  searchInput.value = ''
+}
+
+const hideSuggestions = () => {
+  blurTimer = setTimeout(() => {
+    showSuggestions.value = false
+  }, 120)
+}
+
+/** 供父组件在关键词搜索等场景清空选中（silent 时不触发 selectTags） */
+const clearSelection = (emitChange = true) => {
+  selectedTags.value = []
+  if (emitChange) emit('selectTags', [])
+}
+
+defineExpose({ clearSelection })
 </script>
 
 <style scoped>
 .library-tag-search {
+  position: relative;
   background-color: #fff;
+  background-image: url('../assets/标签分类背景图.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   overflow: hidden;
 }
 
+.library-tag-search::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.2);
+  z-index: 0;
+  pointer-events: none;
+}
+
 .search-header {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 18px 24px;
-  border-bottom: 2px solid #f8f8f8;
-  background: linear-gradient(135deg, #fff 0%, #fafbfc 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: transparent;
 }
 
 .search-title {
@@ -205,7 +324,106 @@ const clearTags = () => {
   transform: rotate(180deg);
 }
 
+.tag-search-box {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 24px 0;
+  padding: 0 14px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid #ffe3c9;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(248, 165, 85, 0.12);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tag-search-box:focus-within {
+  border-color: #f8a555;
+  box-shadow: 0 2px 12px rgba(248, 165, 85, 0.25);
+}
+
+.tag-search-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.tag-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: #333;
+}
+
+.tag-search-input::placeholder {
+  color: #aaa;
+}
+
+.tag-search-clear {
+  border: none;
+  background: none;
+  color: #bbb;
+  font-size: 16px;
+  line-height: 1;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.tag-search-clear:hover {
+  color: #f8a555;
+}
+
+.tag-suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #f0e6db;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  padding: 6px;
+  z-index: 20;
+}
+
+.suggestion-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #444;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.suggestion-item:hover {
+  background: #fff3e8;
+  color: #e07b26;
+}
+
+.suggestion-empty {
+  padding: 12px;
+  text-align: center;
+  color: #bbb;
+  font-size: 13px;
+}
+
 .tags-container {
+  position: relative;
+  z-index: 1;
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.3s ease;
@@ -216,16 +434,18 @@ const clearTags = () => {
 }
 
 .tag-row {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   padding: 20px 24px;
-  border-bottom: 1px solid #f5f5f5;
-  background: #fafafa;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: transparent;
 }
 
 .tag-row:nth-child(odd) {
-  background: #fff;
+  background: transparent;
 }
 
 .tag-row:last-child {
@@ -233,6 +453,8 @@ const clearTags = () => {
 }
 
 .tag-loading {
+  position: relative;
+  z-index: 1;
   padding: 20px 24px;
   color: #999;
   font-size: 14px;
@@ -269,9 +491,11 @@ const clearTags = () => {
 }
 
 .selected-tags {
+  position: relative;
+  z-index: 1;
   padding: 16px 24px;
-  background: linear-gradient(135deg, #fff8f0 0%, #fffbf7 100%);
-  border-top: 2px solid #f8f8f8;
+  background: rgba(255, 255, 255, 0.35);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -325,6 +549,10 @@ const clearTags = () => {
 @media (max-width: 768px) {
   .search-header {
     padding: 14px 18px;
+  }
+
+  .tag-search-box {
+    margin: 12px 18px 0;
   }
 
   .search-title {

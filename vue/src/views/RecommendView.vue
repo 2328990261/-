@@ -1083,4 +1083,80 @@ h1 {
 .confirm-tags-btn:hover {
   opacity: 0.9;
 }
+
+/* ========== 移动端响应式 ========== */
+@media (max-width: 768px) {
+  .recommend-content {
+    margin: 64px auto 0;
+    padding: 24px 16px;
+  }
+
+  h1 {
+    font-size: 24px;
+  }
+
+  .recommend-as-library .page-title {
+    font-size: 22px;
+  }
+
+  .books-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+  }
+
+  .book-cover {
+    height: 220px;
+  }
+
+  .dialog-content {
+    padding: 28px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .recommend-content {
+    margin: 56px auto 0;
+    padding: 20px 12px;
+  }
+
+  h1 {
+    font-size: 20px;
+  }
+
+  .recommend-as-library .page-title {
+    font-size: 20px;
+  }
+
+  .books-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+
+  .book-cover {
+    height: 180px;
+  }
+
+  .book-info {
+    padding: 12px;
+    padding-bottom: 40px;
+  }
+
+  .book-title {
+    font-size: 14px;
+  }
+
+  .sort-option {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .option-icon-wrap {
+    width: 42px;
+    height: 42px;
+  }
+
+  .dialog-content {
+    padding: 24px 16px;
+  }
+}
 </style>

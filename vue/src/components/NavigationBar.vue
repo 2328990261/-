@@ -235,21 +235,30 @@ const scrollToTop = () => {
   color: #ff6b00;
 }
 
-/* 响应式设计 */
+/* 响应式设计：移动端改为底部居中悬浮工具栏，避免遮挡正文 */
 @media (max-width: 768px) {
   .navigation-bar {
-    left: 72px;
-    padding: 8px;
+    left: 50%;
+    top: auto;
+    bottom: 16px;
+    transform: translateX(-50%);
+    flex-direction: row;
+    border-radius: 24px;
+    padding: 6px 12px;
+  }
+
+  .nav-vertical-container {
+    flex-direction: row;
+    gap: 6px;
   }
 
   .nav-btn {
-    padding: 8px 12px;
-    min-width: 80px;
-    font-size: 13px;
-  }
-
-  .btn-icon {
-    font-size: 13px;
+    min-width: 0;
+    width: 58px;
+    padding: 8px 4px;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 11px;
   }
 }
 </style>

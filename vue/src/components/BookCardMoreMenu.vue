@@ -221,4 +221,13 @@ function onDislike() {
 .more-item-muted {
   color: #606266;
 }
+
+/* ========== 移动端响应式 ========== */
+@media (max-width: 480px) {
+  .more-dropdown {
+    min-width: 104px;
+    max-width: calc(100vw - 24px);
+    box-sizing: border-box;
+  }
+}
 </style>

@@ -17,6 +17,19 @@
         <div class="card-arrow">→</div>
       </div>
 
+      <div class="config-card" @click="goEmailConfig">
+        <div class="card-icon">
+          <svg viewBox="0 0 1024 1024" width="48" height="48">
+            <path d="M928 160H96c-17.7 0-32 14.3-32 32v640c0 17.7 14.3 32 32 32h832c17.7 0 32-14.3 32-32V192c0-17.7-14.3-32-32-32z m-40 110.8V792H136V270.8l-32.4-14.2 15.9-31.9 42.5 18.6 13.5 5.9 322.6 143.7c9.4 4.2 20.1 4.2 29.5 0l322.6-143.7 13.5-5.9 42.5-18.6 15.9 31.9L888 270.8z" fill="#409EFF"/>
+          </svg>
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">邮箱配置</h3>
+          <p class="card-desc">SMTP 发信配置（QQ 邮箱），用于邮箱验证码登录 / 注册</p>
+        </div>
+        <div class="card-arrow">→</div>
+      </div>
+
       <div class="config-card" @click="goRecommendBehavior">
         <div class="card-icon">
           <svg viewBox="0 0 1024 1024" width="48" height="48">
@@ -98,6 +111,10 @@ const router = useRouter()
 
 const goToBannerManage = () => {
   router.push({ name: 'AdminBannerManage' })
+}
+
+const goEmailConfig = () => {
+  router.push({ name: 'AdminEmailConfig' })
 }
 
 const goRecommendBehavior = () => {

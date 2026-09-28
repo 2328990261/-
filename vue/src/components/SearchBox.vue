@@ -37,4 +37,13 @@
 .search-btn:hover {
   background-color: #e89030;
 }
+
+/* ========== 移动端响应式 ========== */
+@media (max-width: 480px) {
+  .search-box {
+    max-width: 100%;
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+}
 </style>

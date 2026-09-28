@@ -13,6 +13,8 @@ public interface UserMapper {
 
     User findByPhone(@Param("phone") String phone);
 
+    User findByEmail(@Param("email") String email);
+
     void insert(User user);
 
     // 添加收藏

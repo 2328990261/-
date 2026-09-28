@@ -6,7 +6,7 @@
 
     <div id="contain">
       <div id="left_card">
-        <h1>轻小说</h1>
+        <img src="../assets/logo-zi.png" alt="轻小说" class="auth-logo" />
         <span>ライトノベル</span>
         <div class="welcome-text">へようこそ</div>
       </div>
@@ -19,18 +19,18 @@
             <button
               type="button"
               class="tab"
-              :class="{ active: loginType === 'account' }"
-              @click="loginType = 'account'; error = ''"
+              :class="{ active: loginType === 'email' }"
+              @click="loginType = 'email'; error = ''"
             >
-              账号密码
+              邮箱登录
             </button>
             <button
               type="button"
               class="tab"
-              :class="{ active: loginType === 'phone' }"
-              @click="loginType = 'phone'; error = ''"
+              :class="{ active: loginType === 'account' }"
+              @click="loginType = 'account'; error = ''"
             >
-              手机验证码
+              账号密码
             </button>
           </div>
 
@@ -39,14 +39,14 @@
             <input
               v-model="accountForm.username"
               type="text"
-              placeholder="请输入账号（3-20位）"
+              placeholder="请输入账号"
               autocomplete="username"
               maxlength="20"
             />
             <input
               v-model="accountForm.password"
               type="password"
-              placeholder="请输入密码（6-20位）"
+              placeholder="请输入密码"
               autocomplete="current-password"
               maxlength="20"
             />
@@ -63,18 +63,18 @@
             </div>
           </form>
 
-          <!-- 手机验证码登录 -->
-          <form v-else class="login-form" @submit.prevent="submitPhone">
+          <!-- 邮箱验证码登录 -->
+          <form v-else class="login-form" @submit.prevent="submitEmail">
             <input
-              v-model="phoneForm.phone"
-              type="tel"
-              placeholder="请输入手机号"
-              autocomplete="tel"
-              maxlength="11"
+              v-model="emailForm.email"
+              type="email"
+              placeholder="请输入邮箱"
+              autocomplete="email"
+              maxlength="64"
             />
             <div class="code-row">
               <input
-                v-model="phoneForm.code"
+                v-model="emailForm.code"
                 type="text"
                 placeholder="请输入验证码"
                 autocomplete="one-time-code"
@@ -84,7 +84,7 @@
               <button
                 type="button"
                 class="send-code-btn"
-                :disabled="codeCountdown > 0 || !isPhoneValid"
+                :disabled="codeCountdown > 0 || !isEmailValid"
                 @click="sendCode"
               >
                 {{ codeCountdown > 0 ? `${codeCountdown}s 后重发` : '获取验证码' }}
@@ -103,7 +103,7 @@
               type="button"
               class="login-btn"
               :disabled="loading"
-              @click="loginType === 'account' ? submitAccount() : submitPhone()"
+              @click="loginType === 'account' ? submitAccount() : submitEmail()"
             >
               {{ loading ? '登录中...' : '登录' }}
             </button>
@@ -117,19 +117,19 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { reactive, ref, computed } from 'vue'
-import { login, sendCode as apiSendCode, loginByPhone } from '@/api/auth'
+import { login, sendEmailCode as apiSendEmailCode, loginByEmail } from '@/api/auth'
 import { clearLegacyGlobalReadingCaches } from '@/utils/userBrowserCache'
 
-const loginType = ref('account')
+const loginType = ref('email')
 const accountForm = reactive({ username: '', password: '' })
-const phoneForm = reactive({ phone: '', code: '' })
+const emailForm = reactive({ email: '', code: '' })
 const rememberPwd = ref(false)
 const error = ref('')
 const loading = ref(false)
 const codeCountdown = ref(0)
 const router = useRouter()
 
-const isPhoneValid = computed(() => /^1[3-9]\d{9}$/.test(phoneForm.phone))
+const isEmailValid = computed(() => /^[\w.+-]+@[\w-]+(\.[\w-]+)+$/.test(emailForm.email.trim()))
 
 function goHome() {
   router.push('/')
@@ -191,24 +191,24 @@ async function doAccountLogin() {
   }
 }
 
-function submitPhone() {
+function submitEmail() {
   error.value = ''
-  if (!isPhoneValid.value) {
-    error.value = "<font color='red'>请输入正确的手机号</font>"
+  if (!isEmailValid.value) {
+    error.value = "<font color='red'>请输入正确的邮箱</font>"
     return
   }
-  if (!phoneForm.code || phoneForm.code.trim().length < 4) {
+  if (!emailForm.code || emailForm.code.trim().length < 4) {
     error.value = "<font color='red'>请输入验证码</font>"
     return
   }
-  doPhoneLogin()
+  doEmailLogin()
 }
 
-async function doPhoneLogin() {
+async function doEmailLogin() {
   loading.value = true
   error.value = ''
   try {
-    const res = await loginByPhone(phoneForm.phone.trim(), phoneForm.code.trim())
+    const res = await loginByEmail(emailForm.email.trim(), emailForm.code.trim())
     if (res.code === 200) {
       const { token, user } = res.data
       clearLegacyGlobalReadingCaches()
@@ -228,13 +228,13 @@ async function doPhoneLogin() {
 }
 
 async function sendCode() {
-  if (!isPhoneValid.value) {
-    error.value = "<font color='red'>请输入正确的手机号</font>"
+  if (!isEmailValid.value) {
+    error.value = "<font color='red'>请输入正确的邮箱</font>"
     return
   }
   error.value = ''
   try {
-    const res = await apiSendCode(phoneForm.phone.trim())
+    const res = await apiSendEmailCode(emailForm.email.trim())
     if (res.code === 200) {
       codeCountdown.value = 60
       const timer = setInterval(() => {
@@ -318,11 +318,14 @@ async function sendCode() {
   width: 500px;
   padding: 0 20px;
 }
-#left_card h1 {
-  color: white;
-  white-space: nowrap;
-  text-shadow: 0 0 5px #000;
-  font-size: 3rem;
+#left_card .auth-logo {
+  display: block;
+  margin: 0 auto;
+  width: 380px;
+  max-width: 90%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.45));
 }
 #left_card span {
   font-size: 2rem;
@@ -352,7 +355,7 @@ async function sendCode() {
 
 #right_card h2 {
   margin-bottom: 12px;
-  font-size: 24px;
+  font-size: 26px;
   text-align: center;
 }
 
@@ -369,7 +372,7 @@ async function sendCode() {
   border-radius: 8px;
   color: #fff;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 15px;
   transition: all 0.2s;
 }
 .login-tabs .tab.active {
@@ -379,14 +382,15 @@ async function sendCode() {
 
 .login-form input[type="text"],
 .login-form input[type="password"],
-.login-form input[type="tel"] {
+.login-form input[type="tel"],
+.login-form input[type="email"] {
   width: 100%;
   height: 45px;
   margin-top: 10px;
   border: 1px solid white;
   background-color: rgba(255, 255, 255, 0.5);
   border-radius: 10px;
-  font-size: 16px;
+  font-size: 18px;
   padding-left: 20px;
   outline: none;
   color: #333;
@@ -405,6 +409,9 @@ async function sendCode() {
   flex: 1;
   min-width: 0;
 }
+.login-form .code-row .code-input {
+  margin-top: 0;
+}
 .send-code-btn {
   flex-shrink: 0;
   padding: 0 14px;
@@ -413,7 +420,7 @@ async function sendCode() {
   border: 1px solid rgba(255,255,255,0.8);
   background: rgba(255,255,255,0.2);
   color: #fff;
-  font-size: 14px;
+  font-size: 15px;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -439,7 +446,7 @@ async function sendCode() {
 
 .message {
   margin-top: 14px;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   text-align: center;
   min-height: 20px;
 }
@@ -447,7 +454,7 @@ async function sendCode() {
 .register-link {
   margin-top: 12px;
   text-align: center;
-  font-size: 14px;
+  font-size: 15px;
   color: #fff;
 }
 .register-link a {
@@ -471,7 +478,7 @@ async function sendCode() {
   cursor: pointer;
   border: none;
   color: white;
-  font-size: 16px;
+  font-size: 17px;
   transition: background-color 0.3s;
 }
 .login-btn:hover:not(:disabled) {
@@ -480,5 +487,39 @@ async function sendCode() {
 .login-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+@media (max-width: 768px) {
+  #contain {
+    width: 94vw;
+    max-width: 430px;
+    height: auto;
+    max-height: 88vh;
+    overflow-y: auto;
+    flex-direction: column;
+    padding: 28px 0;
+  }
+
+  #left_card {
+    display: none;
+  }
+
+  #right_card {
+    width: 100%;
+  }
+
+  #right_card .login-card {
+    margin: 0 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  #contain {
+    width: 96vw;
+  }
+
+  #right_card .login-card {
+    margin: 0 12px;
+    padding: 16px;
+  }
 }
 </style>

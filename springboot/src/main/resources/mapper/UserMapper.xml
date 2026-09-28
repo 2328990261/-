@@ -29,6 +29,12 @@
         WHERE phone = #{phone}
     </select>
 
+    <select id="findByEmail" resultMap="UserResultMap">
+        SELECT id, username, password, email, phone, is_admin, status, created_at
+        FROM user
+        WHERE email = #{email}
+    </select>
+
     <insert id="insert" parameterType="com.wangrui.springboot.pojo.User">
         INSERT INTO user (username, password, email, phone, is_admin, status, created_at)
         VALUES (#{username}, #{password}, #{email}, #{phone}, #{isAdmin}, COALESCE(#{status}, 0), NOW())

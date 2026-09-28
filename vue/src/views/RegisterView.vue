@@ -7,7 +7,7 @@
 
     <div id="contain">
       <div id="left_card">
-        <h1>轻小说</h1>
+        <img src="../assets/logo-zi.png" alt="轻小说" class="auth-logo" />
         <span>ライトノベル</span>
         <div>へようこそ</div>
       </div>
@@ -15,7 +15,14 @@
         <el-card class="el-card">
           <h2>用户注册</h2>
           <form class="register" action="">
-            <input type="text" v-model="userRegisterForm.username" placeholder="请输入账号/手机号">
+            <input type="text" v-model="userRegisterForm.username" placeholder="请输入账号">
+            <input type="email" v-model="userRegisterForm.email" placeholder="请输入邮箱" maxlength="64">
+            <div class="register-code-row">
+              <input type="text" v-model="userRegisterForm.code" maxlength="6" class="register-code-input">
+              <button type="button" class="register-send-code" :disabled="codeCountdown > 0 || !isEmailValid" @click="sendRegisterCode">
+                {{ codeCountdown > 0 ? `${codeCountdown}s 后重发` : '获取验证码' }}
+              </button>
+            </div>
             <input type="password" v-model="userRegisterForm.password" placeholder="请输入密码">
             <input type="password" v-model="userRegisterForm.confirmPwd" placeholder="再一次输入密码">
           </form>
@@ -37,21 +44,52 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { reactive, ref } from 'vue'
-import { register } from '@/api/auth'
+import { reactive, ref, computed } from 'vue'
+import { register, sendEmailCode } from '@/api/auth'
 import { clearLegacyGlobalReadingCaches } from '@/utils/userBrowserCache'
 
 const userRegisterForm = reactive({
   username: "",
+  email: "",
+  code: "",
   password: "",
   confirmPwd: ""
 })
 
 const error = ref('')
+const codeCountdown = ref(0)
 const router = useRouter()
+
+const isEmailValid = computed(() => /^[\w.+-]+@[\w-]+(\.[\w-]+)+$/.test(userRegisterForm.email.trim()))
 
 const goHome = () => {
   router.push('/')
+}
+
+const sendRegisterCode = async () => {
+  error.value = ''
+  if (!isEmailValid.value) {
+    error.value = "<font color='red'>请输入正确的邮箱</font>"
+    return
+  }
+  try {
+    const res = await sendEmailCode(userRegisterForm.email.trim())
+    if (res.code === 200) {
+      codeCountdown.value = 60
+      const timer = setInterval(() => {
+        codeCountdown.value--
+        if (codeCountdown.value <= 0) clearInterval(timer)
+      }, 1000)
+      const devCode = res.data && res.data.devCode
+      error.value = devCode
+        ? "<font color='green'>验证码已生成。本次验证码：<strong>" + devCode + "</strong>（请填入上方输入框）</font>"
+        : "<font color='green'>验证码已发送，请查收邮箱</font>"
+    } else {
+      error.value = "<font color='red'>" + (res.msg || '发送失败') + "</font>"
+    }
+  } catch (err) {
+    error.value = "<font color='red'>发送失败，请检查网络</font>"
+  }
 }
 
 const userRegister = async () => {
@@ -60,6 +98,16 @@ const userRegister = async () => {
     const uname = (userRegisterForm.username || '').trim()
     if (uname.length < 3 || uname.length > 20) {
       error.value = "<font color='red'>账号长度为 3-20 个字符！</font>"
+      return
+    }
+
+    if (!isEmailValid.value) {
+      error.value = "<font color='red'>请输入正确的邮箱！</font>"
+      return
+    }
+
+    if (!userRegisterForm.code || userRegisterForm.code.trim().length < 4) {
+      error.value = "<font color='red'>请输入邮箱验证码！</font>"
       return
     }
 
@@ -78,7 +126,7 @@ const userRegister = async () => {
     }
 
     try {
-      const res = await register(uname, userRegisterForm.password, '')
+      const res = await register(uname, userRegisterForm.password, userRegisterForm.email.trim(), userRegisterForm.code.trim())
       if (res.code === 200) {
         const { token, user } = res.data
         clearLegacyGlobalReadingCaches()
@@ -160,7 +208,8 @@ const userRegister = async () => {
 // 注册卡片容器（和登录页一致）
 #contain {
   width: 900px;
-  height: 400px;
+  height: auto;
+  min-height: 500px;
   position: absolute;
   top: 50%;
   left: 50%;
@@ -182,11 +231,14 @@ const userRegister = async () => {
   width: 500px;
   padding: 0 20px;
 
-  h1 {
-    color: white;
-    white-space: nowrap;
-    text-shadow: 0 0 5px #000;
-    font-size: 3rem;
+  .auth-logo {
+    display: block;
+    margin: 0 auto;
+    width: 380px;
+    max-width: 90%;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.45));
   }
 
   span {
@@ -221,7 +273,7 @@ const userRegister = async () => {
 
   h2 {
     margin-bottom: 15px;
-    font-size: 24px;
+    font-size: 26px;
     text-align: center;
   }
 
@@ -237,7 +289,7 @@ const userRegister = async () => {
     /* 核心调整：宽度85% + 最大宽度300px，防止超出 */
     width: 85%;
     max-width: 300px;
-    height: 35px;
+    height: 38px;
     /* 水平居中，避免左右贴边 */
     margin: 8px auto;
     display: block;
@@ -245,34 +297,73 @@ const userRegister = async () => {
     border: 1px solid white;
     background-color: rgba(255, 255, 255, 0.5);
     border-radius: 12px;
-    font-size: 18px;
+    font-size: 19px;
     outline: none;
     color: #333;
   }
+
+  .register-code-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    width: 85%;
+    max-width: 300px;
+    margin: 8px auto;
+  }
+
+  .register-code-input {
+    flex: 1;
+    min-width: 0;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  .register-send-code {
+    flex-shrink: 0;
+    height: 38px;
+    padding: 0 10px;
+    border: 1px solid white;
+    border-radius: 12px;
+    background-color: rgba(255, 255, 255, 0.5);
+    color: #333;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    white-space: nowrap;
+  }
+
+  .register-send-code:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
   // 提示信息
   .message {
-    margin-top: 16px;
+    margin-top: 6px;
     font-size: 0.9rem;
     text-align: center;
-    min-height: 20px;
+    min-height: 14px;
   }
 
   // 注册按钮容器
   #btn {
     width: 100%;
-    margin-top: 10px;
+    margin-top: 2px;
   }
 
   // 注册按钮
   .registerbtn {
     width: 100%;
-    height: 40px;
+    height: 42px;
     border-radius: 10px;
     background-color: rgba(207, 38, 38, 0.8);
     cursor: pointer;
     border: none;
     color: white;
-    font-size: 16px;
+    font-size: 17px;
   }
 
   .registerbtn:hover {
@@ -283,7 +374,7 @@ const userRegister = async () => {
   .login-link {
     margin-top: 15px;
     text-align: center;
-    font-size: 14px;
+    font-size: 15px;
     color: #fff;
 
     a {
@@ -299,4 +390,37 @@ const userRegister = async () => {
 }
 
 
+@media (max-width: 768px) {
+  #contain {
+    width: 94vw;
+    max-width: 430px;
+    height: auto;
+    max-height: 88vh;
+    overflow-y: auto;
+    flex-direction: column;
+    padding: 28px 0;
+  }
+
+  #left_card {
+    display: none;
+  }
+
+  #right_card {
+    width: 100%;
+  }
+
+  #right_card .el-card {
+    margin: 0 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  #contain {
+    width: 96vw;
+  }
+
+  #right_card .el-card {
+    margin: 0 12px;
+  }
+}
 </style>

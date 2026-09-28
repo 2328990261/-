@@ -600,4 +600,28 @@ onMounted(() => {
   justify-content: flex-end;
   flex-wrap: wrap;
 }
+
+/* ========== 移动端响应式 ========== */
+@media (max-width: 768px) {
+  .toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .search-bar {
+    flex-wrap: wrap;
+  }
+
+  .modal,
+  .modal--wide {
+    min-width: 0;
+    width: calc(100vw - 24px);
+    max-width: 520px;
+    box-sizing: border-box;
+  }
+
+  .pagination {
+    justify-content: center;
+  }
+}
 </style>

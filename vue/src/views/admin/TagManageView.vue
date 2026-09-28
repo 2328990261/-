@@ -119,4 +119,14 @@ onMounted(loadTags)
 .form-item label { display: block; margin-bottom: 4px; font-size: 13px; }
 .form-item input { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; }
 .modal-actions { margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+
+/* ========== 移动端响应式 ========== */
+@media (max-width: 480px) {
+  .modal {
+    min-width: 0;
+    width: calc(100vw - 24px);
+    max-width: 400px;
+    box-sizing: border-box;
+  }
+}
 </style>

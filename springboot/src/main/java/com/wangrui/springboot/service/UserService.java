@@ -7,13 +7,19 @@ import java.util.Map;
 public interface UserService {
     Map<String, Object> login(String username, String password);
 
-    Map<String, Object> register(String username, String password, String email);
+    Map<String, Object> register(String username, String password, String email, String code);
 
     /** 发送手机验证码（开发环境可仅打印到控制台） */
     Map<String, Object> sendVerificationCode(String phone);
 
     /** 手机号+验证码登录，成功返回与 login 一致的数据结构 */
     Map<String, Object> loginByPhone(String phone, String code);
+
+    /** 发送邮箱验证码（开发/未配置 SMTP 时返回 devCode） */
+    Map<String, Object> sendEmailCode(String email);
+
+    /** 邮箱+验证码登录，成功返回与 login 一致的数据结构 */
+    Map<String, Object> loginByEmail(String email, String code);
 
     // 添加收藏
     boolean addCollection(Integer userId, Integer novelId);

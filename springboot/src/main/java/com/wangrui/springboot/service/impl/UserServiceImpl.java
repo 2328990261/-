@@ -3,8 +3,10 @@ package com.wangrui.springboot.service.impl;
 import com.wangrui.springboot.mapper.UserMapper;
 import com.wangrui.springboot.pojo.User;
 import com.wangrui.springboot.service.RedisCacheService;
+import com.wangrui.springboot.service.EmailService;
 import com.wangrui.springboot.service.UserService;
 import com.wangrui.springboot.util.JwtUtil;
+import com.wangrui.springboot.util.EmailCodeStore;
 import com.wangrui.springboot.util.SmsCodeStore;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -25,6 +27,8 @@ public class UserServiceImpl implements UserService {
     private UserMapper userMapper;
     @Autowired
     private RedisCacheService redisCacheService;
+    @Autowired
+    private EmailService emailService;
 
     @Override
     public Map<String, Object> login(String username, String password) {
@@ -80,7 +84,20 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Map<String, Object> register(String username, String password, String email) {
+    public Map<String, Object> register(String username, String password, String email, String code) {
+        String targetEmail = email == null ? "" : email.trim().toLowerCase();
+        if (!targetEmail.matches("^[\\w.+-]+@[\\w-]+(\\.[\\w-]+)+$")) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("code", 400);
+            result.put("msg", "邮箱格式不正确");
+            return result;
+        }
+        if (!EmailCodeStore.verify(targetEmail, code)) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("code", 403);
+            result.put("msg", "邮箱验证码错误或已过期");
+            return result;
+        }
         User existUser = userMapper.findByUsername(username);
         if (existUser != null) {
             Map<String, Object> result = new HashMap<>();
@@ -88,11 +105,18 @@ public class UserServiceImpl implements UserService {
             result.put("msg", "用户名已存在");
             return result;
         }
+        User emailUser = userMapper.findByEmail(targetEmail);
+        if (emailUser != null) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("code", 400);
+            result.put("msg", "该邮箱已被注册");
+            return result;
+        }
 
         User user = new User();
         user.setUsername(username);
         user.setPassword(PASSWORD_ENCODER.encode(password));
-        user.setEmail(email != null ? email : "");
+        user.setEmail(targetEmail);
         user.setPhone("");
         user.setIsAdmin(0);
 
@@ -157,6 +181,53 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             result.put("code", 404);
             result.put("msg", "该手机号未注册");
+            return result;
+        }
+        String token = JwtUtil.generateToken(user.getUsername(), user.getId(), user.getIsAdmin());
+        Map<String, Object> data = new HashMap<>();
+        data.put("token", token);
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("id", user.getId());
+        userInfo.put("username", user.getUsername());
+        userInfo.put("email", user.getEmail());
+        userInfo.put("phone", user.getPhone());
+        userInfo.put("isAdmin", user.getIsAdmin());
+        userInfo.put("createdAt", user.getCreatedAt());
+        data.put("user", userInfo);
+        result.put("code", 200);
+        result.put("msg", "登录成功");
+        result.put("data", data);
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> sendEmailCode(String email) {
+        return emailService.sendVerificationCode(email);
+    }
+
+    @Override
+    public Map<String, Object> loginByEmail(String email, String code) {
+        Map<String, Object> result = new HashMap<>();
+        String targetEmail = email == null ? "" : email.trim().toLowerCase();
+        if (!targetEmail.matches("^[\\w.+-]+@[\\w-]+(\\.[\\w-]+)+$")) {
+            result.put("code", 400);
+            result.put("msg", "邮箱格式不正确");
+            return result;
+        }
+        if (!EmailCodeStore.verify(targetEmail, code)) {
+            result.put("code", 403);
+            result.put("msg", "验证码错误或已过期");
+            return result;
+        }
+        User user = userMapper.findByEmail(targetEmail);
+        if (user == null) {
+            result.put("code", 404);
+            result.put("msg", "该邮箱未注册，请先注册");
+            return result;
+        }
+        if (user.getStatus() != null && user.getStatus() == 1) {
+            result.put("code", 403);
+            result.put("msg", "账号已被禁用");
             return result;
         }
         String token = JwtUtil.generateToken(user.getUsername(), user.getId(), user.getIsAdmin());

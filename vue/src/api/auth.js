@@ -26,11 +26,29 @@ export function loginByPhone(phone, code) {
   })
 }
 
-export function register(username, password, email) {
+/** 发送邮箱验证码 */
+export function sendEmailCode(email) {
+  return request({
+    url: '/auth/sendEmailCode',
+    method: 'post',
+    data: { email }
+  })
+}
+
+/** 邮箱+验证码登录 */
+export function loginByEmail(email, code) {
+  return request({
+    url: '/auth/loginByEmail',
+    method: 'post',
+    data: { email, code }
+  })
+}
+
+export function register(username, password, email, code) {
   return request({
     url: '/auth/register',
     method: 'post',
-    data: { username, password, email }
+    data: { username, password, email, code }
   })
 }
 

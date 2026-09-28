@@ -435,4 +435,15 @@ onMounted(loadList)
   gap: 10px;
   flex-wrap: wrap;
 }
+
+/* ========== 移动端响应式 ========== */
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-overlay {
+    padding: 12px;
+  }
+}
 </style>

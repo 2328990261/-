@@ -1,7 +1,9 @@
 <template>
   <nav class="navbar" :class="{ 'eye-protection-mode': eyeProtection }">
     <div class="navbar-inner">
-      <h1 class="logo">轻小说</h1>
+      <router-link to="/" class="logo" aria-label="轻小说首页">
+        <img src="../assets/logo.png" alt="轻小说" class="logo-img" />
+      </router-link>
 
       <!-- 桌面端：搜索 + 主导航 -->
       <div class="navbar-expand">
@@ -269,15 +271,18 @@ function performLogoutAndRedirect() {
 }
 
 .logo {
-  font-size: clamp(18px, 4vw, 24px);
-  font-weight: 900;
-  margin: 0;
-  color: #ff1493;
-  font-family: 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
-  letter-spacing: 1px;
-  text-shadow: 0 2px 4px rgba(255, 20, 147, 0.2);
+  display: flex;
+  align-items: center;
+  line-height: 0;
+  text-decoration: none;
   flex-shrink: 0;
-  white-space: nowrap;
+}
+
+.logo-img {
+  display: block;
+  height: 38px;
+  width: auto;
+  object-fit: contain;
 }
 
 .search-bar {
@@ -525,6 +530,10 @@ function performLogoutAndRedirect() {
 @media (max-width: 991px) {
   .navbar {
     padding: 0 12px;
+  }
+
+  .logo-img {
+    height: 32px;
   }
 
   .navbar-expand,

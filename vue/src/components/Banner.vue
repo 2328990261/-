@@ -112,4 +112,19 @@ watch(
   align-items: center;
   justify-content: center;
 }
+
+/* ========== 移动端响应式 ========== */
+@media (max-width: 768px) {
+  .banner-title {
+    font-size: 15px;
+    bottom: 14px;
+    left: 14px;
+    right: 14px;
+  }
+
+  .no-data-tip {
+    padding: 24px 16px;
+    font-size: 13px;
+  }
+}
 </style>

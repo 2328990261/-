@@ -78,4 +78,18 @@ const props = defineProps({
   font-size: 12px;
   color: #999;
 }
+
+/* 移动端响应式 */
+@media (max-width: 480px) {
+  .book-card {
+    width: 44vw;
+    max-width: 160px;
+    height: auto;
+    margin: 8px;
+  }
+
+  .book-card .card-cover {
+    height: 180px;
+  }
+}
 </style>

@@ -19,7 +19,7 @@
         <button type="button" class="history-clear" @click="clearHistory">清空</button>
       </div>
 
-      <LibraryTagSearch @selectTags="handleTagsSelect" />
+      <LibraryTagSearch ref="tagSearchRef" :initial-tags="panelInitialTags" @selectTags="handleTagsSelect" />
 
       <DailyBooks
         v-if="displayBooks.length > 0"
@@ -42,14 +42,17 @@ import Navbar from '@/components/Navbar.vue'
 import LibraryTagSearch from '@/components/LibraryTagSearch.vue'
 import DailyBooks from '@/components/DailyBooks.vue'
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { getAllNovels, getNovelsByLabels, searchNovels } from '@/api/novel'
 
 const route = useRoute()
+const router = useRouter()
 const allBooks = ref([])
 const pageSize = ref(50)
 const selectedTags = ref([])
 const searchKeyword = ref('')
+const panelInitialTags = ref([])
+const tagSearchRef = ref(null)
 
 const SEARCH_HISTORY_KEY = 'novel_search_history'
 const MAX_HISTORY = 20
@@ -91,6 +94,7 @@ const handleTagsSelect = async (tags) => {
   selectedTags.value = tags
   searchKeyword.value = ''
   pageSize.value = 50
+  syncUrlFromTags(tags)
 
   if (tags.length === 0) {
     await loadAllNovels()
@@ -104,6 +108,33 @@ const handleTagsSelect = async (tags) => {
   } catch (err) {
     console.error('获取标签小说失败', err)
     allBooks.value = []
+  }
+}
+
+/** 把当前选中的标签同步到 URL（逗号拼接的 label 参数）；取消的标签从 URL 删除 */
+const syncUrlFromTags = (tags) => {
+  const query = { ...route.query }
+  if (tags.length > 0) {
+    query.label = tags.join(',')
+    delete query.keyword
+  } else {
+    delete query.label
+  }
+  router.replace({ path: '/library', query }).catch(() => {})
+}
+
+/** 从 URL 的 label 参数恢复筛选条件：交给面板预选，由面板 emit 驱动后续拉取 */
+const applyLabelQuery = (labelStr) => {
+  const tags = String(labelStr || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+  searchKeyword.value = ''
+  panelInitialTags.value = tags
+  if (tags.length === 0) {
+    selectedTags.value = []
+    tagSearchRef.value?.clearSelection(false)
+    loadAllNovels()
   }
 }
 
@@ -125,6 +156,7 @@ const doSearch = async (keyword) => {
   }
   searchKeyword.value = keyword.trim()
   selectedTags.value = []
+  tagSearchRef.value?.clearSelection(false)
   pageSize.value = 50
   try {
     const res = await searchNovels(keyword)
@@ -143,8 +175,11 @@ const loadMore = () => {
 
 onMounted(() => {
   loadSearchHistory()
+  const l = route.query.label
   const q = route.query.keyword
-  if (q) {
+  if (l) {
+    applyLabelQuery(l)
+  } else if (q) {
     doSearch(q)
   } else {
     loadAllNovels()
@@ -154,9 +189,18 @@ onMounted(() => {
 watch(() => route.query.keyword, (newVal) => {
   if (newVal) doSearch(newVal)
   else {
-    searchKeyword.value = ''
-    loadAllNovels()
+    // 标签筛选生效时，清除关键词不应触发“全部小说”重载
+    if (selectedTags.value.length === 0) {
+      searchKeyword.value = ''
+      loadAllNovels()
+    }
   }
+})
+
+// label 参数变化：跳过自己 replace 的“回显”，仅处理外部跳转/前进后退
+watch(() => route.query.label, (newVal) => {
+  if ((newVal || '') === selectedTags.value.join(',')) return
+  applyLabelQuery(newVal)
 })
 </script>
 

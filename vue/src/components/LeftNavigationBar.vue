@@ -699,4 +699,15 @@ onUnmounted(() => {
     padding: 16px;
   }
 }
+@media (max-width: 480px) {
+  .settings-panel {
+    left: 56px;
+    right: 10px;
+    width: auto;
+  }
+
+  .setting-item {
+    grid-template-columns: 78px 1fr;
+  }
+}
 </style>

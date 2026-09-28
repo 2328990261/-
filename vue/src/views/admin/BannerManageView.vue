@@ -613,4 +613,58 @@ onMounted(() => {
 .banner-remove-image svg {
   color: #fff;
 }
+
+/* ========== 移动端响应式 ========== */
+@media (max-width: 768px) {
+  .banner-manage {
+    padding: 12px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header h2 {
+    font-size: 20px;
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+
+  .banner-preview {
+    width: 90px;
+    height: 48px;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .dialog-content {
+    width: calc(100vw - 32px);
+    max-width: 500px;
+    padding: 18px;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 480px) {
+  .banner-manage {
+    padding: 8px;
+  }
+
+  .dialog-content {
+    width: calc(100vw - 20px);
+    padding: 16px;
+  }
+
+  .image-preview img {
+    height: 200px;
+  }
+}
 </style>

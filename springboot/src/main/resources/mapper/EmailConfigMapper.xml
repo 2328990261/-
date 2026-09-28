@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wangrui.springboot.mapper.EmailConfigMapper">
+
+    <resultMap id="EmailConfigResultMap" type="com.wangrui.springboot.pojo.EmailConfig">
+        <id column="id" property="id"/>
+        <result column="smtp_host" property="smtpHost"/>
+        <result column="smtp_port" property="smtpPort"/>
+        <result column="username" property="username"/>
+        <result column="auth_code" property="authCode"/>
+        <result column="ssl_enabled" property="sslEnabled"/>
+        <result column="enabled" property="enabled"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="EmailConfigResultMap">
+        SELECT id, smtp_host, smtp_port, username, auth_code, ssl_enabled, enabled, updated_at
+        FROM email_config
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.wangrui.springboot.pojo.EmailConfig">
+        INSERT INTO email_config (id, smtp_host, smtp_port, username, auth_code, ssl_enabled, enabled)
+        VALUES (#{id}, #{smtpHost}, #{smtpPort}, #{username}, #{authCode}, #{sslEnabled}, #{enabled})
+    </insert>
+
+    <update id="update" parameterType="com.wangrui.springboot.pojo.EmailConfig">
+        UPDATE email_config
+        SET smtp_host = #{smtpHost},
+            smtp_port = #{smtpPort},
+            username = #{username},
+            auth_code = #{authCode},
+            ssl_enabled = #{sslEnabled},
+            enabled = #{enabled}
+        WHERE id = #{id}
+    </update>
+</mapper>

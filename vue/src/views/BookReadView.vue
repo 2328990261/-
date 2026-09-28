@@ -1,7 +1,11 @@
 <template>
   <div class="book-read-container" :class="{ 'eye-protection-mode': eyeProtection }">
     <!-- 主内容区域 -->
-    <div class="book-read-main">
+    <div
+      class="book-read-main"
+      @touchstart="handleTouchStart"
+      @touchend="handleTouchEnd"
+    >
       <!-- 1. 导航栏组件 -->
       <Navbar :eye-protection="eyeProtection" />
       <!-- 左侧导航栏组件 -->
@@ -652,6 +656,57 @@ const handleNextChapter = async () => {
   await saveReadingProgress()
 }
 
+/** ==================== 移动端左右滑动翻页 ==================== */
+
+/** 是否处于移动端视口（≤768px，与样式断点保持一致） */
+const isMobileDevice = () => window.matchMedia('(max-width: 768px)').matches
+
+/** 触摸滑动起始坐标（仅移动端使用） */
+let touchStartX = 0
+let touchStartY = 0
+
+/**
+ * 触摸开始：记录起点坐标
+ */
+const handleTouchStart = (e) => {
+  if (!isMobileDevice()) return
+  const touch = e.changedTouches[0]
+  touchStartX = touch.clientX
+  touchStartY = touch.clientY
+}
+
+/**
+ * 触摸结束：左右滑动切换上一页/下一页
+ * 本章首页/末页时联动上一章/下一章，保证移动端也能切换章节
+ */
+const handleTouchEnd = (e) => {
+  if (!isMobileDevice()) return
+  const touch = e.changedTouches[0]
+  const deltaX = touch.clientX - touchStartX
+  const deltaY = touch.clientY - touchStartY
+
+  // 仅处理横向滑动：横向位移需超过阈值且大于纵向位移，避免误触竖向滚动
+  if (Math.abs(deltaX) <= 50 || Math.abs(deltaX) <= Math.abs(deltaY)) return
+
+  if (deltaX < 0) {
+    // 左滑 → 下一页；已是本章末页则进入下一章
+    const reader = bookReaderRef.value
+    if (reader && reader.currentPage >= reader.totalPages) {
+      handleNextChapter()
+    } else {
+      handleNextPage()
+    }
+  } else {
+    // 右滑 → 上一页；已是本章首页则回到上一章
+    const reader = bookReaderRef.value
+    if (reader && reader.currentPage <= 1) {
+      handlePrevChapter()
+    } else {
+      handlePrevPage()
+    }
+  }
+}
+
 /**
  * 切换收藏状态
  */
@@ -963,6 +1018,25 @@ defineExpose({
   .read-comment-panel {
     right: 8px;
     width: 220px;
+  }
+}
+/* ========== 阅读页移动端响应式 ========== */
+@media (max-width: 768px) {
+  .book-read-main {
+    /* 顶部预留空间，避免被固定导航栏遮挡；底部预留空间给悬浮工具栏 */
+    padding: 92px 12px 96px;
+    /* 允许纵向滚动，横向手势交给滑动翻页处理，避免触发浏览器返回手势 */
+    touch-action: pan-y;
+  }
+
+  /* 移动端隐藏左侧设置/章节侧边栏 */
+  .book-read-main :deep(.left-navigation-bar) {
+    display: none;
+  }
+
+  /* 移动端隐藏实时评论 */
+  .read-comment-panel {
+    display: none;
   }
 }
 </style>

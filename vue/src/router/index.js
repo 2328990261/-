@@ -79,6 +79,7 @@ const router = createRouter({
         { path: 'recommend/dashboard', name: 'adminRecommendDashboard', component: () => import('@/views/admin/RecommendTagDashboardView.vue') },
         { path: 'config', name: 'adminConfig', component: () => import('@/views/admin/ConfigCenterView.vue') },
         { path: 'config/banner', name: 'AdminBannerManage', component: () => import('@/views/admin/BannerManageView.vue') },
+        { path: 'config/email', name: 'AdminEmailConfig', component: () => import('@/views/admin/EmailConfigView.vue') },
         { path: 'config/recommend-main', name: 'RecommendMainConfig', component: () => import('@/views/admin/RecommendMainConfigView.vue') },
         { path: 'config/recommend-behavior', name: 'RecommendBehaviorConfig', component: () => import('@/views/admin/RecommendBehaviorConfigView.vue') },
         { path: 'settings', name: 'adminSettings', component: () => import('@/views/admin/TagManageView.vue') }
@@ -152,6 +153,7 @@ router.beforeEach((to, from, next) => {
     'adminRecommendDashboard',
     'adminConfig',
     'AdminBannerManage',
+    'AdminEmailConfig',
     'RecommendMainConfig',
     'RecommendBehaviorConfig',
     'adminSettings'

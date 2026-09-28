@@ -612,4 +612,35 @@ h2 {
   cursor: pointer;
 }
 .publish-selected-tag:hover { opacity: 0.9; }
+
+/* ========== 移动端响应式 ========== */
+@media (max-width: 768px) {
+  .upload-form {
+    padding: 20px 16px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .form-actions .admin-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .upload-form {
+    padding: 16px 12px;
+  }
+
+  h1 {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  h2 {
+    font-size: 16px;
+  }
+}
 </style>

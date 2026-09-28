@@ -23,9 +23,12 @@ server:
   port: 8081
 
 # 图片上传目录（统一放在项目根目录下的 uploads 文件夹）
+# 必须用绝对路径：如果继续用 ${user.dir}/../uploads，从项目根目录启动后端时会读成
+# 项目外一层的 uploads，导致封面/轮播图 404。可用环境变量 UPLOAD_COVERS_DIR /
+# UPLOAD_BANNERS_DIR 覆盖（例如项目移动到其他盘符后）。
 upload:
-  covers-dir: ${user.dir}/../uploads/covers
-  banners-dir: ${user.dir}/../uploads/banners
+  covers-dir: ${UPLOAD_COVERS_DIR:D:/毕业设计/轻小说推荐系统/uploads/covers}
+  banners-dir: ${UPLOAD_BANNERS_DIR:D:/毕业设计/轻小说推荐系统/uploads/banners}
 
 app:
   cache:

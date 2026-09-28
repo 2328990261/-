@@ -21,7 +21,10 @@
           <h2 class="module-title">
             <span class="title-dot"></span>
             {{ cat.name }}
-            <span class="title-count">更多</span>
+            <router-link
+              :to="{ name: 'library', query: { label: cat.name } }"
+              class="title-count"
+            >查看更多 →</router-link>
           </h2>
           <div class="module-books">
             <NovelGridCard
@@ -231,13 +234,24 @@ onMounted(async () => {
 }
 
 .title-count {
-  font-size: 12px;
-  font-weight: 500;
-  color: #999;
-  background: #f5f5f5;
-  padding: 2px 10px;
-  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cat-accent);
+  background: rgba(0, 0, 0, 0.04);
+  padding: 4px 12px;
+  border-radius: 14px;
   margin-left: auto;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.title-count:hover {
+  background: var(--cat-accent);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .module-books {

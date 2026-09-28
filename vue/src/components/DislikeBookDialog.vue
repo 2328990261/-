@@ -405,4 +405,36 @@ async function submit() {
   padding: 12px 22px 20px;
   border-top: 1px solid #f0f2f5;
 }
+
+@media (max-width: 560px) {
+  .dislike-book-dialog.el-dialog {
+    width: calc(100vw - 24px) !important;
+  }
+
+  .dislike-book-dialog .el-dialog__header {
+    padding: 16px 16px 10px;
+  }
+
+  .dislike-book-dialog .el-dialog__body {
+    padding: 8px 16px 12px;
+  }
+
+  .dislike-book-dialog .el-dialog__footer {
+    padding: 10px 16px 16px;
+  }
+
+  .dislike-book-dialog .dlg-header {
+    gap: 10px;
+  }
+
+  .dislike-book-dialog .dlg-header-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .dislike-book-dialog .dlg-title {
+    font-size: 16px;
+  }
+}
 </style>

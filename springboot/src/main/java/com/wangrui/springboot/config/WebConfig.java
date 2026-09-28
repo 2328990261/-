@@ -14,7 +14,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**") // 对所有接口生效
-                .allowedOrigins("http://localhost:5173") // 你的前端地址
+                .allowedOrigins("http://localhost:5173", "https://elysiumlight.cn", "https://www.elysiumlight.cn") // 本地开发 + 线上域名
                 .allowedMethods("*") // 允许所有请求方法
                 .allowedHeaders("*") // 允许所有请求头
                 .exposedHeaders("*") // 暴露所有响应头

@@ -75,25 +75,56 @@ public class AuthController {
         }
     }
 
-    /** 注册：用户名 3-20 位，密码 6-20 位 */
+    /** 发送邮箱验证码 */
+    @PostMapping("/sendEmailCode")
+    public Result<Object> sendEmailCode(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        Map<String, Object> result = userService.sendEmailCode(email);
+        Integer code = (Integer) result.get("code");
+        if (code == 200) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("msg", result.get("msg"));
+            data.put("devCode", result.get("devCode"));
+            return Result.success(data);
+        } else {
+            return Result.error(code, (String) result.get("msg"));
+        }
+    }
+
+    /** 邮箱+验证码登录 */
+    @PostMapping("/loginByEmail")
+    public Result<Object> loginByEmail(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String code = request.get("code");
+        Map<String, Object> result = userService.loginByEmail(email, code);
+        Integer resCode = (Integer) result.get("code");
+        if (resCode == 200) {
+            return Result.success(result.get("data"));
+        } else {
+            return Result.error(resCode, (String) result.get("msg"));
+        }
+    }
+
+    /** 注册：用户名 3-20 位，密码 6-20 位，邮箱需验证码 */
     @PostMapping("/register")
     public Result<Object> register(@RequestBody Map<String, String> request) {
         String username = request.get("username");
         String password = request.get("password");
         String email = request.get("email");
+        String code = request.get("code");
         if (username == null || username.trim().length() < 3 || username.trim().length() > 20) {
             return Result.error(400, "账号长度为 3-20 个字符");
         }
         if (password == null || password.length() < 6 || password.length() > 20) {
             return Result.error(400, "密码长度为 6-20 个字符");
         }
-        Map<String, Object> result = userService.register(username.trim(), password, email != null ? email : "");
-        Integer code = (Integer) result.get("code");
-        if (code == 200) {
+        Map<String, Object> result = userService.register(username.trim(), password, email, code);
+        Integer resCode = (Integer) result.get("code");
+        if (resCode == 200) {
             Object data = result.get("data");
             return Result.success(data);
         } else {
-            return Result.error(code, (String) result.get("msg"));
+            return Result.error(resCode, (String) result.get("msg"));
         }
     }
 
