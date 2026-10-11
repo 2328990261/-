@@ -24,6 +24,10 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 @Service
 public class SiteTagHeatServiceImpl implements SiteTagHeatService {
@@ -37,6 +41,9 @@ public class SiteTagHeatServiceImpl implements SiteTagHeatService {
     private static final double W_COMMENT_PER_NOVEL_UNIT = 0.35;
     private static final int COMMENT_CAP = 20;
     private static final double W_FINISHED = 0.85;
+
+    /** 时序趋势统一使用的时区（与前端展示时区保持一致） */
+    private static final ZoneId TREND_ZONE = ZoneId.of("Asia/Shanghai");
 
     @Autowired
     private NovelBookMainService novelBookMainService;
@@ -76,6 +83,77 @@ public class SiteTagHeatServiceImpl implements SiteTagHeatService {
     @Override
     public long getLastComputedAtMillis() {
         return getSnapshot().computedAt;
+    }
+
+    @Override
+    public Map<String, Object> getTagTrend(String granularity, String metric) {
+        String g = (granularity == null || granularity.isEmpty()) ? "day" : granularity;
+        String m = (metric == null || metric.isEmpty()) ? "heat" : metric;
+
+        // 按粒度生成时间桶边界（升序），并生成横轴展示标签
+        List<LocalDate> starts;
+        switch (g) {
+            case "week":
+                starts = lastNStarts(ChronoUnit.WEEKS, 8);
+                break;
+            case "month":
+                starts = lastNStarts(ChronoUnit.MONTHS, 12);
+                break;
+            case "day":
+            default:
+                starts = lastNStarts(ChronoUnit.DAYS, 7);
+                break;
+        }
+        List<String> buckets = new ArrayList<>();
+        for (LocalDate s : starts) {
+            buckets.add("month".equals(g)
+                    ? s.format(DateTimeFormatter.ofPattern("yyyy-MM"))
+                    : s.format(DateTimeFormatter.ofPattern("MM-dd")));
+        }
+
+        Map<Integer, String> novelLabels = buildNovelLabelMap();
+        Map<String, double[]> collections = new HashMap<>();
+        Map<String, double[]> comments = new HashMap<>();
+        Map<String, double[]> finished = new HashMap<>();
+        // 三类带时间戳的行为分别按“小说标签”拆解并累加到对应时间桶
+        accumulateTrend(novelLabels, userMapper.selectCollectionsForTrend(), collections, starts);
+        accumulateTrend(novelLabels, userCommentMapper.selectCommentsForTrend(), comments, starts);
+        accumulateTrend(novelLabels, userFinishedNovelMapper.selectFinishedForTrend(), finished, starts);
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("granularity", g);
+        data.put("buckets", buckets);
+
+        List<Map<String, Object>> series = new ArrayList<>();
+        if ("collection".equals(m) || "comment".equals(m) || "finished".equals(m)) {
+            // 单项指标：返回全站总量曲线（单条线）
+            Map<String, double[]> src = "collection".equals(m) ? collections
+                    : "comment".equals(m) ? comments : finished;
+            String name = "collection".equals(m) ? "收藏数" : "comment".equals(m) ? "评论数" : "完读数";
+            series.add(metricSeries(name, sumArrays(src, starts.size())));
+        } else {
+            // 标签走向：每个标签一条热度曲线（收藏 + 评论 + 完读加权合成）
+            Set<String> tags = new LinkedHashSet<>();
+            tags.addAll(collections.keySet());
+            tags.addAll(comments.keySet());
+            tags.addAll(finished.keySet());
+            int n = starts.size();
+            for (String tag : tags) {
+                double[] values = new double[n];
+                for (int i = 0; i < n; i++) {
+                    values[i] = round4(W_COLLECTION * val(collections, tag, i)
+                            + W_COMMENT_PER_NOVEL_UNIT * val(comments, tag, i)
+                            + W_FINISHED * val(finished, tag, i));
+                }
+                series.add(metricSeries(tag, values));
+            }
+            // 按区间内总热度降序，前端可据此取“简略（前5）”或“详细（全部）”
+            series.sort((a, b) -> Double.compare(
+                    Double.parseDouble(b.get("total").toString()),
+                    Double.parseDouble(a.get("total").toString())));
+        }
+        data.put("series", series);
+        return data;
     }
 
     private TagHeatSnapshot getSnapshot() {
@@ -388,6 +466,93 @@ public class SiteTagHeatServiceImpl implements SiteTagHeatService {
 
     private static double round2(double v) {
         return Math.round(v * 100.0) / 100.0;
+    }
+
+    /** 生成从今天往前 count 个时间粒度的起始日期（升序） */
+    private List<LocalDate> lastNStarts(ChronoUnit unit, int count) {
+        LocalDate today = LocalDate.now(TREND_ZONE);
+        List<LocalDate> starts = new ArrayList<>();
+        for (int i = count - 1; i >= 0; i--) {
+            starts.add(today.minus(i, unit));
+        }
+        return starts;
+    }
+
+    /** 把日期映射到时间桶下标；早于所有桶返回 -1 */
+    private int bucketIndex(List<LocalDate> starts, LocalDate d) {
+        for (int i = starts.size() - 1; i >= 0; i--) {
+            if (!d.isBefore(starts.get(i))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** 把一行行为按“小说标签”拆解，累加到对应标签的日/周/月桶 */
+    private void accumulateTrend(Map<Integer, String> novelLabels, List<Map<String, Object>> rows,
+                                 Map<String, double[]> tagBuckets, List<LocalDate> starts) {
+        if (rows == null) return;
+        int n = starts.size();
+        for (Map<String, Object> row : rows) {
+            if (row == null) continue;
+            Integer novelId = parseInt(row.get("novelId"));
+            LocalDate d = toLocalDate(row.get("eventTime"));
+            if (novelId == null || d == null) continue;
+            int idx = bucketIndex(starts, d);
+            if (idx < 0) continue;
+            String label = novelLabels.get(novelId);
+            if (label == null || label.trim().isEmpty()) continue;
+            for (String part : label.split("[,，]")) {
+                String tag = part.trim();
+                if (tag.isEmpty()) continue;
+                double[] arr = tagBuckets.computeIfAbsent(tag, k -> new double[n]);
+                arr[idx] += 1.0;
+            }
+        }
+    }
+
+    /** 将数据库时间对象转换为趋势时区下的日期 */
+    private LocalDate toLocalDate(Object v) {
+        if (v instanceof java.util.Date) {
+            return ((java.util.Date) v).toInstant().atZone(TREND_ZONE).toLocalDate();
+        }
+        if (v instanceof LocalDate) {
+            return (LocalDate) v;
+        }
+        return null;
+    }
+
+    private static double val(Map<String, double[]> map, String tag, int i) {
+        double[] arr = map.get(tag);
+        return arr == null ? 0.0 : arr[i];
+    }
+
+    /** 汇总所有标签在每桶的计数，得到全站总量曲线 */
+    private double[] sumArrays(Map<String, double[]> map, int n) {
+        double[] totals = new double[n];
+        for (double[] arr : map.values()) {
+            for (int i = 0; i < n; i++) {
+                totals[i] += arr[i];
+            }
+        }
+        return totals;
+    }
+
+    /** 组装单条序列：名称 + 区间总值 + 每桶值 */
+    private Map<String, Object> metricSeries(String name, double[] values) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("name", name);
+        double total = 0;
+        for (double v : values) {
+            total += v;
+        }
+        item.put("total", round4(total));
+        List<Double> list = new ArrayList<>(values.length);
+        for (double v : values) {
+            list.add(v);
+        }
+        item.put("values", list);
+        return item;
     }
 
     public static final class TagHeatSnapshot {

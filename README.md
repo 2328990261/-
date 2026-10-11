@@ -77,6 +77,7 @@ CREATE DATABASE IF NOT EXISTS novel_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf
    - `行为功能相关表结构.sql` — 用户行为相关  
    - `user_preference_tag.sql` / `update_user_preference_tag.sql` — 用户偏好标签  
    - `banner_carousel.sql` / `fix_banner_carousel.sql` — 轮播图  
+   - `sql/ai_assistant_config.sql` — AI 助手后台配置（人设 / 推荐规则 / 模型 / 连接参数）  
 
 执行方式示例（命令行）：
 
@@ -260,6 +261,7 @@ npm run dev
 ## 十、文档与补充说明
 
 - 书籍上传（EPUB）：见项目根目录 **EPUB上传功能说明.md**。  
+- AI 助手后台配置：登录后台 → 侧边栏「AI 助手」，编辑人设/推荐规则/模型并可对话测试；首次使用需先执行 `sql/ai_assistant_config.sql`。
 - 其他业务或表结构说明，可参考项目内对应 SQL 与 Markdown 文件。
 
 如有问题，请根据上述版本与配置逐项核对后再排查。

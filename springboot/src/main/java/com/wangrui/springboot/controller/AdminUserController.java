@@ -23,6 +23,15 @@ public class AdminUserController {
     @Autowired
     private AdminUserService adminUserService;
 
+    /**
+     * 获取用户列表
+     * @param page 页码，默认1页
+     * @param pageSize
+     * @param keyword
+     * @param status
+     * @param isAdmin
+     * @return
+     */
     @GetMapping("/users")
     public Result<Map<String, Object>> listUsers(
             @RequestParam(defaultValue = "1") Integer page,
@@ -39,6 +48,11 @@ public class AdminUserController {
         return Result.success(data);
     }
 
+    /**
+     * 获取用户详情
+     * @param id
+     * @return
+     */
     @GetMapping("/users/{id}")
     public Result<Map<String, Object>> getUser(@PathVariable Integer id) {
         Map<String, Object> row = userMapper.selectUserAdminById(id);
@@ -48,6 +62,12 @@ public class AdminUserController {
         return Result.success(row);
     }
 
+    /**
+     * 更新用户信息
+     * @param id
+     * @param body
+     * @return
+     */
     @PutMapping("/users/{id}")
     public Result<Void> updateUser(@PathVariable Integer id, @RequestBody Map<String, Object> body) {
         Map<String, Object> existing = userMapper.selectUserAdminById(id);
@@ -75,6 +95,7 @@ public class AdminUserController {
         String email = normalizeNullableString(body.get("email"));
         String phone = normalizeNullableString(body.get("phone"));
 
+        // 构建更新参数
         Map<String, Object> params = new HashMap<>();
         params.put("id", id);
         params.put("username", username);
@@ -95,6 +116,12 @@ public class AdminUserController {
         return Result.success(null);
     }
 
+    /**
+     * 更新用户状态
+     * @param id
+     * @param body
+     * @return
+     */
     @PutMapping("/users/{id}/status")
     public Result<Void> updateStatus(@PathVariable Integer id, @RequestBody Map<String, Integer> body) {
         Integer status = body.get("status");
@@ -105,6 +132,11 @@ public class AdminUserController {
         return Result.success(null);
     }
 
+    /**
+     * 删除用户
+     * @param id
+     * @return
+     */
     @DeleteMapping("/users/{id}")
     public Result<Void> deleteUser(@PathVariable Integer id) {
         Map<String, Object> existing = userMapper.selectUserAdminById(id);
@@ -115,6 +147,11 @@ public class AdminUserController {
         return Result.success(null);
     }
 
+    /**
+     * 将对象转换为整数
+     * @param o
+     * @return
+     */
     private static Integer parseInt(Object o) {
         if (o == null) {
             return null;
@@ -129,6 +166,11 @@ public class AdminUserController {
         }
     }
 
+    /**
+     * 将对象转换为非空字符串，移除首尾空格
+     * @param o
+     * @return
+     */
     private static String normalizeNullableString(Object o) {
         if (o == null) {
             return null;

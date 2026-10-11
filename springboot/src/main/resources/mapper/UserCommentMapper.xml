@@ -78,4 +78,9 @@
         SELECT novel_id AS novelId, COUNT(*) AS cnt FROM user_comment GROUP BY novel_id
     </select>
 
+    <!-- 趋势图：全站评论的 (novel_id, created_at) 原始行 -->
+    <select id="selectCommentsForTrend" resultType="java.util.HashMap">
+        SELECT novel_id AS novelId, created_at AS eventTime FROM user_comment
+    </select>
+
 </mapper>

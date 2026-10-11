@@ -39,6 +39,10 @@ public class AdminRecommendCommentConfigController {
         return c;
     }
 
+    /**
+     * 获取推荐行为权重配置
+     * @return
+     */
     @GetMapping("/recommend-comment-config")
     public Result<RecommendCommentConfig> get() {
         RecommendCommentConfig row = recommendCommentConfigMapper.selectById(1);
@@ -49,8 +53,16 @@ public class AdminRecommendCommentConfigController {
         return Result.success(row);
     }
 
+    /**
+     * 更新推荐行为权重配置
+     * @param body
+     * @return
+     */
     @PutMapping("/recommend-comment-config")
     public Result<Void> save(@RequestBody RecommendCommentConfig body) {
+        /**
+         * 校验参数
+         */
         if (body.getEnabled() == null || (body.getEnabled() != 0 && body.getEnabled() != 1)) {
             return Result.error("enabled 须为 0 或 1");
         }
@@ -85,6 +97,9 @@ public class AdminRecommendCommentConfigController {
         } catch (Exception e) {
             return Result.error("保存行为配置失败：" + e.getMessage());
         }
+        /**
+         * 更新阅读计分调试
+         */
         if (body.getReadRecordUnitBonus() != null) {
             try {
                 persistReadRecordBonus(body.getReadRecordUnitBonus());
@@ -96,6 +111,10 @@ public class AdminRecommendCommentConfigController {
         return Result.success(null);
     }
 
+    /**
+     * 合并阅读计分调试
+     * @param out
+     */
     private void attachReadDebug(RecommendCommentConfig out) {
         try {
             RecommendScoreDebug dbg = recommendScoreDebugMapper.selectById(1);
@@ -110,7 +129,11 @@ public class AdminRecommendCommentConfigController {
         }
     }
 
-    private void persistReadRecordBonus(BigDecimal readBonus) {
+    /**
+     * 保存阅读计分调试
+     * @param readBonus
+     */
+       private void persistReadRecordBonus(BigDecimal readBonus) {
         RecommendScoreDebug dbg = recommendScoreDebugMapper.selectById(1);
         if (dbg == null) {
             dbg = RecommendScoreDebug.defaultRow();

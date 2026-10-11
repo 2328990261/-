@@ -26,6 +26,10 @@ public class AdminRecommendMainConfigController {
     @Autowired
     private CacheInvalidationService cacheInvalidationService;
 
+    /**
+     * 获取主推荐算法全局超参
+     * @return
+     */
     @GetMapping("/recommend-main-config")
     public Result<RecommendMainConfig> get() {
         RecommendMainConfig row;
@@ -41,6 +45,11 @@ public class AdminRecommendMainConfigController {
         return Result.success(row);
     }
 
+    /**
+     * 更新主推荐算法全局超参
+     * @param body
+     * @return
+     */
     @PutMapping("/recommend-main-config")
     public Result<Void> save(@RequestBody RecommendMainConfig body) {
         if (body == null) {
@@ -77,6 +86,10 @@ public class AdminRecommendMainConfigController {
         return Result.success(null);
     }
 
+    /**
+     * 合并物品协同计分调试
+     * @param out
+     */
     private void attachCfCoocDebug(RecommendMainConfig out) {
         try {
             RecommendScoreDebug dbg = recommendScoreDebugMapper.selectById(1);
@@ -91,6 +104,10 @@ public class AdminRecommendMainConfigController {
         }
     }
 
+    /**
+     * 保存物品协同计分调试
+     * @param cfBonus
+     */
     private void persistCfCoocBonus(BigDecimal cfBonus) {
         RecommendScoreDebug dbg = recommendScoreDebugMapper.selectById(1);
         if (dbg == null) {
@@ -103,6 +120,11 @@ public class AdminRecommendMainConfigController {
         }
     }
 
+    /**
+     * 校验参数
+     * @param c
+     * @return
+     */
     private static String validate(RecommendMainConfig c) {
         double pop = bd(c.getPopWeight(), -1);
         if (pop < 0 || pop > 1.0) {
@@ -131,6 +153,12 @@ public class AdminRecommendMainConfigController {
         return null;
     }
 
+    /**
+     * 将 BigDecimal 转换为 double
+     * @param v
+     * @param def
+     * @return
+     */
     private static double bd(BigDecimal v, double def) {
         if (v == null) return def;
         return v.doubleValue();

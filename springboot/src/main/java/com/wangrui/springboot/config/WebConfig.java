@@ -1,6 +1,7 @@
 package com.wangrui.springboot.config;
 
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -9,6 +10,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+
+    @Value("${upload.epub-images-dir:}")
+    private String epubImagesDir;
+
+    @Value("${upload.ai-images-dir:}")
+    private String aiImagesDir;
 
     // 原有：跨域配置（保持不变）
     @Override
@@ -27,6 +34,17 @@ public class WebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/images/**")
                 .addResourceLocations("classpath:/static/images/");
+        // EPUB 插画：映射 uploads/epub-images/ 目录
+        if (epubImagesDir != null && !epubImagesDir.isEmpty()) {
+            String location = java.nio.file.Paths.get(epubImagesDir).toUri().toString();
+            if (!location.endsWith("/")) location += "/";
+            registry.addResourceHandler("/epub-images/**").addResourceLocations(location);
+        }
+        if (aiImagesDir != null && !aiImagesDir.isEmpty()) {
+            String location = java.nio.file.Paths.get(aiImagesDir).toUri().toString();
+            if (!location.endsWith("/")) location += "/";
+            registry.addResourceHandler("/ai-images/**").addResourceLocations(location);
+        }
     }
 
     /**
@@ -37,7 +55,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new JwtInterceptor())
-                .addPathPatterns("/api/admin/**", "/api/user/**", "/api/recommend/**", "/api/customer-service/**")
+                .addPathPatterns("/api/admin/**", "/api/user/**", "/api/recommend/**", "/api/customer-service/**", "/api/ai-assistant/**")
                 .addPathPatterns("/novel/detail/**", "/novel/chapter/**", "/novel/volume");
 
     }

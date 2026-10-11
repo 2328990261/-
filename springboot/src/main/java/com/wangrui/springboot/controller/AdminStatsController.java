@@ -61,4 +61,15 @@ public class AdminStatsController {
         data.put("description", "来源：全站收藏、阅读历史、评论条数（按书封顶）、完读；在 tag 表标签上按热度映射为 0.1~1.0 推荐权重");
         return Result.success(data);
     }
+
+    /**
+     * 标签趋势时序（方案 A）：基于收藏/评论/完读，按日/周/月分桶返回折线数据。
+     * metric 支持：heat（标签走向）、collection（收藏数）、comment（评论数）、finished（完读数）。
+     */
+    @GetMapping("/stats/tag-trend")
+    public Result<Map<String, Object>> tagTrend(
+            @RequestParam(defaultValue = "day") String granularity,
+            @RequestParam(defaultValue = "heat") String metric) {
+        return Result.success(siteTagHeatService.getTagTrend(granularity, metric));
+    }
 }

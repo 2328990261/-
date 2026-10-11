@@ -3,6 +3,7 @@ package com.wangrui.springboot.service.impl;
 
 import com.wangrui.springboot.service.RedisCacheService;
 import com.wangrui.springboot.mapper.NovelBookMainMapper;
+import com.wangrui.springboot.mapper.NovelIllustrationMapper;
 import com.wangrui.springboot.mapper.NovelVolumeMapper;
 import com.wangrui.springboot.pojo.NovelBook;
 import com.wangrui.springboot.pojo.NovelBookVolume;
@@ -20,6 +21,8 @@ public class NovelBookServiceImpl implements NovelBookService {
 
     @Autowired
     private NovelVolumeMapper novelVolumeMapper;
+    @Autowired
+    private NovelIllustrationMapper novelIllustrationMapper;
     @Autowired
     private RedisCacheService redisCacheService;
 
@@ -50,6 +53,10 @@ public class NovelBookServiceImpl implements NovelBookService {
     // 实现获取章节内容方法
     @Override
     public NovelBookVolume getVolumeContentById(Integer volumeId) {
-        return novelVolumeMapper.selectVolumeById(volumeId);
+        NovelBookVolume volume = novelVolumeMapper.selectVolumeById(volumeId);
+        if (volume != null) {
+            volume.setIllustrations(novelIllustrationMapper.selectByVolumeId(volumeId));
+        }
+        return volume;
     }
 }

@@ -128,6 +128,7 @@ public class AuthController {
         }
     }
 
+    /** 更新用户信息 */
     @PostMapping("/updateUserInfo")
     public Result<Object> updateUserInfo(@RequestBody Map<String, Object> request) {
         Integer userId = (Integer) request.get("userId");
@@ -144,7 +145,7 @@ public class AuthController {
         }
     }
 
-    // 添加收藏
+    /** 添加用户收藏 */
     @PostMapping("/collection/add")
     public Result<String> addCollection(@RequestBody Map<String, Integer> params) {
         Integer userId = params.get("userId");
@@ -162,7 +163,7 @@ public class AuthController {
         }
     }
 
-    // 取消收藏
+    /** 取消用户收藏 */
     @PostMapping("/collection/remove")
     public Result<String> removeCollection(@RequestBody Map<String, Integer> params) {
         Integer userId = params.get("userId");
@@ -180,7 +181,7 @@ public class AuthController {
         }
     }
 
-    // 检查收藏状态
+    /** 检查用户收藏状态 */
     @GetMapping("/collection/check")
     public Result<Boolean> checkCollection(@RequestParam Integer userId, @RequestParam Integer novelId) {
         if (userId == null || novelId == null) {
@@ -191,7 +192,7 @@ public class AuthController {
         return Result.success(result);
     }
 
-    // 获取用户收藏列表
+    /** 获取用户收藏列表 */
     @GetMapping("/collection/list")
     public Result<List<Map<String, Object>>> getCollectionList(@RequestParam Integer userId) {
         if (userId == null) {
@@ -202,7 +203,7 @@ public class AuthController {
         return Result.success(result);
     }
     
-    // 获取用户信息
+    /** 获取用户信息 */
     @GetMapping("/userinfo")
     public Result<Object> getUserInfo(@RequestParam String username) {
         Map<String, Object> result = userService.getUserInfo(username);

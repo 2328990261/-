@@ -1,11 +1,15 @@
 <template>
   <div class="home-page">
     <!-- 1. 导航栏 -->
-    <Navbar />
+    <Navbar transparent />
 
-    <!-- 2. 轮播图 -->
+    <!-- 2. 全屏轮播区：父容器相对定位 -> 背景图 -> 顶部栏盖上去 -> 文字 + 阅读按钮 -->
     <div class="banner-container">
-      <Banner :bannerList="bannerList" :errorMsg="bannerErrorMsg" />
+      <Banner
+        :bannerList="bannerList"
+        :errorMsg="bannerErrorMsg"
+        @select="onBannerSelect"
+      />
     </div>
 
     <!-- 3. 五个分类模块 -->
@@ -127,6 +131,19 @@ function goToDetail(bookId) {
   router.push({ name: 'BookDetail', params: { id: bookId } })
 }
 
+// ========== 轮播图阅读按钮：跳转对应小说详情页 ==========
+function onBannerSelect(item) {
+  if (!item) return
+  // 优先自定义链接，其次跳转关联小说详情
+  if (item.linkUrl) {
+    window.open(item.linkUrl, '_blank', 'noopener')
+    return
+  }
+  if (item.novelId != null) {
+    goToDetail(item.novelId)
+  }
+}
+
 // ========== 初始化加载 ==========
 onMounted(async () => {
   // 加载轮播图
@@ -136,21 +153,23 @@ onMounted(async () => {
     if (Array.isArray(carouselData) && carouselData.length > 0) {
       bannerList.value = carouselData.map(item => ({
         id: item.id,
+        novelId: item.novel_id != null ? item.novel_id : null,
         image: `${backendUrl('/novel/cover')}/${encodeURIComponent(item.cover)}`,
-        title: ''
+        title: item.title || item.book_main_name || '',
+        linkUrl: item.link_url || ''
       }))
     } else {
       bannerList.value = [
-        { id: 1, image: 'https://picsum.photos/1200/400?random=1', title: '' },
-        { id: 2, image: 'https://picsum.photos/1200/400?random=2', title: '' }
+        { id: 1, novelId: null, image: 'https://picsum.photos/1600/900?random=1', title: '发现你的下一本轻小说', linkUrl: '' },
+        { id: 2, novelId: null, image: 'https://picsum.photos/1600/900?random=2', title: '热门好书等你来看', linkUrl: '' }
       ]
     }
   } catch (err) {
     console.error('轮播图加载失败:', err)
     bannerErrorMsg.value = err.message || '轮播图数据加载失败'
     bannerList.value = [
-      { id: 1, image: 'https://picsum.photos/1200/400?random=1', title: '' },
-      { id: 2, image: 'https://picsum.photos/1200/400?random=2', title: '' }
+      { id: 1, novelId: null, image: 'https://picsum.photos/1600/900?random=1', title: '发现你的下一本轻小说', linkUrl: '' },
+      { id: 2, novelId: null, image: 'https://picsum.photos/1600/900?random=2', title: '热门好书等你来看', linkUrl: '' }
     ]
   }
 
@@ -170,16 +189,17 @@ onMounted(async () => {
 .home-page {
   min-height: 100vh;
   background: linear-gradient(180deg, #f8f9fc 0%, #f5f7fa 100%);
-  padding-top: 60px;
+  padding-top: 0;
 }
 
-/* ========== 轮播图 ========== */
+/* ========== 全屏轮播区（父容器：相对定位 + 全屏） ========== */
 .banner-container {
-  max-width: 1400px;
-  margin: 0 auto 20px;
-  padding: 0 20px;
-  height: 380px;
   position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100svh;
+  min-height: 520px;
+  overflow: hidden;
   z-index: 1;
 }
 
@@ -372,19 +392,17 @@ onMounted(async () => {
   }
 
   .banner-container {
-    height: 260px;
+    height: 100vh;
+    height: 100svh;
+    min-height: 480px;
   }
 }
 
 @media (max-width: 640px) {
-  .home-page {
-    padding-top: 50px;
-  }
-
   .banner-container {
-    height: 200px;
-    padding: 0 12px;
-    margin-bottom: 12px;
+    height: 100vh;
+    height: 100svh;
+    min-height: 420px;
   }
 
   .modules-container {

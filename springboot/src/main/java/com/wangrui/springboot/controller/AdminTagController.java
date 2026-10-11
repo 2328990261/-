@@ -16,17 +16,30 @@ public class AdminTagController {
     @Autowired
     private TagService tagService;
 
+    /**
+     * 获取所有标签
+     * @return
+     */
     @GetMapping("/tags")
     public Result<List<Tag>> listTags() {
         return Result.success(tagService.listAll());
     }
 
+    /**
+     * 获取标签详情
+     * @return
+     */
     @GetMapping("/tags/{id}")
     public Result<Tag> getTag(@PathVariable Integer id) {
         Tag tag = tagService.getById(id);
         return tag != null ? Result.success(tag) : Result.error("标签不存在");
     }
 
+    /**
+     * 新增标签
+     * @param tag
+     * @return
+     */
     @PostMapping("/tags")
     public Result<Integer> addTag(@RequestBody Tag tag) {
         if (tag.getName() == null || tag.getName().trim().isEmpty()) {
@@ -43,6 +56,12 @@ public class AdminTagController {
         return Result.success(tag.getId());
     }
 
+    /**
+     * 更新标签
+     * @param id
+     * @param tag
+     * @return
+     */
     @PutMapping("/tags/{id}")
     public Result<Void> updateTag(@PathVariable Integer id, @RequestBody Tag tag) {
         if (tagService.getById(id) == null) {
@@ -54,6 +73,11 @@ public class AdminTagController {
         return Result.success(null);
     }
 
+    /**
+     * 删除标签
+     * @param id
+     * @return
+     */
     @DeleteMapping("/tags/{id}")
     public Result<Void> deleteTag(@PathVariable Integer id) {
         if (tagService.getById(id) == null) {

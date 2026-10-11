@@ -53,4 +53,7 @@ public interface UserMapper {
 
     /** 全站收藏的小说 id（含不同用户重复收藏同一书，重复计数以放大热度） */
     List<Integer> selectAllCollectionNovelIds();
+
+    /** 趋势图：全站收藏的 (novel_id, created_at) 原始行 */
+    List<Map<String, Object>> selectCollectionsForTrend();
 }

@@ -1,11 +1,14 @@
-import { app as m, BrowserWindow as u } from "electron";
-import n from "node:path";
-import h from "node:fs";
-import g from "node:http";
-import { fileURLToPath as W } from "node:url";
-const w = n.dirname(W(import.meta.url)), x = !!process.env.VITE_DEV_SERVER_URL, E = process.env.VITE_BACKEND_URL || "http://localhost:8081";
-let a = null, f = null;
-const S = {
+import { app, BrowserWindow } from "electron";
+import path from "node:path";
+import fs from "node:fs";
+import http from "node:http";
+import { fileURLToPath } from "node:url";
+const __dirname$1 = path.dirname(fileURLToPath(import.meta.url));
+const isDev = !!process.env.VITE_DEV_SERVER_URL;
+const BACKEND = process.env.VITE_BACKEND_URL || "http://localhost:8081";
+let win = null;
+let localServer = null;
+const MIME = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -21,90 +24,124 @@ const S = {
   ".ttf": "font/ttf",
   ".map": "application/json"
 };
-function y(t) {
-  return t.startsWith("/api/user/") || t.startsWith("/api/recommend") || t.startsWith("/api/admin") ? t : t.startsWith("/api") ? t.replace(/^\/api/, "") || "/" : t;
+function rewriteApiPath(urlPath) {
+  if (urlPath.startsWith("/api/user/") || urlPath.startsWith("/api/recommend") || urlPath.startsWith("/api/admin")) {
+    return urlPath;
+  }
+  if (urlPath.startsWith("/api")) {
+    return urlPath.replace(/^\/api/, "") || "/";
+  }
+  return urlPath;
 }
-function _(t, o, p) {
-  const i = new URL(p, E), r = { ...t.headers, host: i.host };
-  delete r.origin;
-  const e = g.request(
-    i,
-    { method: t.method, headers: r },
-    (c) => {
-      o.writeHead(c.statusCode || 502, c.headers), c.pipe(o);
+function proxyToBackend(req, res, targetPathWithQuery) {
+  const target = new URL(targetPathWithQuery, BACKEND);
+  const headers = { ...req.headers, host: target.host };
+  delete headers["origin"];
+  const proxyReq = http.request(
+    target,
+    { method: req.method, headers },
+    (proxyRes) => {
+      res.writeHead(proxyRes.statusCode || 502, proxyRes.headers);
+      proxyRes.pipe(res);
     }
   );
-  e.on("error", () => {
-    o.writeHead(502, { "Content-Type": "text/plain; charset=utf-8" }), o.end("后端未启动：请先启动 Spring Boot（端口 8081）");
-  }), t.pipe(e);
+  proxyReq.on("error", () => {
+    res.writeHead(502, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("后端未启动：请先启动 Spring Boot（端口 8081）");
+  });
+  req.pipe(proxyReq);
 }
-function L(t) {
-  return new Promise((o, p) => {
-    const i = g.createServer((r, e) => {
+function startStaticServer(distDir) {
+  return new Promise((resolve, reject) => {
+    const server = http.createServer((req, res) => {
       try {
-        const c = new URL(r.url || "/", "http://127.0.0.1"), s = decodeURIComponent(c.pathname);
-        if (s.startsWith("/api") || s.startsWith("/novel") || s.startsWith("/cover") || s.startsWith("/auth")) {
-          const R = s.startsWith("/api") ? y(s) : s;
-          _(r, e, R + c.search);
+        const u = new URL(req.url || "/", "http://127.0.0.1");
+        const pathname = decodeURIComponent(u.pathname);
+        if (pathname.startsWith("/api") || pathname.startsWith("/novel") || pathname.startsWith("/cover") || pathname.startsWith("/auth")) {
+          const rewritten = pathname.startsWith("/api") ? rewriteApiPath(pathname) : pathname;
+          proxyToBackend(req, res, rewritten + u.search);
           return;
         }
-        let d = n.join(t, s === "/" ? "index.html" : s);
-        const l = n.resolve(d);
-        if (!l.startsWith(n.resolve(t))) {
-          e.writeHead(403), e.end();
+        let filePath = path.join(distDir, pathname === "/" ? "index.html" : pathname);
+        const resolved = path.resolve(filePath);
+        if (!resolved.startsWith(path.resolve(distDir))) {
+          res.writeHead(403);
+          res.end();
           return;
         }
-        !h.existsSync(l) || h.statSync(l).isDirectory() ? d = n.join(t, "index.html") : d = l;
-        const j = n.extname(d).toLowerCase();
-        e.writeHead(200, { "Content-Type": S[j] || "application/octet-stream" }), h.createReadStream(d).pipe(e);
+        if (!fs.existsSync(resolved) || fs.statSync(resolved).isDirectory()) {
+          filePath = path.join(distDir, "index.html");
+        } else {
+          filePath = resolved;
+        }
+        const ext = path.extname(filePath).toLowerCase();
+        res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
+        fs.createReadStream(filePath).pipe(res);
       } catch {
-        e.writeHead(500), e.end("Server error");
+        res.writeHead(500);
+        res.end("Server error");
       }
     });
-    i.once("error", p), i.listen(0, "127.0.0.1", () => {
-      const r = i.address(), e = typeof r == "object" && r ? r.port : 0;
-      o({ server: i, url: `http://127.0.0.1:${e}` });
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const addr = server.address();
+      const port = typeof addr === "object" && addr ? addr.port : 0;
+      resolve({ server, url: `http://127.0.0.1:${port}` });
     });
   });
 }
-function U() {
-  return [
-    n.join(w, "../build/icon.ico"),
-    n.join(w, "../build/icon.png"),
-    n.join(process.resourcesPath || "", "build/icon.ico")
-  ].find((o) => h.existsSync(o));
+function resolveIconPath() {
+  const candidates = [
+    path.join(__dirname$1, "../build/icon.ico"),
+    path.join(__dirname$1, "../build/icon.png"),
+    path.join(process.resourcesPath || "", "build/icon.ico")
+  ];
+  return candidates.find((p) => fs.existsSync(p));
 }
-async function v() {
-  const t = U();
-  if (a = new u({
+async function createWindow() {
+  const icon = resolveIconPath();
+  win = new BrowserWindow({
     width: 1280,
     height: 840,
     minWidth: 960,
     minHeight: 640,
     title: "轻小说推荐系统",
-    icon: t,
+    icon,
     webPreferences: {
-      nodeIntegration: !1,
-      contextIsolation: !0
+      nodeIntegration: false,
+      contextIsolation: true
     },
-    autoHideMenuBar: !0,
-    show: !1
-  }), a.once("ready-to-show", () => a?.show()), x)
-    await a.loadURL(process.env.VITE_DEV_SERVER_URL), a.webContents.openDevTools({ mode: "detach" });
-  else {
-    const o = n.join(w, "../dist"), { server: p, url: i } = await L(o);
-    f = p, await a.loadURL(i);
+    autoHideMenuBar: true,
+    show: false
+  });
+  win.once("ready-to-show", () => win?.show());
+  if (isDev) {
+    await win.loadURL(process.env.VITE_DEV_SERVER_URL);
+    win.webContents.openDevTools({ mode: "detach" });
+  } else {
+    const distDir = path.join(__dirname$1, "../dist");
+    const { server, url } = await startStaticServer(distDir);
+    localServer = server;
+    await win.loadURL(url);
   }
-  a.on("closed", () => {
-    a = null;
+  win.on("closed", () => {
+    win = null;
   });
 }
-m.whenReady().then(() => {
-  v();
+app.whenReady().then(() => {
+  createWindow();
 });
-m.on("window-all-closed", () => {
-  f && (f.close(), f = null), process.platform !== "darwin" && m.quit();
+app.on("window-all-closed", () => {
+  if (localServer) {
+    localServer.close();
+    localServer = null;
+  }
+  if (process.platform !== "darwin") {
+    app.quit();
+  }
 });
-m.on("activate", () => {
-  u.getAllWindows().length === 0 && v();
+app.on("activate", () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
 });

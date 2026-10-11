@@ -75,8 +75,7 @@ const router = createRouter({
         { path: 'users', name: 'adminUsers', component: () => import('@/views/admin/UserManageView.vue') },
         { path: 'customer-service', name: 'adminCustomerService', component: () => import('@/views/admin/CustomerServiceConsoleView.vue') },
         { path: 'admins', name: 'adminManage', component: () => import('@/views/admin/AdminManageView.vue') },
-        { path: 'recommend', name: 'adminRecommend', component: () => import('@/views/admin/RecommendConfigView.vue') },
-        { path: 'recommend/dashboard', name: 'adminRecommendDashboard', component: () => import('@/views/admin/RecommendTagDashboardView.vue') },
+        { path: 'ai-assistant', name: 'adminAiAssistant', component: () => import('@/views/admin/AiAssistantConfigView.vue') },
         { path: 'config', name: 'adminConfig', component: () => import('@/views/admin/ConfigCenterView.vue') },
         { path: 'config/banner', name: 'AdminBannerManage', component: () => import('@/views/admin/BannerManageView.vue') },
         { path: 'config/email', name: 'AdminEmailConfig', component: () => import('@/views/admin/EmailConfigView.vue') },
@@ -95,6 +94,11 @@ const router = createRouter({
       path: '/user/tag-weights',
       name: 'userTagWeights',
       component: () => import('@/views/UserTagWeightConfigView.vue')
+    },
+    {
+      path: '/ai-assistant',
+      name: 'aiAssistant',
+      component: () => import('@/views/AiAssistantView.vue')
     },
     {
       path: '/customer-service',
@@ -149,8 +153,7 @@ router.beforeEach((to, from, next) => {
     'adminUsers',
     'adminCustomerService',
     'adminManage',
-    'adminRecommend',
-    'adminRecommendDashboard',
+    'adminAiAssistant',
     'adminConfig',
     'AdminBannerManage',
     'AdminEmailConfig',

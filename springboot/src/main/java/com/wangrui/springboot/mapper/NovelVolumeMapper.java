@@ -20,4 +20,7 @@ public interface NovelVolumeMapper {
     NovelBookVolume selectVolumeById(Integer volumeId);
     // 插入新分卷（书籍上架时添加章节内容）
     int insertVolume(NovelBookVolume volume);
+
+    /** 仅查分卷业务唯一标识（删除分卷时清理插画目录用） */
+    String selectVolumeUuid(@Param("volumeId") Integer volumeId);
 }

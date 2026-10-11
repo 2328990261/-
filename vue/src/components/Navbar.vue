@@ -1,5 +1,11 @@
 <template>
-  <nav class="navbar" :class="{ 'eye-protection-mode': eyeProtection }">
+  <nav
+    class="navbar"
+    :class="{
+      'navbar-overlay': transparent && !scrolled,
+      'eye-protection-mode': eyeProtection
+    }"
+  >
     <div class="navbar-inner">
       <router-link to="/" class="logo" aria-label="轻小说首页">
         <img src="../assets/logo.png" alt="轻小说" class="logo-img" />
@@ -17,6 +23,7 @@
           <router-link to="/" class="nav-link" @click="closeMobileMenu">首页</router-link>
           <router-link to="/library" class="nav-link" @click="closeMobileMenu">书库</router-link>
           <router-link to="/recommend" class="nav-link" @click="closeMobileMenu">推荐</router-link>
+          <router-link to="/ai-assistant" class="nav-link" @click="closeMobileMenu">AI 荐书</router-link>
           <router-link to="/customer-service" class="nav-link" @click="closeMobileMenu">联系客服</router-link>
         </div>
       </div>
@@ -81,6 +88,7 @@
             <router-link to="/" class="mobile-nav-link nav-link" @click="closeMobileMenu">首页</router-link>
             <router-link to="/library" class="mobile-nav-link nav-link" @click="closeMobileMenu">书库</router-link>
             <router-link to="/recommend" class="mobile-nav-link nav-link" @click="closeMobileMenu">推荐</router-link>
+            <router-link to="/ai-assistant" class="mobile-nav-link nav-link" @click="closeMobileMenu">AI 荐书</router-link>
             <router-link to="/customer-service" class="mobile-nav-link nav-link" @click="closeMobileMenu">联系客服</router-link>
           </div>
 
@@ -121,16 +129,27 @@ const route = useRoute()
 const username = ref('')
 const searchKeyword = ref('')
 const mobileMenuOpen = ref(false)
+const scrolled = ref(false)
 
 const BREAKPOINT_MOBILE = 992
+const SCROLL_THRESHOLD = 80
 let mq = null
 
 defineProps({
   eyeProtection: {
     type: Boolean,
     default: false
+  },
+  transparent: {
+    type: Boolean,
+    default: false
   }
 })
+
+/** 滚动超过阈值后显示顶部栏自带背景色，未滚动时保持透明毛玻璃 */
+function handleScroll() {
+  scrolled.value = window.scrollY > SCROLL_THRESHOLD
+}
 
 const isLoggedIn = computed(() => {
   return !!localStorage.getItem('token')
@@ -182,6 +201,8 @@ watch(() => route.fullPath, closeMobileMenu)
 onMounted(() => {
   mq = typeof window !== 'undefined' ? window.matchMedia(`(max-width: ${BREAKPOINT_MOBILE - 1}px)`) : null
   mq?.addEventListener('change', maybeCloseMenuAfterResize)
+  window.addEventListener('scroll', handleScroll, { passive: true })
+  handleScroll()
 
   const userInfoStr = localStorage.getItem('userInfo')
   if (userInfoStr && userInfoStr !== 'undefined') {
@@ -198,6 +219,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   mq?.removeEventListener('change', maybeCloseMenuAfterResize)
+  window.removeEventListener('scroll', handleScroll)
   unlockBodyScroll()
 })
 
@@ -580,6 +602,56 @@ function performLogoutAndRedirect() {
   color: #fff;
   border-color: #ffd700;
   border-bottom: 1px solid #ffd700;
+}
+
+/* ========== 透明毛玻璃模式（首页全屏轮播图上方） ========== */
+.navbar.navbar-overlay {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+}
+
+.navbar.navbar-overlay .nav-link {
+  color: #fff;
+}
+
+.navbar.navbar-overlay .nav-link:hover,
+.navbar.navbar-overlay .nav-link.router-link-active {
+  color: #ffd6e8;
+  border-bottom-color: #ffd6e8;
+}
+
+.navbar.navbar-overlay .user-info {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.navbar.navbar-overlay .divider {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.navbar.navbar-overlay .logout-btn {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
+.navbar.navbar-overlay .logout-btn:hover {
+  background: rgba(255, 255, 255, 0.92);
+  color: #ff1493;
+}
+
+.navbar.navbar-overlay .admin-btn {
+  color: #fff;
+  border-color: rgba(255, 215, 0, 0.85);
+}
+
+.navbar.navbar-overlay .admin-btn:hover {
+  background: #ffd700;
+  color: #fff;
+}
+
+.navbar.navbar-overlay .navbar-burger-line {
+  background: #fff;
 }
 
 .navbar.eye-protection-mode {

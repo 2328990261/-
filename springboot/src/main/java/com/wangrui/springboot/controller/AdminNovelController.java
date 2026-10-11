@@ -5,6 +5,7 @@ import com.wangrui.springboot.mapper.NovelVolumeMapper;
 import com.wangrui.springboot.pojo.NovelBook;
 import com.wangrui.springboot.pojo.NovelBookVolume;
 import com.wangrui.springboot.service.CacheInvalidationService;
+import com.wangrui.springboot.util.EpubImageStorage;
 import com.wangrui.springboot.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +25,8 @@ public class AdminNovelController {
     private NovelVolumeMapper novelVolumeMapper;
     @Autowired
     private CacheInvalidationService cacheInvalidationService;
+    @Autowired
+    private EpubImageStorage epubImageStorage;
 
     /** 后台分页列表，status 可选：null=全部 0=下架 1=上架，支持标签和关键词筛选 */
     @GetMapping("/novels")
@@ -55,6 +58,11 @@ public class AdminNovelController {
         return Result.success(data);
     }
 
+    /**
+     * 获取书籍详情
+     * @param id
+     * @return
+     */
     @GetMapping("/novels/{id}")
     public Result<Map<String, Object>> getNovel(@PathVariable Integer id) {
         NovelBook n = novelBookMainMapper.selectNovelById(id);
@@ -72,6 +80,12 @@ public class AdminNovelController {
         return Result.success(m);
     }
 
+    /**
+     * 更新书籍信息
+     * @param id
+     * @param body
+     * @return
+     */
     @PutMapping("/novels/{id}")
     public Result<Void> updateNovel(@PathVariable Integer id, @RequestBody Map<String, Object> body) {
         NovelBook existing = novelBookMainMapper.selectNovelById(id);
@@ -88,6 +102,12 @@ public class AdminNovelController {
         return Result.success(null);
     }
 
+    /**
+     * 更新书籍状态
+     * @param id
+     * @param body
+     * @return
+     */
     @PutMapping("/novels/{id}/status")
     public Result<Void> updateStatus(@PathVariable Integer id, @RequestBody Map<String, Integer> body) {
         Integer status = body.get("status");
@@ -119,8 +139,11 @@ public class AdminNovelController {
     public Result<Void> deleteVolume(@PathVariable Integer novelId, @PathVariable Integer volumeId) {
         NovelBook existing = novelBookMainMapper.selectNovelById(novelId);
         if (existing == null) return Result.error("书籍不存在");
+        String volumeUuid = novelVolumeMapper.selectVolumeUuid(volumeId);
         int n = novelVolumeMapper.deleteVolumeByIdAndMainBook(volumeId, novelId);
         if (n == 0) return Result.error("分卷不存在或不属于该书");
+        // 插画表行由外键级联删除，磁盘插画目录在此同步清理
+        epubImageStorage.deleteVolumeDir(novelId, volumeUuid);
         cacheInvalidationService.invalidateBookDetail(novelId);
         return Result.success(null);
     }

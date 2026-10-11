@@ -62,4 +62,9 @@
         SELECT DISTINCT novel_id FROM user_finished_novel
     </select>
 
+    <!-- 趋势图：全站完读的 (novel_id, 完读时间) 原始行，缺失完读时间时回退到创建时间 -->
+    <select id="selectFinishedForTrend" resultType="java.util.HashMap">
+        SELECT novel_id AS novelId, COALESCE(finished_time, created_at) AS eventTime FROM user_finished_novel
+    </select>
+
 </mapper>

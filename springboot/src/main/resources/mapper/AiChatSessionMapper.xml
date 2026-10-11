@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wangrui.springboot.mapper.AiChatSessionMapper">
+
+    <resultMap id="AiChatSessionResultMap" type="com.wangrui.springboot.pojo.AiChatSession">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="title" column="title"/>
+        <result property="pinned" column="pinned"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.wangrui.springboot.pojo.AiChatSession"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ai_chat_session (user_id, title, created_at, updated_at)
+        VALUES (#{userId}, #{title}, NOW(), NOW())
+    </insert>
+
+    <!-- 会话列表：置顶的排在最前，其余按最近活跃时间倒序 -->
+    <select id="selectByUserId" resultMap="AiChatSessionResultMap">
+        SELECT id, user_id, title, pinned, created_at, updated_at
+        FROM ai_chat_session
+        WHERE user_id = #{userId}
+        ORDER BY pinned DESC, updated_at DESC, id DESC
+    </select>
+
+    <select id="selectById" resultMap="AiChatSessionResultMap">
+        SELECT id, user_id, title, pinned, created_at, updated_at
+        FROM ai_chat_session
+        WHERE id = #{id}
+    </select>
+
+    <update id="updateTitle">
+        UPDATE ai_chat_session
+        SET title = #{title}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 置顶 / 取消置顶 -->
+    <update id="updatePinned">
+        UPDATE ai_chat_session
+        SET pinned = #{pinned}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除会话 -->
+    <delete id="deleteById">
+        DELETE FROM ai_chat_session
+        WHERE id = #{id}
+    </delete>
+
+    <update id="touch">
+        UPDATE ai_chat_session
+        SET updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+</mapper>

@@ -25,4 +25,13 @@ public interface SiteTagHeatService {
 
     /** 最近一次聚合时间戳（毫秒） */
     long getLastComputedAtMillis();
+
+    /**
+     * 时序趋势（方案 A）：基于收藏/评论/完读三类带时间戳行为，按日/周/月分桶统计。
+     *
+     * @param granularity 时间粒度：day（近7天）、week（近8周）、month（近12个月）
+     * @param metric      指标：heat（标签走向）、collection（收藏数）、comment（评论数）、finished（完读数）
+     * @return 含 buckets（横轴标签）与 series（每条线一个标签或单项指标）的结构
+     */
+    Map<String, Object> getTagTrend(String granularity, String metric);
 }

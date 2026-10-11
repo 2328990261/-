@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.5</version>
+        <version>3.5.5</version>
         <relativePath/>
     </parent>
 
@@ -22,6 +22,7 @@
         <mybatis.version>3.0.3</mybatis.version>
         <jjwt.version>0.11.5</jjwt.version>
         <springdoc.version>2.1.0</springdoc.version>
+        <spring-ai.version>1.1.8</spring-ai.version>
     </properties>
 
     <dependencies>
@@ -38,6 +39,30 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
+        <!-- Spring AI 1.1.x（OpenAI 兼容接口） -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
+            <version>${spring-ai.version}</version>
+        </dependency>
+        <!-- 直接 import 的 ChatClient / ChatModel 显式声明，避免 IDE / 传递解析漏掉 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-client-chat</artifactId>
+            <version>${spring-ai.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-model</artifactId>
+            <version>${spring-ai.version}</version>
+        </dependency>
+
+        <!-- OpenAiApi.chatCompletionStream 走 WebClient，需 Reactor Netty 提供响应式 HTTP 连接器 -->
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty-http</artifactId>
         </dependency>
 
         <dependency>
@@ -94,7 +119,7 @@
             <artifactId>commons-compress</artifactId>
             <version>1.21</version>
         </dependency>
-        
+
         <!-- JDOM用于解析XML -->
         <dependency>
             <groupId>org.jdom</groupId>

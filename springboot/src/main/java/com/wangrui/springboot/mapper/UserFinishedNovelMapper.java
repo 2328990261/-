@@ -4,6 +4,7 @@ import com.wangrui.springboot.pojo.UserFinishedNovel;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 public interface UserFinishedNovelMapper {
     // 获取用户完读记录列表
@@ -28,4 +29,7 @@ public interface UserFinishedNovelMapper {
 
     /** 全站完读过的小说 id（去重） */
     List<Integer> selectAllFinishedDistinctNovelIds();
+
+    /** 趋势图：全站完读的 (novel_id, 完读时间) 原始行 */
+    List<Map<String, Object>> selectFinishedForTrend();
 }

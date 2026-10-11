@@ -33,6 +33,7 @@ export default defineConfig({
             path.startsWith('/api/user/') ||
             path.startsWith('/api/recommend') ||
             path.startsWith('/api/customer-service') ||
+            path.startsWith('/api/ai-assistant') ||
             path.startsWith('/api/admin')
           ) {
             return path

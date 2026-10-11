@@ -169,4 +169,9 @@
     <select id="selectAllCollectionNovelIds" resultType="int">
         SELECT novel_id FROM user_collection
     </select>
+
+    <!-- 趋势图：全站收藏的 (novel_id, created_at) 原始行，时间在 Java 侧按日/周/月分桶 -->
+    <select id="selectCollectionsForTrend" resultType="java.util.HashMap">
+        SELECT novel_id AS novelId, created_at AS eventTime FROM user_collection
+    </select>
 </mapper>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wangrui.springboot.mapper.NovelIllustrationMapper">
+
+    <insert id="insertIllustration" parameterType="com.wangrui.springboot.pojo.NovelBookIllustration" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO novel_book_illustration (volume_id, sort_order, url, original_name, created_at)
+        VALUES (#{volumeId}, #{sortOrder}, #{url}, #{originalName}, NOW())
+    </insert>
+
+    <select id="selectByVolumeId" parameterType="Integer" resultType="com.wangrui.springboot.pojo.NovelBookIllustration">
+        SELECT id, volume_id, sort_order, url, original_name, created_at
+        FROM novel_book_illustration
+        WHERE volume_id = #{volumeId}
+        ORDER BY sort_order ASC
+    </select>
+</mapper>

@@ -1,11 +1,11 @@
 <template>
   <div class="publish-content">
     <h1>书籍上架</h1>
-    
-    <!-- 第一步：创建主卷 -->
-    <div class="upload-form" v-if="step === 1">
-      <h2>第一步：创建主卷信息</h2>
-      
+
+    <!-- 一步式：主卷信息 + EPUB 分卷一起提交 -->
+    <div class="upload-form">
+      <h2>主卷信息</h2>
+
       <div class="form-item">
         <label>书籍名称：</label>
         <input v-model="mainBookData.bookName" type="text" placeholder="请输入书籍名称" />
@@ -18,7 +18,7 @@
 
       <div class="form-item">
         <label>标签：</label>
-        <p class="form-hint">从下方选择标签（与前台标签栏一致，可多选）</p>
+        <p class="form-hint">从下方选择标签</p>
         <div v-if="tagRows.length === 0" class="tag-loading">加载标签中…</div>
         <div v-else class="publish-tag-rows">
           <div class="publish-tag-row" v-for="(row, rowIndex) in tagRows" :key="rowIndex">
@@ -69,32 +69,14 @@
             <span class="upload-icon" aria-hidden="true">+</span>
             <p class="upload-title">点击选择封面图片</p>
             <p class="cover-tip text-muted">支持 jpg / png / gif / webp，上传后自动保存文件名</p>
-            <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" @click.stop="triggerCoverPick">选择文件</button>
           </div>
         </div>
         <p v-if="mainBookData.cover" class="cover-tip">已保存：{{ mainBookData.cover }}</p>
       </div>
 
-      <div class="form-actions">
-        <button type="button" class="admin-btn admin-btn--primary admin-btn--lg" @click="createMainBook" :disabled="uploading">
-          {{ uploading ? '创建中...' : '创建主卷' }}
-        </button>
-      </div>
-    </div>
-
-    <!-- 第二步：上传分卷 -->
-    <div class="upload-form" v-if="step === 2">
-      <h2>第二步：上传分卷内容</h2>
-      
-      <div class="main-book-info">
-        <p><strong>主卷信息：</strong></p>
-        <p>书名：{{ mainBookData.bookName }}</p>
-        <p>作者：{{ mainBookData.author }}</p>
-        <p>主卷ID：{{ mainBookId }}</p>
-      </div>
-
+      <h2>分卷内容（EPUB）</h2>
       <div class="form-item">
-        <label>选择 EPUB 文件（分卷）：</label>
+        <label>选择 EPUB 分卷：</label>
         <input
           ref="fileInput"
           type="file"
@@ -104,7 +86,7 @@
           @change="handleFileChange"
         />
         <div
-          class="file-upload-card file-upload-card--epub"
+          class="file-upload-card"
           role="button"
           tabindex="0"
           @click="triggerEpubPick"
@@ -112,9 +94,8 @@
         >
           <div class="file-upload-placeholder">
             <span class="upload-icon upload-icon--epub" aria-hidden="true">EPUB</span>
-            <p class="upload-title">点击或按钮选择 EPUB（可多选）</p>
-            <p class="cover-tip text-muted">选择后将显示在下方列表，确认后点「上传分卷」</p>
-            <button type="button" class="admin-btn admin-btn--primary admin-btn--sm" @click.stop="triggerEpubPick">选择 EPUB</button>
+            <p class="upload-title">点击选择 EPUB 文件</p>
+            <p class="cover-tip text-muted">选填：也可先只创建主卷，稍后在书籍管理中补充分卷</p>
           </div>
         </div>
         <div v-if="selectedFiles.length > 0" class="file-list">
@@ -126,11 +107,8 @@
       </div>
 
       <div class="form-actions">
-        <button type="button" class="admin-btn admin-btn--primary admin-btn--lg" @click="uploadVolumes" :disabled="uploading">
-          {{ uploading ? '上传中...' : '上传分卷' }}
-        </button>
-        <button type="button" class="admin-btn admin-btn--reset admin-btn--lg" @click="resetForm">
-          重新开始
+        <button type="button" class="admin-btn admin-btn--primary admin-btn--lg" @click="publishBook" :disabled="uploading">
+          {{ uploading ? '发布中...' : '发布上架' }}
         </button>
       </div>
     </div>
@@ -147,8 +125,6 @@ const coverInputRef = ref(null)
 const coverUploading = ref(false)
 const selectedFiles = ref([])
 const uploading = ref(false)
-const step = ref(1)
-const mainBookId = ref(null)
 
 const mainBookData = ref({
   bookName: '',
@@ -277,8 +253,8 @@ const removeFile = (index) => {
   selectedFiles.value.splice(index, 1)
 }
 
-// 第一步：创建主卷
-const createMainBook = async () => {
+/** 一步式发布：主卷信息 + EPUB 分卷一次提交 */
+const publishBook = async () => {
   if (!mainBookData.value.bookName || !mainBookData.value.author) {
     alert('请填写书籍名称和作者')
     return
@@ -294,59 +270,34 @@ const createMainBook = async () => {
   mainBookData.value.label = selectedLabelTags.value.join(',')
 
   uploading.value = true
-
   try {
-    const response = await adminHttp.post('/admin/createMainBook', {
-      bookName: mainBookData.value.bookName,
-      author: mainBookData.value.author,
-      label: mainBookData.value.label,
-      cover: mainBookData.value.cover
-    })
+    const formData = new FormData()
+    formData.append('bookName', mainBookData.value.bookName)
+    formData.append('author', mainBookData.value.author)
+    formData.append('label', mainBookData.value.label)
+    formData.append('cover', mainBookData.value.cover)
+    selectedFiles.value.forEach(file => formData.append('files', file))
 
-    if (response.data?.code === 200) {
-      mainBookId.value = response.data.data
-      alert('主卷创建成功！ID: ' + mainBookId.value)
-      step.value = 2
-    } else {
-      alert('创建失败：' + (response.data?.msg || ''))
-    }
-  } catch (error) {
-    console.error('创建错误：', error)
-    alert('创建失败，请检查网络连接')
-  } finally {
-    uploading.value = false
-  }
-}
-
-// 第二步：上传分卷
-const uploadVolumes = async () => {
-  if (selectedFiles.value.length === 0) {
-    alert('请选择至少一个EPUB文件')
-    return
-  }
-
-  uploading.value = true
-
-  try {
-    const formDataToSend = new FormData()
-    
-    selectedFiles.value.forEach(file => {
-      formDataToSend.append('files', file)
-    })
-    
-    formDataToSend.append('mainBookId', mainBookId.value)
-
-    const response = await adminHttp.post('/admin/uploadVolumes', formDataToSend)
-
-    if (response.data?.code === 200) {
-      alert('分卷上传成功！')
+    const res = await adminHttp.post('/admin/publishBook', formData)
+    if (res.data?.code === 200) {
+      const data = res.data.data || {}
+      const volumes = data.volumes || []
+      const failed = volumes.filter(v => !v.success)
+      const failMsg = failed.length
+        ? '\n失败分卷：' + failed.map(v => `${v.volumeName}（${v.error || '未知原因'}）`).join('；')
+        : ''
+      alert(
+        `发布成功！主卷ID：${data.mainBookId}` +
+        `\n成功分卷：${data.successCount ?? 0} 个` +
+        (failed.length ? failMsg : '')
+      )
       resetForm()
     } else {
-      alert('上传失败：' + (response.data?.msg || ''))
+      alert('发布失败：' + (res.data?.msg || ''))
     }
   } catch (error) {
-    console.error('上传错误：', error)
-    alert('上传失败，请检查网络连接')
+    console.error('发布错误：', error)
+    alert('发布失败，请检查网络连接')
   } finally {
     uploading.value = false
   }
@@ -361,8 +312,6 @@ const resetForm = () => {
   }
   selectedLabelTags.value = []
   selectedFiles.value = []
-  mainBookId.value = null
-  step.value = 1
   if (fileInput.value) {
     fileInput.value.value = ''
   }
@@ -371,7 +320,6 @@ const resetForm = () => {
   }
 }
 </script>
-
 <style scoped>
 .publish-content {
   padding: 0;
@@ -396,19 +344,6 @@ h2 {
   padding: 30px;
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-}
-
-.main-book-info {
-  background-color: #f0f9ff;
-  padding: 15px;
-  border-radius: 4px;
-  margin-bottom: 20px;
-  border-left: 4px solid #409eff;
-}
-
-.main-book-info p {
-  margin: 5px 0;
-  color: #606266;
 }
 
 .form-item {
@@ -520,9 +455,6 @@ h2 {
   pointer-events: none;
 }
 
-.file-upload-card--epub .file-upload-placeholder {
-  padding: 22px 16px;
-}
 
 .form-item input[type="text"] {
   width: 100%;

@@ -23,6 +23,10 @@ public class AdminEmailConfigController {
     @Autowired
     private EmailService emailService;
 
+    /**
+     * 获取邮箱配置
+     * @return
+     */
     @GetMapping("/email-config")
     public Result<EmailConfig> get() {
         EmailConfig row;
@@ -37,6 +41,11 @@ public class AdminEmailConfigController {
         return Result.success(row);
     }
 
+    /**
+     * 更新邮箱配置
+     * @param body
+     * @return
+     */
     @PutMapping("/email-config")
     public Result<Void> save(@RequestBody EmailConfig body) {
         if (body == null) {
@@ -66,6 +75,11 @@ public class AdminEmailConfigController {
         return Result.success(null);
     }
 
+    /**
+     * 测试邮箱配置
+     * @param request
+     * @return
+     */
     @PostMapping("/email-config/test")
     public Result<Object> test(@RequestBody Map<String, String> request) {
         String to = request != null ? request.get("to") : null;

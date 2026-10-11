@@ -20,9 +20,23 @@
     <!-- 阅读内容区域 -->
     <div class="reader-content">
       <div v-if="loading" class="loading">加载中...</div>
-      <div v-else-if="currentPageContent.length > 0" class="content-area">
-        <p v-for="(para, idx) in currentPageContent" :key="idx" class="content-para">
-          {{ para }}
+      <div v-else-if="allBlocks.length > 0" ref="contentAreaRef" class="content-area">
+        <p
+          v-for="(para, idx) in allBlocks"
+          :key="para.key"
+          class="content-para"
+          :class="{ 'content-image-line': para.type === 'image', 'is-hidden-page': !blockInCurrentPage(idx) }"
+        >
+          <img
+            v-if="para.type === 'image'"
+            :src="illustrationUrl(para.order)"
+            :style="illustrationStyle"
+            class="reader-illustration"
+            alt="插图"
+            @load="scheduleRelayout"
+            @error="scheduleRelayout"
+          >
+          <template v-else>{{ para.text }}</template>
         </p>
       </div>
       <div v-else class="empty-content">暂无章节内容</div>
@@ -75,7 +89,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { backendUrl } from '@/config/env'
 
 // 定义组件属性
 const props = defineProps({
@@ -128,86 +143,121 @@ const currentPage = ref(1)
 // 跳转页码
 const jumpPage = ref(null)
 
-// 将章节内容分割为行数组
-const contentLines = computed(() => {
+/** 正文中的插画占位标记：[插图n]，n 对应插画表 sort_order */
+const ILLUS_RE = /^\[插图(\d+)\]$/
+
+/** 内容区根节点（用于测量分页高度） */
+const contentAreaRef = ref(null)
+
+/** 内容块：文本块 { type:'text', text } 与插画块 { type:'image', order }，按出现顺序排列 */
+const allBlocks = computed(() => {
   if (!props.chapter?.content) return []
-  const content = props.chapter.content
-  
-  // 先按换行符分割
-  let lines = content.split('\n').filter(line => line.trim() !== '')
-  
-  // 如果行数太少（说明是一大段文本），按字数自动分行
-  if (lines.length < 20) {
-    const allText = lines.join(' ')
-    const charsPerLine = 45
-    const newLines = []
-    let currentPos = 0
-    
-    while (currentPos < allText.length) {
-      let endPos = Math.min(currentPos + charsPerLine, allText.length)
-      
-      // 在标点符号处断行
-      if (endPos < allText.length) {
-        const searchEnd = Math.min(endPos + 20, allText.length)
-        let bestBreak = endPos
-        
-        // 优先在句号等处断行
-        for (let i = endPos; i < searchEnd; i++) {
-          const c = allText.charAt(i)
-          if (c === '。' || c === '！' || c === '？') {
-            bestBreak = i + 1
-            break
-          }
-        }
-        
-        // 其次在分号处
-        if (bestBreak === endPos) {
-          for (let i = endPos; i < searchEnd; i++) {
-            if (allText.charAt(i) === '；') {
-              bestBreak = i + 1
-              break
-            }
-          }
-        }
-        
-        // 最后在逗号处
-        if (bestBreak === endPos) {
-          for (let i = endPos; i < searchEnd; i++) {
-            const c = allText.charAt(i)
-            if (c === '，' || c === '、') {
-              bestBreak = i + 1
-              break
-            }
-          }
-        }
-        
-        endPos = bestBreak
-      }
-      
-      const line = allText.substring(currentPos, endPos).trim()
-      if (line) newLines.push(line)
-      currentPos = endPos
+  const blocks = []
+  props.chapter.content.split('\n').forEach((rawLine, i) => {
+    const line = rawLine.trim()
+    if (!line) return
+    const m = line.match(ILLUS_RE)
+    if (m) {
+      blocks.push({ key: 'img' + i, type: 'image', order: Number(m[1]) })
+    } else {
+      blocks.push({ key: 'txt' + i, type: 'text', text: line })
     }
-    
-    return newLines
+  })
+  return blocks
+})
+
+/** 分页结果：每页为 { start, end } 块下标区间（按实际渲染高度切分） */
+const pages = ref([])
+
+/** 当前页高度（px）= 每页行数 × 行高，用于超高插图限高 */
+const pageHeightPx = ref(0)
+
+/** 根据插画序号解析对应插画的访问 URL */
+function illustrationUrl(order) {
+  const illustrations = props.chapter?.illustrations || []
+  const illustration = illustrations.find(i => Number(i.sortOrder) === order)
+  return illustration?.url ? backendUrl(illustration.url) : ''
+}
+
+/** 图片限高：超高插图单独成页时也不会超出页面高度 */
+const illustrationStyle = computed(() => {
+  return pageHeightPx.value ? { maxHeight: pageHeightPx.value + 'px' } : {}
+})
+
+/** 某块是否属于当前页（分页未就绪时全部显示，便于测量） */
+function blockInCurrentPage(idx) {
+  const page = pages.value[currentPage.value - 1]
+  if (!page) return true
+  return idx >= page.start && idx < page.end
+}
+
+/** 计算总页数 */
+const totalPages = computed(() => pages.value.length)
+
+/** 防抖定时器 */
+let relayoutTimer = null
+
+/** 重新测量并分页：先清空分页让所有块可见以测真实高度，再按高度贪心切页 */
+async function relayout() {
+  if (!props.chapter?.content) {
+    pages.value = []
+    pageHeightPx.value = 0
+    return
   }
-  
-  // 如果已经有足够的行数，直接返回
-  return lines
-})
+  pages.value = []
+  await nextTick()
+  const area = contentAreaRef.value
+  if (!area) return
+  const items = area.querySelectorAll('.content-para')
+  if (!items.length) {
+    pages.value = [{ start: 0, end: 0 }]
+    return
+  }
 
-// 计算总页数
-const totalPages = computed(() => {
-  const lines = contentLines.value.length
-  return Math.ceil(lines / props.pageSize)
-})
+  // 估算行高：取第一个文本块的实际行高
+  let lineHeight = 0
+  const firstText = area.querySelector('.content-para:not(.content-image-line)')
+  if (firstText) {
+    const cs = getComputedStyle(firstText)
+    lineHeight = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) * 1.6)
+  }
+  if (!lineHeight || lineHeight < 12) lineHeight = 40
+  const pageHeight = Math.max(1, Math.round(props.pageSize * lineHeight))
+  pageHeightPx.value = pageHeight
 
-// 计算当前页内容
-const currentPageContent = computed(() => {
-  const start = (currentPage.value - 1) * props.pageSize
-  const end = start + props.pageSize
-  return contentLines.value.slice(start, end)
-})
+  // 贪心分页：累计高度超过页高则换页；超高块（限高后的插图）单独成页
+  const result = []
+  let start = 0
+  let acc = 0
+  for (let i = 0; i < items.length; i++) {
+    const h = items[i].offsetHeight
+    if (h >= pageHeight) {
+      if (i > start) result.push({ start, end: i })
+      result.push({ start: i, end: i + 1 })
+      start = i + 1
+      acc = 0
+    } else if (acc + h > pageHeight && i > start) {
+      result.push({ start, end: i })
+      start = i
+      acc = h
+    } else {
+      acc += h
+    }
+  }
+  if (start < items.length) result.push({ start, end: items.length })
+  pages.value = result.length ? result : [{ start: 0, end: 0 }]
+
+  // 页码越界保护（换章节/设置变化后页数可能变少）
+  if (currentPage.value > pages.value.length) {
+    currentPage.value = pages.value.length || 1
+  }
+}
+
+/** 安排一次防抖的重新分页（字体/宽度/章节/图片加载等变化时调用） */
+function scheduleRelayout() {
+  if (relayoutTimer) clearTimeout(relayoutTimer)
+  relayoutTimer = setTimeout(() => { relayout() }, 60)
+}
 
 // 上一页
 const prevPage = () => {
@@ -244,6 +294,12 @@ const goToJumpPage = () => {
   // 清空输入框
   jumpPage.value = null
 }
+
+// 内容、字体、宽度、行数、加载状态变化时重新分页
+watch(() => [props.chapter, props.fontSize, props.pageWidth], scheduleRelayout, { deep: true })
+watch(() => props.pageSize, scheduleRelayout)
+watch(() => props.loading, (v) => { if (!v) scheduleRelayout() })
+onMounted(scheduleRelayout)
 
 // 监听章节变化，重置页码
 watch(() => props.chapter, () => {
@@ -438,6 +494,26 @@ defineExpose({
   line-height: 2;
   text-indent: 2em;
   word-break: break-word;
+}
+
+/* EPUB 插画：正文占位标记渲染出的图片 */
+.reader-illustration {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 16px auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* 插画行：去掉段落缩进，避免图片被缩进 */
+.content-para.content-image-line {
+  text-indent: 0;
+}
+
+/* 分页：隐藏非当前页的内容块（全部渲染仅用于测量高度） */
+.content-para.is-hidden-page {
+  display: none;
 }
 
 /* 字体大小设置 */

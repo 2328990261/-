@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wangrui.springboot.mapper.AiAssistantConfigMapper">
+
+    <resultMap id="AiAssistantConfigResultMap" type="com.wangrui.springboot.pojo.AiAssistantConfig">
+        <id column="id" property="id"/>
+        <result column="persona" property="persona"/>
+        <result column="recommendation_rules" property="recommendationRules"/>
+        <result column="model" property="model"/>
+        <result column="base_url" property="baseUrl"/>
+        <result column="api_key" property="apiKey"/>
+        <result column="temperature" property="temperature"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="AiAssistantConfigResultMap">
+        SELECT id, persona, recommendation_rules, model, base_url, api_key, temperature, updated_at
+        FROM ai_assistant_config
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.wangrui.springboot.pojo.AiAssistantConfig">
+        INSERT INTO ai_assistant_config (id, persona, recommendation_rules, model, base_url, api_key, temperature, updated_at)
+        VALUES (#{id}, #{persona}, #{recommendationRules}, #{model}, #{baseUrl}, #{apiKey}, #{temperature}, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.wangrui.springboot.pojo.AiAssistantConfig">
+        UPDATE ai_assistant_config
+        SET persona = #{persona},
+            recommendation_rules = #{recommendationRules},
+            model = #{model},
+            base_url = #{baseUrl},
+            api_key = #{apiKey},
+            temperature = #{temperature},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+</mapper>

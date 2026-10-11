@@ -29,4 +29,7 @@ public interface UserCommentMapper {
 
     /** 每本小说的评论条数（全站聚合） */
     List<Map<String, Object>> selectCommentCountByNovel();
+
+    /** 趋势图：全站评论的 (novel_id, created_at) 原始行 */
+    List<Map<String, Object>> selectCommentsForTrend();
 }

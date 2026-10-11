@@ -2,12 +2,19 @@
   <div class="admin-container">
     <div class="admin-layout">
       <!-- 左侧：背景图 + 深色遮罩 + 浅色字菜单（参考深色侧栏稿） -->
-      <aside class="sidebar" :aria-label="'管理菜单'">
+      <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }" :aria-label="'管理菜单'">
         <div class="sidebar-bg" :style="sidebarBgStyle" />
         <div class="sidebar-scrim" aria-hidden="true" />
         <div class="sidebar-inner">
           <div class="sidebar-header">
-            <h2>管理功能</h2>
+            <!-- 展开态显示标题；折叠态只保留右侧收起/展开图标 -->
+            <h2 v-if="!sidebarCollapsed">管理功能</h2>
+            <button type="button" class="sidebar-toggle" :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'" @click="toggleSidebar">
+              <el-icon :size="20">
+                <Expand v-if="sidebarCollapsed" />
+                <Fold v-else />
+              </el-icon>
+            </button>
           </div>
           <ul class="menu-list">
             <li class="menu-item" :class="{ active: isTabActive('adminDashboard') }" @click="openTab('adminDashboard', '概览', '/admin/dashboard')">
@@ -40,12 +47,12 @@
               <span class="menu-text">管理员管理</span>
               <svg class="menu-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </li>
-            <li class="menu-item" :class="{ active: isTabActive('adminRecommend') }" @click="openTab('adminRecommend', '推荐配置', '/admin/recommend')">
-              <div class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div>
-              <span class="menu-text">推荐配置</span>
+                        <li class="menu-item" :class="{ active: isTabActive('adminAiAssistant') }" @click="openTab('adminAiAssistant', 'AI 助手', '/admin/ai-assistant')">
+              <div class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"></path></svg></div>
+              <span class="menu-text">AI 助手</span>
               <svg class="menu-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </li>
-            <li class="menu-item" :class="{ active: isTabActive('adminConfig') }" @click="openTab('adminConfig', '配置管理', '/admin/config')">
+<li class="menu-item" :class="{ active: isTabActive('adminConfig') }" @click="openTab('adminConfig', '配置管理', '/admin/config')">
               <div class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="9"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg></div>
               <span class="menu-text">配置管理</span>
               <svg class="menu-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
@@ -106,17 +113,30 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+// 侧边栏背景图
 import sidebarBgUrl from '@/assets/爱莉.jpg'
+// Element Plus 折叠/展开图标：用于侧边栏收起按钮
+import { Fold, Expand } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
 
+// 侧边栏背景图样式（内联绑定）
 const sidebarBgStyle = computed(() => ({
   backgroundImage: `url(${sidebarBgUrl})`
 }))
 
+// 已打开的标签页列表与当前激活标签名称
 const tabs = ref([])
 const activeTab = ref('')
+
+// 侧边栏是否折叠（折叠后仅保留一个展开图标）
+const sidebarCollapsed = ref(false)
+
+// 切换侧边栏折叠/展开状态
+const toggleSidebar = () => {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+}
 
 const goHome = () => router.push('/')
 
@@ -148,12 +168,8 @@ const closeTab = (name) => {
   }
 }
 
-const isTabActive = (name) => {
-  if (name === 'adminRecommend') {
-    return route.name === 'adminRecommend' || route.name === 'adminRecommendDashboard'
-  }
-  return route.name === name
-}
+// 判断菜单项是否为当前激活状态（按路由名称匹配）
+const isTabActive = (name) => route.name === name
 
 watch(
   () => route.name,
@@ -161,6 +177,7 @@ watch(
     if (!newName || newName === 'admin') return
     if (!route.path.startsWith('/admin')) return
 
+    // 路由名称 -> 标签页标题与路径（已移除“推荐配置”及其“仪表盘”）
     const tabConfig = {
       adminDashboard: { title: '概览', path: '/admin/dashboard' },
       adminPublish: { title: '书籍上架', path: '/admin/publish' },
@@ -168,8 +185,7 @@ watch(
       adminUsers: { title: '用户管理', path: '/admin/users' },
       adminCustomerService: { title: '客服工作台', path: '/admin/customer-service' },
       adminManage: { title: '管理员管理', path: '/admin/admins' },
-      adminRecommend: { title: '推荐配置', path: '/admin/recommend' },
-      adminRecommendDashboard: { title: '仪表盘', path: '/admin/recommend/dashboard' },
+      adminAiAssistant: { title: 'AI 助手', path: '/admin/ai-assistant' },
       adminConfig: { title: '配置管理', path: '/admin/config' },
       AdminBannerManage: { title: '轮播图管理', path: '/admin/config/banner' },
       RecommendBehaviorConfig: { title: '行为与阅读计分', path: '/admin/config/recommend-behavior' },
@@ -209,14 +225,22 @@ watch(
 /* ========== 左侧边栏：底图 + 深色遮罩 + 白字（参考深色导航稿） ========== */
 .sidebar {
   position: relative;
-  flex: 0 0 clamp(220px, 24vw, 300px);
-  width: clamp(220px, 24vw, 300px);
+  flex: 0 0 clamp(196px, 19vw, 248px);
+  width: clamp(196px, 19vw, 248px);
   min-height: 100vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   border-right: 1px solid rgba(15, 23, 42, 0.65);
   box-shadow: 4px 0 24px rgba(15, 23, 42, 0.12);
+  /* 折叠动画：宽度与 flex-basis 同步过渡，实现平滑收窄/展开 */
+  transition: width 0.28s ease, flex-basis 0.28s ease;
+}
+
+.sidebar.collapsed {
+  /* 折叠态保留 64px 竖条，仅容纳展开图标，不完全隐藏侧边栏 */
+  flex-basis: 64px;
+  width: 64px;
 }
 
 .sidebar-bg {
@@ -249,12 +273,23 @@ watch(
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  min-width: 0;
   padding: 22px 0 16px;
 }
 
 .sidebar-header {
-  padding: 0 20px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 16px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* 折叠态：仅保留居中的展开图标 */
+.sidebar.collapsed .sidebar-header {
+  justify-content: center;
+  padding: 0 0 16px;
 }
 
 .sidebar-header h2 {
@@ -266,6 +301,27 @@ watch(
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
+/* 侧边栏折叠按钮（深色底、白色图标） */
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.24);
+  color: #9cc3ff;
+}
+
 .menu-list {
   list-style: none;
   padding: 10px 0 0;
@@ -275,6 +331,11 @@ watch(
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+}
+
+/* 折叠态隐藏整个菜单列表，只保留头部图标 */
+.sidebar.collapsed .menu-list {
+  display: none;
 }
 
 .menu-item {
