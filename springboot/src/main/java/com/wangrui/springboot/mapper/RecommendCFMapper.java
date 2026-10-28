@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 import java.util.Map;
 
+/** 协同过滤数据访问接口，提供物品共现相似度、互动统计与协同推荐种子查询 */
 @Mapper
 public interface RecommendCFMapper {
     /**
@@ -34,4 +35,3 @@ public interface RecommendCFMapper {
      */
     List<Map<String, Object>> selectTopNovelIdsByInteractionCount(@Param("limit") Integer limit);
 }
-

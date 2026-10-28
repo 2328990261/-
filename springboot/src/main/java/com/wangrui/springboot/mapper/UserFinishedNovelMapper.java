@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 import java.util.Map;
 
+/** 用户完读记录数据访问接口，负责完读标记的增删改查与全站完读统计 */
 public interface UserFinishedNovelMapper {
     // 获取用户完读记录列表
     List<UserFinishedNovel> selectByUserId(@Param("userId") Integer userId);

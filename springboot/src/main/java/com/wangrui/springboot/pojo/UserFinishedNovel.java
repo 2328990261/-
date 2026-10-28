@@ -2,6 +2,7 @@ package com.wangrui.springboot.pojo;
 
 import java.util.Date;
 
+/** 用户完读记录实体类，映射数据库 user_finished_novel 表 */
 public class UserFinishedNovel {
     private Integer id;
     private Integer userId;

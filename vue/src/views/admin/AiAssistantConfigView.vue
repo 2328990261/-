@@ -186,8 +186,10 @@ const sending = ref(false)
 const messages = ref([])
 const messageList = ref(null)
 let localIdSeed = 0
+/** 提交时若 API Key 未改动则不回传明文，避免泄露 */
 const apiKeyForSubmit = () => (cfg.value.apiKey === loadedApiKey.value ? '' : cfg.value.apiKey)
 
+/** 将后端返回的配置映射为前端表单结构，缺失字段用默认值兜底 */
 const mapFromApi = (d) => {
   if (!d || typeof d !== 'object') return defaultCfg()
   return {
@@ -202,6 +204,7 @@ const mapFromApi = (d) => {
   }
 }
 
+/** 将消息列表滚动到底部（等待 DOM 更新后执行） */
 const scrollToBottom = async () => {
   await nextTick()
   if (messageList.value) {
@@ -209,6 +212,7 @@ const scrollToBottom = async () => {
   }
 }
 
+/** 加载 AI 助手配置并回填表单 */
 const load = async () => {
   loadError.value = ''
   try {
@@ -225,6 +229,7 @@ const load = async () => {
   }
 }
 
+/** 保存 AI 助手配置并提示结果 */
 const save = async () => {
   tip.value = ''
   saving.value = true
@@ -246,10 +251,12 @@ const save = async () => {
   }
 }
 
+/** 清空测试对话记录 */
 const clearMessages = () => {
   messages.value = []
 }
 
+/** 发送测试消息：追加用户与助手消息，并通过流式接口接收回复 */
 const send = async () => {
   const content = draft.value.trim()
   if (!content || sending.value) return
@@ -309,6 +316,7 @@ const send = async () => {
   }
 }
 
+/** 通过 SSE 流式调用 AI 测试接口，逐事件回调给界面 */
 const streamTestChat = async (body, onEvent) => {
   const token = localStorage.getItem('token') || ''
   const controller = new AbortController()

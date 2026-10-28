@@ -126,6 +126,7 @@ function onCardSelect(book) {
   if (book?.id != null) goToDetail(book.id)
 }
 
+/** 跳转小说详情页：记录最近点击后路由跳转 */
 function goToDetail(bookId) {
   localStorage.setItem('lastClickedNovelId', String(bookId))
   router.push({ name: 'BookDetail', params: { id: bookId } })

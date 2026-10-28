@@ -6,7 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * GET /api/recommend/books 返回体：书单 + 供前端 console 的调试载荷。
+ * 推荐书单响应体
+ * 该类型为 GET /api/recommend/books 的返回体：书单 + 供前端 console 的调试载荷。
  */
 public class RecommendBooksResponse {
     private List<Map<String, Object>> books = new ArrayList<>();

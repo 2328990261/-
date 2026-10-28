@@ -8,7 +8,7 @@ import com.wangrui.springboot.pojo.NovelBook;
 import com.wangrui.springboot.pojo.NovelBookVolume;
 import com.wangrui.springboot.pojo.Tag;
 import com.wangrui.springboot.service.NovelBookMainService;
-import com.wangrui.springboot.service.RedisCacheService;
+import com.wangrui.springboot.cache.RedisCacheService;
 import com.wangrui.springboot.service.NovelBookService;
 import com.wangrui.springboot.service.TagService;
 import com.wangrui.springboot.util.Result;

@@ -35,7 +35,7 @@ spring:
       timeout: ${REDIS_TIMEOUT:1s}
       connect-timeout: ${REDIS_CONNECT_TIMEOUT:500ms}
 
-# 服务器端口（保持你的8081）
+# 服务器端口
 server:
   port: 8081
 

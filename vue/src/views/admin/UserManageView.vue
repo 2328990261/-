@@ -164,6 +164,7 @@ const editForm = ref({
   createdAt: ''
 })
 
+/** 格式化时间：非法时间返回原文占位 */
 const formatTime = (v) => {
   if (v == null || v === '') return '-'
   try {
@@ -175,6 +176,7 @@ const formatTime = (v) => {
   }
 }
 
+/** 按分页、关键词与状态加载普通用户列表 */
 const loadList = async () => {
   try {
     const res = await adminHttp.get('/admin/users', {
@@ -195,6 +197,7 @@ const loadList = async () => {
   }
 }
 
+/** 更新用户启用/禁用状态 */
 const setStatus = async (id, status) => {
   try {
     await adminHttp.put(`/admin/users/${id}/status`, { status })
@@ -204,6 +207,7 @@ const setStatus = async (id, status) => {
   }
 }
 
+/** 打开编辑弹窗：回填用户基础信息 */
 const openEdit = (row) => {
   editForm.value = {
     id: row.id,
@@ -218,10 +222,12 @@ const openEdit = (row) => {
   editVisible.value = true
 }
 
+/** 关闭编辑弹窗 */
 const closeEdit = () => {
   editVisible.value = false
 }
 
+/** 保存编辑：更新用户资料与权限（可选修改密码） */
 const saveEdit = async () => {
   const f = editForm.value
   if (!f.id) return
@@ -251,6 +257,7 @@ const saveEdit = async () => {
   }
 }
 
+/** 确认删除用户：确认后删除关联数据并刷新 */
 const confirmDelete = (row) => {
   const name = row.username || `id=${row.id}`
   const ok = window.confirm(
@@ -260,6 +267,7 @@ const confirmDelete = (row) => {
   doDelete(row.id)
 }
 
+/** 执行删除：删除成功后退页并刷新列表 */
 const doDelete = async (id) => {
   try {
     const res = await adminHttp.delete(`/admin/users/${id}`)

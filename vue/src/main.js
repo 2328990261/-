@@ -5,13 +5,11 @@ import { createPinia } from 'pinia'
 
 import App from './App.vue'
 import router from './router'
-import ElementPlus from 'element-plus' // 新增
-import 'element-plus/dist/index.css' // 新增Element Plus样式
-
 const app = createApp(App)
 
+// 依次注册状态管理、路由与组件库
 app.use(createPinia())
 app.use(router)
-app.use(ElementPlus) // 新增注册
+app.use(ElementPlus)
+// 挂载到页面根节点
 app.mount('#app')
-

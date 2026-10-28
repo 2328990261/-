@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
+/** 标签数据访问接口，负责标签的增删改查与排序 */
 @Mapper
 public interface TagMapper {
     List<Tag> selectAll();

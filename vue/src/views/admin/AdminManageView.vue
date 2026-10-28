@@ -138,6 +138,7 @@ const editForm = ref({
   newPassword: ''
 })
 
+/** 按分页、关键词与状态加载管理员列表 */
 const loadList = async () => {
   try {
     const res = await adminHttp.get('/admin/users', {
@@ -158,6 +159,7 @@ const loadList = async () => {
   }
 }
 
+/** 更新管理员启用/禁用状态 */
 const setStatus = async (id, status) => {
   try {
     await adminHttp.put(`/admin/users/${id}/status`, { status })
@@ -167,6 +169,7 @@ const setStatus = async (id, status) => {
   }
 }
 
+/** 打开编辑弹窗：回填管理员资料 */
 const openEdit = (row) => {
   const ia = row.isAdmin
   const isAdmin = ia === 1 || ia === '1' ? 1 : 0
@@ -182,6 +185,7 @@ const openEdit = (row) => {
   showEdit.value = true
 }
 
+/** 保存编辑：更新管理员信息（可选重置密码） */
 const saveEdit = async () => {
   const { id, username, email, phone, status, isAdmin, newPassword } = editForm.value
   if (!username.trim()) {

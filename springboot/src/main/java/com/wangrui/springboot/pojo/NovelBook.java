@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Date;
 // 对应数据库novel_book_main表
+/** 小说主表实体类，映射数据库 novel_book_main 表 */
 public class NovelBook {
   private Integer id;
   private String bookMainName; // 对应数据库book_main_name

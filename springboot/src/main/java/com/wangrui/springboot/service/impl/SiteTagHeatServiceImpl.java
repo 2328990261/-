@@ -9,9 +9,9 @@ import com.wangrui.springboot.mapper.UserReadingHistoryMapper;
 import com.wangrui.springboot.pojo.Tag;
 import com.wangrui.springboot.pojo.UserReadingHistory;
 import com.wangrui.springboot.service.NovelBookMainService;
-import com.wangrui.springboot.service.RedisCacheService;
+import com.wangrui.springboot.cache.RedisCacheService;
 import com.wangrui.springboot.service.SiteTagHeatService;
-import com.wangrui.springboot.util.CacheEntry;
+import com.wangrui.springboot.cache.CacheEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,62 +29,89 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
+/**
+ * 全站标签热度服务实现
+ * 综合用户收藏、阅读进度、阅读时长、评论与完读等行为为各标签计算热度，
+ * 并支持异步刷新、Redis 缓存与各粒度趋势统计
+ */
 @Service
 public class SiteTagHeatServiceImpl implements SiteTagHeatService {
     private static final Logger log = LoggerFactory.getLogger(SiteTagHeatServiceImpl.class);
+    // 新鲜热度缓存键
     private static final String TAG_HEAT_KEY = "novel:stats:tag-heat";
+    // 陈旧热度缓存键（异步刷新期间可短暂返回）
     private static final String STALE_TAG_HEAT_KEY = "novel:stats:tag-heat:stale";
 
+    // 收藏行为权重
     private static final double W_COLLECTION = 1.0;
+    // 阅读进度权重
     private static final double W_READ_PROGRESS = 0.55;
+    // 阅读时长权重
     private static final double W_READ_DURATION = 0.45;
+    // 单部小说评论加分上限系数
     private static final double W_COMMENT_PER_NOVEL_UNIT = 0.35;
+    // 单部小说评论数封顶
     private static final int COMMENT_CAP = 20;
+    // 完读行为权重
     private static final double W_FINISHED = 0.85;
 
     /** 时序趋势统一使用的时区（与前端展示时区保持一致） */
     private static final ZoneId TREND_ZONE = ZoneId.of("Asia/Shanghai");
 
+    // 小说主表服务（用于读取标签）
     @Autowired
     private NovelBookMainService novelBookMainService;
+    // 用户数据访问对象
     @Autowired
     private UserMapper userMapper;
+    // 用户阅读历史数据访问对象
     @Autowired
     private UserReadingHistoryMapper userReadingHistoryMapper;
+    // 用户评论数据访问对象
     @Autowired
     private UserCommentMapper userCommentMapper;
+    // 用户完读记录数据访问对象
     @Autowired
     private UserFinishedNovelMapper userFinishedNovelMapper;
+    // 标签数据访问对象
     @Autowired
     private TagMapper tagMapper;
+    // Redis缓存服务
     @Autowired
     private RedisCacheService redisCacheService;
+    // 统计线程池
     @Autowired
     @Qualifier("statsExecutor")
     private Executor statsExecutor;
 
+    // 异步刷新进行中的互斥标记
     private final AtomicBoolean refreshInProgress = new AtomicBoolean(false);
 
+    /** 获取全局推荐权重 */
     @Override
     public Map<String, Double> getGlobalRecommendWeights() {
         return getSnapshot().weights;
     }
 
+    /** 获取热度Top5标签 */
     @Override
     public List<Map<String, Object>> getTop5HotTags() {
         return getSnapshot().top5;
     }
 
+    /** 获取全部标签热度行 */
     @Override
     public List<Map<String, Object>> getAllTagHeatRows() {
         return getSnapshot().allRows;
     }
 
+    /** 获取最近一次计算时间戳 */
     @Override
     public long getLastComputedAtMillis() {
         return getSnapshot().computedAt;
     }
 
+    /** 按粒度与指标统计标签趋势 */
     @Override
     public Map<String, Object> getTagTrend(String granularity, String metric) {
         String g = (granularity == null || granularity.isEmpty()) ? "day" : granularity;
@@ -111,11 +138,12 @@ public class SiteTagHeatServiceImpl implements SiteTagHeatService {
                     : s.format(DateTimeFormatter.ofPattern("MM-dd")));
         }
 
+        // 构建小说ID到标签的映射
         Map<Integer, String> novelLabels = buildNovelLabelMap();
         Map<String, double[]> collections = new HashMap<>();
         Map<String, double[]> comments = new HashMap<>();
         Map<String, double[]> finished = new HashMap<>();
-        // 三类带时间戳的行为分别按“小说标签”拆解并累加到对应时间桶
+        // 三类带时间戳的行为分别按"小说标签"拆解并累加到对应时间桶
         accumulateTrend(novelLabels, userMapper.selectCollectionsForTrend(), collections, starts);
         accumulateTrend(novelLabels, userCommentMapper.selectCommentsForTrend(), comments, starts);
         accumulateTrend(novelLabels, userFinishedNovelMapper.selectFinishedForTrend(), finished, starts);

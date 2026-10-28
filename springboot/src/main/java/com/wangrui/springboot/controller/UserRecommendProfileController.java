@@ -5,7 +5,7 @@ import com.wangrui.springboot.mapper.UserTagWeightMapper;
 import com.wangrui.springboot.pojo.UserTagWeight;
 import com.wangrui.springboot.pojo.UserTagWeightOverride;
 import com.wangrui.springboot.pojo.UserRecommendProfile;
-import com.wangrui.springboot.service.RedisCacheService;
+import com.wangrui.springboot.cache.RedisCacheService;
 import com.wangrui.springboot.service.UserEffectiveTagWeightService;
 import com.wangrui.springboot.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.*;
 
+/**
+ * 用户推荐画像控制器
+ * 提供用户推荐配置（是否开启协同/MMR、推荐条数）的查询与个人标签权重更新等接口
+ */
 @RestController
 @RequestMapping("/api/user/recommend")
 @CrossOrigin

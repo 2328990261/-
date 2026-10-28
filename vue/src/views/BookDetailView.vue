@@ -114,21 +114,21 @@
           <div class="comment-header">
             <h2>读者评论</h2>
             <div class="comment-sort">
-              <button 
-                :class="['sort-btn', { active: sortType === 'time' }]" 
+              <button
+                :class="['sort-btn', { active: sortType === 'time' }]"
                 @click="sortType = 'time'; loadComments()"
               >
                 最新
               </button>
-              <button 
-                :class="['sort-btn', { active: sortType === 'hot' }]" 
+              <button
+                :class="['sort-btn', { active: sortType === 'hot' }]"
                 @click="sortType = 'hot'; loadComments()"
               >
                 热门
               </button>
             </div>
           </div>
-          
+
           <div v-if="!commentUserId" class="comment-login-hint">登录后即可评论</div>
           <template v-else>
             <div class="comment-form">
@@ -138,7 +138,7 @@
               </button>
             </div>
           </template>
-          
+
           <div v-if="commentLoading" class="comment-loading">加载中…</div>
           <ul v-else class="comment-list">
             <li v-for="c in displayedComments" :key="c.id" class="comment-item">
@@ -148,7 +148,7 @@
             </li>
           </ul>
           <p v-if="!commentLoading && commentList.length === 0" class="comment-empty">暂无评论</p>
-          
+
           <!-- 显示更多按钮 -->
           <div v-if="!commentLoading && commentList.length > displayCount" class="show-more-container">
             <button class="show-more-btn" @click="showMore">
@@ -221,6 +221,7 @@ const showMore = () => {
   displayCount.value += 5
 }
 
+/** 从本地存储解析当前评论用户 ID */
 const getCommentUserId = () => {
   try {
     const userInfoStr = localStorage.getItem('userInfo')
@@ -235,6 +236,7 @@ const getCommentUserId = () => {
   }
 }
 
+/** 格式化评论时间：按分钟/小时/日期做相对时间展示 */
 const formatCommentTime = (dateStr) => {
   if (!dateStr) return ''
   const d = new Date(dateStr)
@@ -246,6 +248,7 @@ const formatCommentTime = (dateStr) => {
   return d.toLocaleDateString()
 }
 
+/** 加载评论列表：按热度或时间排序后展示 */
 const loadComments = async () => {
   const novelId = Number(props.id)
   if (!novelId) return
@@ -253,7 +256,7 @@ const loadComments = async () => {
   try {
     const res = await getNovelComments(novelId)
     let allComments = Array.isArray(res) ? res : (res?.data ?? [])
-    
+
     // 根据排序类型排序
     if (sortType.value === 'hot') {
       // 热门排序：假设评论有点赞数或回复数，这里暂时用评论长度模拟热度
@@ -268,7 +271,7 @@ const loadComments = async () => {
         return new Date(b.createdAt) - new Date(a.createdAt)
       })
     }
-    
+
     commentList.value = allComments
     // 重置显示数量
     displayCount.value = 5
@@ -279,6 +282,7 @@ const loadComments = async () => {
   }
 }
 
+/** 发表评论：校验内容与登录态后提交并刷新评论列表 */
 const submitComment = async () => {
   const content = commentContent.value?.trim()
   if (!content) return
@@ -904,7 +908,7 @@ const goBack = () => {
   .detail-container {
     flex-direction: column;
   }
-  
+
   .comment-sidebar {
     width: 100%;
     position: static;

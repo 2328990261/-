@@ -6,7 +6,7 @@ import com.wangrui.springboot.mapper.NovelVolumeMapper;
 import com.wangrui.springboot.pojo.NovelBook;
 import com.wangrui.springboot.pojo.NovelBookIllustration;
 import com.wangrui.springboot.pojo.NovelBookVolume;
-import com.wangrui.springboot.service.CacheInvalidationService;
+import com.wangrui.springboot.cache.CacheInvalidationService;
 import com.wangrui.springboot.util.EpubImageStorage;
 import com.wangrui.springboot.util.Result;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
@@ -33,6 +33,10 @@ import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * 后台书籍上传控制器
+ * 负责解析并导入 EPUB/压缩包小说，并存储封面与插画资源，路径前缀：/api/admin
+ */
 @RestController
 @RequestMapping("/api/admin")
 @CrossOrigin

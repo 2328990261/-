@@ -127,6 +127,7 @@ const defaultCfg = () => ({
 const cfg = ref(defaultCfg())
 const loadError = ref('')
 
+/** 将后端返回的全局参数映射为表单结构，缺失字段用默认值兜底 */
 const mapFromApi = (d) => {
   if (!d || typeof d !== 'object') return defaultCfg()
   return {
@@ -142,6 +143,7 @@ const mapFromApi = (d) => {
   }
 }
 
+/** 加载主推荐全局参数并回填表单 */
 const load = async () => {
   loadError.value = ''
   try {
@@ -158,6 +160,7 @@ const load = async () => {
   }
 }
 
+/** 保存主推荐全局参数并提示结果 */
 const save = async () => {
   try {
     await adminHttp.put('/admin/recommend-main-config', {

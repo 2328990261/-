@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 客服消息控制器
+ * 处理用户在客服中心的会话记录查询、客服后台会话与消息管理，以及未读标记等接口请求
+ */
 @RestController
 public class CustomerServiceMessageController {
 

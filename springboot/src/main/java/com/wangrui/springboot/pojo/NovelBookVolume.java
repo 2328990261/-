@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.List;
 
 // 对应数据库novel_book_volume表
+/** 小说分卷实体类，映射数据库 novel_book_volume 表 */
 public class NovelBookVolume {
   private Integer id;
   private Integer mainBookId; // 对应数据库main_book_id

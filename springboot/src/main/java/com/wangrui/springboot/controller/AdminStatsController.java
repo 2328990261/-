@@ -10,6 +10,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 后台数据统计控制器
+ * 提供站点总览与标签热度等统计接口，路径前缀：/api/admin
+ */
 @RestController
 @RequestMapping("/api/admin")
 @CrossOrigin

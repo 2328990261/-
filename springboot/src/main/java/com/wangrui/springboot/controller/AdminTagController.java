@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 后台标签管理控制器
+ * 处理标签的增删改查与推荐权重维护等接口请求，路径前缀：/api/admin
+ */
 @RestController
 @RequestMapping("/api/admin")
 @CrossOrigin

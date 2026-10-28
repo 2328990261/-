@@ -115,6 +115,7 @@ const testTo = ref('')
 const tip = ref('')
 const tipOk = ref(false)
 
+/** 将后端返回的邮箱配置映射为表单结构，缺失字段用默认值兜底 */
 const mapFromApi = (d) => {
   if (!d || typeof d !== 'object') return defaultCfg()
   return {
@@ -129,6 +130,7 @@ const mapFromApi = (d) => {
   }
 }
 
+/** 加载邮箱配置并回填表单 */
 const load = async () => {
   loadError.value = ''
   try {
@@ -144,6 +146,7 @@ const load = async () => {
   }
 }
 
+/** 保存邮箱配置并提示结果 */
 const save = async () => {
   tip.value = ''
   saving.value = true
@@ -165,6 +168,7 @@ const save = async () => {
   }
 }
 
+/** 发送测试邮件：校验收件邮箱后调用测试接口 */
 const sendTest = async () => {
   tip.value = ''
   if (!testTo.value || !/^[\w.+-]+@[\w-]+(\.[\w-]+)+$/.test(testTo.value.trim())) {

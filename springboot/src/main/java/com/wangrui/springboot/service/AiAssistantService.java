@@ -6,6 +6,7 @@ import com.wangrui.springboot.pojo.vo.AdminAiTestRequest;
 
 import java.util.List;
 
+/** AI助手服务接口：会话、消息流式推荐与配置对话测试 */
 public interface AiAssistantService {
 
     /**

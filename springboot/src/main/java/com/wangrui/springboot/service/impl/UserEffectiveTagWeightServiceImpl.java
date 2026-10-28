@@ -14,7 +14,7 @@ import com.wangrui.springboot.service.NovelBookMainService;
 import com.wangrui.springboot.service.TagService;
 import com.wangrui.springboot.service.UserEffectiveTagWeightService;
 import com.wangrui.springboot.service.UserService;
-import com.wangrui.springboot.service.RedisCacheService;
+import com.wangrui.springboot.cache.RedisCacheService;
 import com.wangrui.springboot.util.RecommendTagDislikeConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.BadSqlGrammarException;
@@ -22,41 +22,57 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+/**
+ * 用户有效标签权重服务实现
+ * 根据用户收藏、阅读历史、评论等行为动态计算个人标签权重，
+ * 并叠加手动覆盖权重与不感兴趣标签惩罚，最终供推荐模块使用
+ */
 @Service
 public class UserEffectiveTagWeightServiceImpl implements UserEffectiveTagWeightService {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(UserEffectiveTagWeightServiceImpl.class);
 
+    // 用户服务（用于读取收藏列表）
     @Autowired
     private UserService userService;
 
+    // 小说主表服务（用于读取标签与书名）
     @Autowired
     private NovelBookMainService novelBookMainService;
 
+    // 用户评论数据访问对象
     @Autowired
     private UserCommentMapper userCommentMapper;
 
+    // 用户阅读历史数据访问对象
     @Autowired
     private UserReadingHistoryMapper userReadingHistoryMapper;
 
+    // 用户标签权重覆盖数据访问对象
     @Autowired
     private UserTagWeightMapper userTagWeightMapper;
 
+    // 用户不感兴趣数据访问对象
     @Autowired
     private UserDislikeMapper userDislikeMapper;
 
+    // 标签服务（用于读取系统标签）
     @Autowired
     private TagService tagService;
 
+    // Redis缓存服务
     @Autowired
     private RedisCacheService redisCacheService;
 
+    /** 按标签名返回用户有效权重向量 */
     @Override
     public Map<String, Double> effectiveWeightsByTagName(Integer userId) {
+        // 1. 计算用户有效标签权重
         List<UserTagWeight> list = computeEffectiveUserTagWeights(userId);
         Map<String, Double> m = new HashMap<>();
         if (list == null) {
             return m;
         }
+        // 2. 转换为标签名到权重的映射
         for (UserTagWeight u : list) {
             if (u == null || u.getTagName() == null) {
                 continue;
@@ -70,10 +86,13 @@ public class UserEffectiveTagWeightServiceImpl implements UserEffectiveTagWeight
         return m;
     }
 
+    /** 计算用户有效标签权重（优先读缓存，未命中则实时计算） */
     @Override
     public List<UserTagWeight> computeEffectiveUserTagWeights(Integer userId) {
+        // 1. 构建基于推荐版本号的缓存键
         long version = redisCacheService.getUserRecommendationVersion(userId);
         String cacheKey = version > 0 ? "novel:rec:weights:" + userId + ":" + version : null;
+        // 2. 尝试命中缓存
         if (cacheKey != null) {
             List<UserTagWeight> cached = redisCacheService.get(
                     cacheKey, new TypeReference<List<UserTagWeight>>() {});
@@ -81,6 +100,7 @@ public class UserEffectiveTagWeightServiceImpl implements UserEffectiveTagWeight
                 return cached;
             }
         }
+        // 3. 缓存未命中则实时计算并写缓存
         List<UserTagWeight> computed = computeEffectiveUserTagWeightsFromDatabase(userId);
         if (cacheKey != null) {
             redisCacheService.set(cacheKey, computed,

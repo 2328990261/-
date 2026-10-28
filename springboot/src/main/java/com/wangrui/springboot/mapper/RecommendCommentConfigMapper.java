@@ -4,6 +4,7 @@ import com.wangrui.springboot.pojo.RecommendCommentConfig;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+/** 推荐行为（评论/阅读历史）权重配置数据访问接口 */
 @Mapper
 public interface RecommendCommentConfigMapper {
 

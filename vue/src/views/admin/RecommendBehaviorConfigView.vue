@@ -89,6 +89,7 @@ const cfg = ref({
   scoreDebugUpdatedAt: null
 })
 
+/** 加载评论热度与阅读计分配置：请求后端并回填到表单 */
 const load = async () => {
   try {
     const res = await adminHttp.get('/admin/recommend-comment-config')
@@ -111,6 +112,7 @@ const load = async () => {
   }
 }
 
+/** 保存配置：提交当前表单值并刷新展示 */
 const save = async () => {
   try {
     await adminHttp.put('/admin/recommend-comment-config', {

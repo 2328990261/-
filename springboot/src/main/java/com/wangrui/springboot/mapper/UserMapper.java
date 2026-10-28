@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 import java.util.Map;
 
+/** 用户数据访问接口，负责用户账户、收藏、统计与趋势等数据操作 */
 @Mapper
 public interface UserMapper {
     User findByUsername(@Param("username") String username);

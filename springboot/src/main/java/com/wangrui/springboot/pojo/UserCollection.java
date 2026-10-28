@@ -1,6 +1,7 @@
 package com.wangrui.springboot.pojo;
 
 
+/** 用户收藏实体类，映射数据库 user_collection 表 */
 public class UserCollection {
 
   private long id;

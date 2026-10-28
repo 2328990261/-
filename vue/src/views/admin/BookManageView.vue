@@ -1,31 +1,31 @@
 <template>
   <div class="book-manage">
     <h2 class="page-heading">书籍管理</h2>
-    
+
     <!-- 标签筛选栏 -->
     <div class="filter-bar">
       <div class="filter-tabs">
-        <button 
-          :class="['filter-tab', { active: selectedTag === null }]" 
+        <button
+          :class="['filter-tab', { active: selectedTag === null }]"
           @click="selectTag(null)"
         >
           全部
         </button>
-        <button 
-          v-for="tag in firstRowTags" 
+        <button
+          v-for="tag in firstRowTags"
           :key="tag"
-          :class="['filter-tab', { active: selectedTag === tag }]" 
+          :class="['filter-tab', { active: selectedTag === tag }]"
           @click="selectTag(tag)"
         >
           {{ tag }}
         </button>
       </div>
-      
+
       <div class="search-bar">
-        <input 
-          v-model="searchKeyword" 
-          type="text" 
-          placeholder="搜索书名或作者..." 
+        <input
+          v-model="searchKeyword"
+          type="text"
+          placeholder="搜索书名或作者..."
           class="search-input"
           @keyup.enter="loadList"
         />
@@ -33,7 +33,7 @@
         <button type="button" class="admin-btn admin-btn--reset" @click="resetFilter">重置</button>
       </div>
     </div>
-    
+
     <div class="toolbar">
       <select v-model="filterStatus" class="admin-select" @change="loadList">
         <option :value="null">全部状态</option>
@@ -42,7 +42,7 @@
       </select>
       <button type="button" class="admin-btn admin-btn--secondary" @click="loadList">刷新</button>
     </div>
-    
+
     <div class="table-wrap">
       <table class="data-table">
         <thead>
@@ -87,7 +87,7 @@
         </tbody>
       </table>
     </div>
-    
+
     <div class="pagination">
       <button
         type="button"
@@ -107,7 +107,7 @@
         下一页
       </button>
     </div>
-    
+
     <div v-if="showEdit" class="modal-mask" @click.self="closeEdit">
       <div class="modal modal--wide">
         <h3>编辑书籍</h3>
@@ -209,12 +209,14 @@ const searchKeyword = ref('')
 
 const coverUrl = (name) => (name ? `${backendUrl('/novel/cover')}/${encodeURIComponent(name)}` : '')
 
+/** 格式化分卷更新时间，非法时间返回占位符 */
 const formatVolTime = (t) => {
   if (t == null || t === '') return '-'
   const d = new Date(t)
   return Number.isNaN(d.getTime()) ? String(t) : d.toLocaleString('zh-CN')
 }
 
+/** 加载指定小说的分卷列表到编辑弹窗 */
 const loadEditVolumes = async (novelId) => {
   editVolumes.value = []
   try {
@@ -241,12 +243,14 @@ const loadFirstRowTags = async () => {
   }
 }
 
+/** 选中某个标签：重置分页后按标签筛选加载列表 */
 const selectTag = (tag) => {
   selectedTag.value = tag
   page.value = 1
   loadList()
 }
 
+/** 重置标签、关键词与状态筛选 */
 const resetFilter = () => {
   selectedTag.value = null
   searchKeyword.value = ''
@@ -255,24 +259,25 @@ const resetFilter = () => {
   loadList()
 }
 
+/** 按分页、标签、关键词与状态加载书籍列表 */
 const loadList = async () => {
   try {
-    const params = { 
-      page: page.value, 
-      pageSize, 
-      status: filterStatus.value 
+    const params = {
+      page: page.value,
+      pageSize,
+      status: filterStatus.value
     }
-    
+
     // 添加标签筛选
     if (selectedTag.value) {
       params.tag = selectedTag.value
     }
-    
+
     // 添加搜索关键词
     if (searchKeyword.value) {
       params.keyword = searchKeyword.value
     }
-    
+
     const res = await adminHttp.get('/admin/novels', { params })
     if (res.data?.code === 200 && res.data?.data) {
       list.value = res.data.data.list || []
@@ -283,8 +288,10 @@ const loadList = async () => {
   }
 }
 
+/** 触发隐藏的封面文件选择框 */
 const pickEditCover = () => editCoverInput.value?.click()
 
+/** 选择封面文件：上传到服务器并回填编辑表单的封面字段 */
 const onEditCoverChange = async (e) => {
   const file = e.target.files?.[0]
   if (!file) return
@@ -307,18 +314,22 @@ const onEditCoverChange = async (e) => {
   e.target.value = ''
 }
 
+/** 触发隐藏的分卷文件选择框 */
 const pickVolumeFiles = () => editVolumeFileInput.value?.click()
 
+/** 选择分卷文件：暂存到待上传列表 */
 const onEditVolumeFilesChange = (e) => {
   const files = Array.from(e.target.files || [])
   pendingVolumeFiles.value = [...pendingVolumeFiles.value, ...files]
   e.target.value = ''
 }
 
+/** 从待上传列表中移除指定分卷 */
 const removePendingVolumeFile = (index) => {
   pendingVolumeFiles.value.splice(index, 1)
 }
 
+/** 批量上传待处理的分卷文件到当前编辑书籍 */
 const uploadPendingVolumesToBook = async () => {
   if (!editForm.value.id || pendingVolumeFiles.value.length === 0) return
   volumeBatchUploading.value = true
@@ -342,6 +353,7 @@ const uploadPendingVolumesToBook = async () => {
   }
 }
 
+/** 尝试删除指定分卷：确认后调用删除接口并刷新 */
 const tryDeleteVolume = async (vol) => {
   const name = vol.volumeName || ''
   if (!confirm(`确定删除分卷「${name}」？删除后无法恢复。`)) return
@@ -359,11 +371,13 @@ const tryDeleteVolume = async (vol) => {
   }
 }
 
+/** 关闭编辑弹窗并清空待处理分卷 */
 const closeEdit = () => {
   pendingVolumeFiles.value = []
   showEdit.value = false
 }
 
+/** 打开编辑弹窗：回填书籍信息并加载其分卷列表 */
 const openEdit = async (row) => {
   editForm.value = {
     id: row.id,
@@ -378,6 +392,7 @@ const openEdit = async (row) => {
   await loadEditVolumes(row.id)
 }
 
+/** 提交编辑表单：保存书籍资料后关闭并刷新列表 */
 const submitEdit = async () => {
   try {
     await adminHttp.put(`/admin/novels/${editForm.value.id}`, editForm.value)
@@ -388,6 +403,7 @@ const submitEdit = async () => {
   }
 }
 
+/** 更新书籍上下架状态 */
 const setStatus = async (id, status) => {
   try {
     await adminHttp.put(`/admin/novels/${id}/status`, { status })

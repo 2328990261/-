@@ -196,6 +196,7 @@ const libraryPageSize = ref(50)
 const librarySelectedTags = ref([])
 const libraryDisplayBooks = computed(() => libraryAllBooks.value.slice(0, libraryPageSize.value))
 
+/** 处理“书库”区的标签选择并加载对应小说 */
 const handleLibraryTagsSelect = async (tags) => {
   librarySelectedTags.value = tags
   libraryPageSize.value = 50
@@ -213,6 +214,7 @@ const handleLibraryTagsSelect = async (tags) => {
   }
 }
 
+/** 加载全部小说并按阅读量倒序展示到“书库”区 */
 const libraryLoadAllNovels = async () => {
   try {
     const res = await getAllNovels()
@@ -224,6 +226,7 @@ const libraryLoadAllNovels = async () => {
   }
 }
 
+/** “书库”区加载更多 */
 const libraryLoadMore = () => {
   libraryPageSize.value += 50
 }
@@ -240,11 +243,13 @@ const otherTags = [
 const dislikeDialogVisible = ref(false)
 const dislikeBook = ref(null)
 
+/** 打开“不感兴趣”弹窗并记录要屏蔽的书 */
 const openDislikeDialog = (book) => {
   dislikeBook.value = book
   dislikeDialogVisible.value = true
 }
 
+/** “不感兴趣”保存完成后关闭弹窗并刷新推荐 */
 const onDislikeSaved = async () => {
   dislikeBook.value = null
   await getRecommendations(currentSortType.value)
@@ -268,6 +273,7 @@ const currentSortType = ref('collection')
 // 自定义排序弹窗里已选标签（与个人中心选择规则一致）
 const customSelectedTags = ref([])
 
+/** 从本地存储解析当前用户 ID */
 const getUserId = () => {
   try {
     const userInfoStr = localStorage.getItem('userInfo')
@@ -281,6 +287,7 @@ const getUserId = () => {
   return null
 }
 
+/** 判断推荐接口响应是否成功（兼容数字/字符串状态码） */
 const isRecommendResponseOk = (response) => {
   const c = response?.code
   return c === 200 || c === '200' || Number(c) === 200
@@ -465,11 +472,12 @@ const loadPreferenceTagsFromCenter = async () => {
   }
 }
 
-// 使用收藏排序拉取推荐（默认）
+/** 使用收藏排序拉取推荐（默认入口） */
 const fetchRecommendByCollection = async () => {
   await getRecommendations('collection')
 }
 
+/** 获取推荐书单：按收藏/自定义排序拉取并处理结果 */
 const getRecommendations = async (sortType) => {
   showDialog.value = false
   showTagDialog.value = false
@@ -635,10 +643,12 @@ const getBookTags = (label) => {
     .filter((tag) => tag)
 }
 
+/** 跳转小说详情页 */
 const goToDetail = (bookId) => {
   router.push(`/book/detail/${bookId}`)
 }
 
+/** 封面加载失败时回退到默认占位图 */
 const handleImageError = (e) => {
   e.target.src = '/src/assets/default-cover.jpg'
 }

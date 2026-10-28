@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 // 扫描Mapper包（确保路径正确）
+/** 轻小说推荐系统 Spring Boot 启动类 */
 @MapperScan("com.wangrui.springboot.mapper")
 @SpringBootApplication
 public class SpringbootApplication {

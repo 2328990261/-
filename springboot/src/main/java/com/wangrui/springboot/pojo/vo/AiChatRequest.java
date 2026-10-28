@@ -1,5 +1,6 @@
 package com.wangrui.springboot.pojo.vo;
 
+/** AI聊天请求体：会话ID + 用户输入内容 + 可选的图片URL */
 public class AiChatRequest {
     private Long sessionId;
     private String content;

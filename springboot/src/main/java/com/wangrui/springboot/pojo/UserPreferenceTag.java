@@ -2,6 +2,7 @@ package com.wangrui.springboot.pojo;
 
 import java.util.Date;
 
+/** 用户偏好标签实体类，映射数据库 user_preference_tag 表 */
 public class UserPreferenceTag {
     private Integer id;
     private Integer userId;

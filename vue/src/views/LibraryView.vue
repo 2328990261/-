@@ -58,6 +58,7 @@ const SEARCH_HISTORY_KEY = 'novel_search_history'
 const MAX_HISTORY = 20
 
 const searchHistory = ref([])
+/** 从本地存储加载搜索历史 */
 const loadSearchHistory = () => {
   try {
     const raw = localStorage.getItem(SEARCH_HISTORY_KEY)
@@ -66,10 +67,12 @@ const loadSearchHistory = () => {
     searchHistory.value = []
   }
 }
+/** 保存搜索历史到本地存储与状态 */
 const saveSearchHistory = (list) => {
   searchHistory.value = list
   localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(list))
 }
+/** 添加搜索关键词到历史（去重并限制条数） */
 const addToHistory = (keyword) => {
   if (!keyword || !keyword.trim()) return
   const k = keyword.trim()
@@ -79,17 +82,20 @@ const addToHistory = (keyword) => {
   if (list.length > MAX_HISTORY) list = list.slice(0, MAX_HISTORY)
   saveSearchHistory(list)
 }
+/** 移除指定位置的搜索历史 */
 const removeHistory = (index) => {
   const list = searchHistory.value.slice()
   list.splice(index, 1)
   saveSearchHistory(list)
 }
+/** 清空全部搜索历史 */
 const clearHistory = () => {
   saveSearchHistory([])
 }
 
 const displayBooks = computed(() => allBooks.value.slice(0, pageSize.value))
 
+/** 处理标签选择：更新选中标签并加载对应分类的小说 */
 const handleTagsSelect = async (tags) => {
   selectedTags.value = tags
   searchKeyword.value = ''
@@ -138,6 +144,7 @@ const applyLabelQuery = (labelStr) => {
   }
 }
 
+/** 加载全部小说并按阅读量倒序展示 */
 const loadAllNovels = async () => {
   try {
     const res = await getAllNovels()
@@ -149,6 +156,7 @@ const loadAllNovels = async () => {
   }
 }
 
+/** 关键字搜索小说：命中后清空标签选择并记录历史 */
 const doSearch = async (keyword) => {
   if (!keyword || !keyword.trim()) {
     await loadAllNovels()
@@ -169,6 +177,7 @@ const doSearch = async (keyword) => {
   }
 }
 
+/** 加载更多：增加当前展示条数 */
 const loadMore = () => {
   pageSize.value += 50
 }

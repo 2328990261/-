@@ -334,6 +334,7 @@ async function selectSession(id) {
   scrollToBottom()
 }
 
+/** 新建空会话：清空当前会话状态与输入内容 */
 function newSession() {
   currentSessionId.value = null
   messages.value = []
@@ -344,6 +345,7 @@ function newSession() {
   removeImage()
 }
 
+/** 发送提问：追加用户与助手占位消息，并通过流式接口接收回复 */
 async function send() {
   if (!checkLogin()) return
   const content = draft.value.trim()
@@ -413,11 +415,13 @@ async function send() {
   }
 }
 
+/** 打开系统文件选择框以选取图片 */
 function pickImage() {
   if (!checkLogin()) return
   fileInput.value && fileInput.value.click()
 }
 
+/** 处理选择的图片文件：校验类型后上传并回填预览 */
 async function onFileChange(event) {
   const file = event.target.files && event.target.files[0]
   event.target.value = ''
@@ -440,6 +444,7 @@ async function onFileChange(event) {
   }
 }
 
+/** 移除已上传的图片 */
 function removeImage() {
   imageUrl.value = ''
   imagePreview.value = ''

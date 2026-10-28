@@ -4,7 +4,7 @@ import com.wangrui.springboot.mapper.RecommendMainConfigMapper;
 import com.wangrui.springboot.mapper.RecommendScoreDebugMapper;
 import com.wangrui.springboot.pojo.RecommendMainConfig;
 import com.wangrui.springboot.pojo.RecommendScoreDebug;
-import com.wangrui.springboot.service.CacheInvalidationService;
+import com.wangrui.springboot.cache.CacheInvalidationService;
 import com.wangrui.springboot.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

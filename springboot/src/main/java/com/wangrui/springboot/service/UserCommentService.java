@@ -4,6 +4,7 @@ import com.wangrui.springboot.pojo.UserComment;
 
 import java.util.List;
 
+/** 用户评论服务接口 */
 public interface UserCommentService {
     // 获取用户评论列表
     List<UserComment> getUserComments(Integer userId);

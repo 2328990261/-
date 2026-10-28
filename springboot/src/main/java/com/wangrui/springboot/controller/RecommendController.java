@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
+/** 推荐控制器：个性推荐书单、偏好标签与相关文章推荐，路径前缀：/api/recommend */
 @RestController
 @RequestMapping("/api/recommend")
 @CrossOrigin

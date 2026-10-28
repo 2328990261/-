@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 import java.util.Map;
 
+/** 客服消息数据访问接口，负责消息的写入、会话查询与已读标记 */
 public interface CustomerServiceMessageMapper {
     int insert(CustomerServiceMessage message);
 

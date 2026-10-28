@@ -4,6 +4,7 @@ import com.wangrui.springboot.pojo.UserFinishedNovel;
 
 import java.util.List;
 
+/** 用户完读记录服务接口 */
 public interface UserFinishedService {
     // 获取用户完读记录列表
     List<UserFinishedNovel> getUserFinishedNovels(Integer userId);

@@ -13,29 +13,46 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 管理端用户维护服务实现
+ * 负责删除用户及其全部关联数据的级联清理
+ */
 @Service
 public class AdminUserServiceImpl implements AdminUserService {
 
+    // 用户评论数据访问对象
     @Autowired
     private UserCommentMapper userCommentMapper;
+    // 用户阅读历史数据访问对象
     @Autowired
     private UserReadingHistoryMapper userReadingHistoryMapper;
+    // 用户完读记录数据访问对象
     @Autowired
     private UserFinishedNovelMapper userFinishedNovelMapper;
+    // 用户主表数据访问对象
     @Autowired
     private UserMapper userMapper;
+    // 用户偏好标签数据访问对象
     @Autowired
     private UserPreferenceTagMapper userPreferenceTagMapper;
+    // 用户标签权重数据访问对象
     @Autowired
     private UserTagWeightMapper userTagWeightMapper;
+    // 用户推荐画像数据访问对象
     @Autowired
     private UserRecommendProfileMapper userRecommendProfileMapper;
+    // 用户不感兴趣数据访问对象
     @Autowired
     private UserDislikeMapper userDislikeMapper;
 
+    /**
+     * 删除用户及其评论、阅读、完读、收藏、偏好、推荐画像、不感兴趣等关联数据
+     * 整个方法在一个事务中执行，任一步失败则整体回滚
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteUserAndRelations(Integer userId) {
+        // 0. 用户ID为空则直接结束
         if (userId == null) {
             return;
         }

@@ -32,15 +32,15 @@
         <div class="section-header">
           <h3>阅读偏好</h3>
           <div class="sort-buttons">
-            <button 
-              class="sort-btn" 
+            <button
+              class="sort-btn"
               :class="{ 'active': sortMode === 'collection' }"
               @click="switchToCollectionSort"
             >
               收藏排序
             </button>
-            <button 
-              class="sort-btn" 
+            <button
+              class="sort-btn"
               :class="{ 'active': sortMode === 'custom' }"
               @click="switchToCustomSort"
             >
@@ -56,9 +56,9 @@
             {{ tag }}
             <button v-if="sortMode === 'custom'" @click="removePreferenceTag(tag)" class="tag-remove-btn">×</button>
           </span>
-          <button 
+          <button
             v-if="sortMode === 'custom'"
-            @click="openAddTagDialog" 
+            @click="openAddTagDialog"
             class="add-tag-btn"
           >
             + 添加标签
@@ -166,9 +166,9 @@
           <div class="category-section">
             <h5>五大标签（选择1个）</h5>
             <div class="category-tags">
-              <span 
-                v-for="tag in firstRowTags" 
-                :key="tag" 
+              <span
+                v-for="tag in firstRowTags"
+                :key="tag"
                 class="category-tag"
                 :class="{ 'selected': selectedTags.includes(tag) }"
                 @click="toggleTagSelection(tag)"
@@ -180,9 +180,9 @@
           <div class="category-section">
             <h5>其他标签（最多选择4个）</h5>
             <div class="category-tags">
-              <span 
-                v-for="tag in otherTags" 
-                :key="tag" 
+              <span
+                v-for="tag in otherTags"
+                :key="tag"
                 class="category-tag"
                 :class="{ 'selected': selectedTags.includes(tag) }"
                 @click="toggleTagSelection(tag)"
@@ -367,7 +367,7 @@ const loadUserInfo = async () => {
     try {
       userInfo.value = JSON.parse(userInfoStr)
       console.log('加载的用户信息:', userInfo.value)
-      
+
       // 如果没有createdAt字段，从后端获取最新的用户信息
       if (!userInfo.value.createdAt) {
         console.log('用户信息中没有createdAt字段，从后端获取')
@@ -445,12 +445,12 @@ const savePreferenceTags = async () => {
     const userId = userInfo.value.id
     const currentMode = sortMode.value  // 当前模式：collection 或 custom
     const tagsToSave = currentMode === 'collection' ? userPreferenceTags.value : customTags.value
-    
+
     if (tagsToSave.length === 0) {
       alert('请至少添加一个标签')
       return
     }
-    
+
     // 构建标签数据，添加tagType字段
     const tagData = tagsToSave.map((tagName, index) => ({
       userId: userId,
@@ -459,12 +459,12 @@ const savePreferenceTags = async () => {
       tagOrder: index + 1,
       isFirstRow: currentMode === 'collection' ? (index < 5 ? 1 : 0) : 0
     }))
-    
+
     console.log('=== 保存标签调试信息 ===')
     console.log('当前模式:', currentMode)
     console.log('保存的标签:', tagsToSave)
     console.log('标签数据:', tagData)
-    
+
     // 调用API保存标签，传递tagType参数
     const response = await request.post(
       `/user/behavior/preference/tags?userId=${userId}&tagType=${currentMode}`,
@@ -487,7 +487,7 @@ const loadUserPreferenceTagsFromDB = async () => {
   try {
     const userId = userInfo.value.id
     if (!userId) return
-    
+
     // 加载收藏排序标签
     const collectionResponse = await request.get(`/user/behavior/preference/tags?userId=${userId}`)
 
@@ -497,12 +497,12 @@ const loadUserPreferenceTagsFromDB = async () => {
         .filter(tag => tag.tagType === 'collection')
         .sort((a, b) => a.tagOrder - b.tagOrder)
         .map(tag => tag.tagName)
-      
+
       const customTagsList = collectionResponse
         .filter(tag => tag.tagType === 'custom')
         .sort((a, b) => a.tagOrder - b.tagOrder)
         .map(tag => tag.tagName)
-      
+
       // 如果有收藏标签,使用数据库的;否则统计生成
       if (collectionTags.length > 0) {
         userPreferenceTags.value = collectionTags
@@ -510,7 +510,7 @@ const loadUserPreferenceTagsFromDB = async () => {
         // 如果数据库没有收藏标签,从收藏书籍统计生成
         loadUserPreferences()
       }
-      
+
       // 设置自定义标签
       if (customTagsList.length > 0) {
         customTags.value = customTagsList
@@ -536,11 +536,11 @@ const loadUserPreferences = () => {
     '宫廷', '虚拟网游', '现实题材', '种田文', '转生', '穿越', '魔法', // 第四行
     '全年龄', '轻百' // 第五行
   ]
-  
+
   // 从收藏书籍中统计标签
   if (collectedBooks.value.length > 0) {
     const tagCount = {}
-    
+
     // 遍历所有收藏书籍，统计所有标签出现次数
     collectedBooks.value.forEach(book => {
       if (book.label) {
@@ -551,34 +551,34 @@ const loadUserPreferences = () => {
         })
       }
     })
-    
+
     console.log('=== 标签统计调试信息 ===')
     console.log('收藏书籍数量:', collectedBooks.value.length)
     console.log('所有标签出现次数:', tagCount)
-    
+
     // 首先处理第一行标签，按出现次数排序
     const firstRowTagCount = firstRowTags
       .filter(tag => tagCount[tag]) // 只保留在收藏中出现过的第一行标签
       .sort((a, b) => (tagCount[b] || 0) - (tagCount[a] || 0))
-    
+
     console.log('第一行标签统计:', firstRowTagCount)
-    
+
     // 然后处理其他标签，按出现次数排序，确保排除第一行标签
     const otherTagCount = allTags
       .filter(tag => !firstRowTags.includes(tag) && tagCount[tag]) // 明确排除第一行标签，只保留在收藏中出现过的其他标签
       .sort((a, b) => (tagCount[b] || 0) - (tagCount[a] || 0))
-    
+
     console.log('其他标签统计:', otherTagCount)
     console.log('其他标签数量:', otherTagCount.length)
-    
+
     // 组合标签：严格按照要求排序
     const combinedTags = []
-    
+
     // 1. 首先添加第一行标签中出现次数最多的标签作为第一个标签
     if (firstRowTagCount.length > 0) {
       combinedTags.push(firstRowTagCount[0])
     }
-    
+
     // 2. 然后添加其他标签中出现次数最多的标签，排除第一行标签，最多4个
     let addedOtherTags = 0
     for (const tag of otherTagCount) {
@@ -589,9 +589,9 @@ const loadUserPreferences = () => {
         break
       }
     }
-    
+
     console.log('已添加的其他标签数量:', addedOtherTags)
-    
+
     // 3. 如果其他标签不足4个，从第一行剩余标签中按出现次数排序补充
     if (combinedTags.length < 5) {
       // 遍历第一行标签，按出现次数排序，跳过已添加的标签
@@ -601,7 +601,7 @@ const loadUserPreferences = () => {
         }
       }
     }
-    
+
     // 4. 如果仍然不足5个，从默认标签中补充
     if (combinedTags.length < 5) {
       const defaultTags = ['日常', '奇幻', '冒险', '异世界', '轻松']
@@ -611,9 +611,9 @@ const loadUserPreferences = () => {
         }
       }
     }
-    
+
     console.log('最终标签组合:', combinedTags)
-    
+
     userPreferenceTags.value = combinedTags
     console.log('统计的偏好标签:', userPreferenceTags.value)
   } else {
@@ -656,15 +656,18 @@ const finishedCount = computed(() => {
   return sortedBooks.value.filter(book => finishedNovels.value.includes(String(book.id))).length
 })
 
+/** 切换到「正在读」书架标签 */
 const switchToReadingTab = () => {
   activeTab.value = 'reading'
   pageSize.value = 10
 }
+/** 切换到「已看完」书架标签 */
 const switchToFinishedTab = () => {
   activeTab.value = 'finished'
   pageSize.value = 10
 }
 
+/** 加载阅读行为统计：收藏数、完读数、累计阅读时长（小时） */
 const loadUserBehaviors = async () => {
   const userId = getCurrentUserId()
   let totalHours = 0
@@ -683,6 +686,7 @@ const loadUserBehaviors = async () => {
   }
 }
 
+/** 加载收藏小说列表（从后端获取） */
 const loadCollectedBooks = async () => {
   const userId = getCurrentUserId()
   if (!userId) {
@@ -701,6 +705,7 @@ const loadCollectedBooks = async () => {
   return collectedBooks.value
 }
 
+/** 移除某个偏好标签（区分收藏/自定义模式） */
 const removePreferenceTag = (tag) => {
   if (sortMode.value === 'collection') {
     const index = userPreferenceTags.value.indexOf(tag)
@@ -715,6 +720,7 @@ const removePreferenceTag = (tag) => {
   }
 }
 
+/** 添加偏好标签：校验数量上限与去重后追加 */
 const addPreferenceTag = () => {
   if (newTag.value.trim()) {
     // 检查标签数量是否已达上限
@@ -742,7 +748,7 @@ const toggleTagSelection = (tag) => {
   } else {
     // 检查选择规则
     const isFirstRowTag = firstRowTags.includes(tag)
-    
+
     if (isFirstRowTag) {
       // 五大标签只能选择一个，先清空其他五大标签的选择
       selectedTags.value = selectedTags.value.filter(t => !firstRowTags.includes(t))
@@ -759,10 +765,10 @@ const toggleTagSelection = (tag) => {
       }
     }
   }
-  
+
   // 实时更新页面上的标签（保持选择顺序）
   customTags.value = [...selectedTags.value]
-  
+
   console.log('当前选择的标签顺序:', selectedTags.value)
 }
 
@@ -802,15 +808,16 @@ const confirmAddTags = () => {
     alert('请至少选择一个标签')
     return
   }
-  
+
   // 保持当前选择状态
   customTags.value = [...selectedTags.value]
-  
+
   // 关闭对话框
   selectedTags.value = []
   showAddTagDialog.value = false
 }
 
+/** 跳转小说详情页：记录最近点击并调整书架顺序 */
 const goToBookDetail = (bookId) => {
   // 记录最近点击的小说 ID 到 localStorage
   localStorage.setItem('lastClickedNovelId', String(bookId))
@@ -848,10 +855,12 @@ const formatDate = (dateString) => {
   return dateString
 }
 
+/** 跳转到标签权重配置页 */
 const goTagWeightConfig = () => {
   router.push({ name: 'userTagWeights' })
 }
 
+/** 加载阅读历史并补全封面与书名（本地无则向后端查询） */
 const loadReadingHistoryDisplay = async () => {
   const raw = getReadingHistoryList()
   const enriched = await Promise.all(
@@ -873,6 +882,7 @@ const loadReadingHistoryDisplay = async () => {
   readingHistoryList.value = enriched
 }
 
+/** 从阅读历史打开阅读页：更新最近打开状态后跳转到对应章节/页码 */
 const openReadFromHistory = async (item) => {
   const id = item.novelId
   touchReadingHistoryRecency(id, {

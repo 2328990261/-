@@ -101,6 +101,7 @@ const connectionText = computed(() => {
   return '连接已断开'
 })
 
+/** 构建客服 WebSocket 地址（带上服务端角色与登录令牌） */
 function buildWebSocketUrl() {
   const token = localStorage.getItem('token') || ''
   const path = `/ws/customer-service?role=service&token=${encodeURIComponent(token)}`
@@ -109,6 +110,7 @@ function buildWebSocketUrl() {
   return `${protocol}://${window.location.host}${path}`
 }
 
+/** 建立 WebSocket 客服长连接，并绑定各类消息回调 */
 function connect() {
   if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) return
   connectionState.value = 'connecting'
@@ -136,6 +138,7 @@ function connect() {
   }
 }
 
+/** 处理聊天气象：追加消息、更新会话列表，必要时标记已读 */
 function handleChatMessage(payload) {
   if (payload.userId === selectedUserId.value) {
     appendMessage(payload.sender === 'USER' ? 'user' : 'service', payload)
@@ -146,6 +149,7 @@ function handleChatMessage(payload) {
   }
 }
 
+/** 加载全部客服会话列表 */
 async function loadConversations() {
   try {
     const response = await adminHttp.get('/admin/customer-service/conversations')
@@ -155,6 +159,7 @@ async function loadConversations() {
   }
 }
 
+/** 选中某用户会话：加载其聊天记录并标记已读 */
 async function selectConversation(userId) {
   selectedUserId.value = userId
   messages.value = []
@@ -162,6 +167,7 @@ async function selectConversation(userId) {
   await markConversationRead(userId)
 }
 
+/** 加载指定用户的聊天记录 */
 async function loadMessages(userId) {
   try {
     const response = await adminHttp.get(`/admin/customer-service/messages/${userId}`)
@@ -179,6 +185,7 @@ async function loadMessages(userId) {
   }
 }
 
+/** 将指定用户的会话未读数清零并请求后端标记已读 */
 async function markConversationRead(userId) {
   const conversation = conversations.value.find((item) => item.userId === userId)
   if (conversation) conversation.unreadCount = 0
@@ -189,6 +196,7 @@ async function markConversationRead(userId) {
   }
 }
 
+/** 通过 WebSocket 发送客服回复并清空输入框 */
 function sendMessage() {
   if (!canSend.value) return
   const content = draft.value.trim()
@@ -196,6 +204,7 @@ function sendMessage() {
   draft.value = ''
 }
 
+/** 更新会话列表：不存在则新建，同时维护最后一条消息与未读数 */
 function updateConversation(payload) {
   let conversation = conversations.value.find((item) => item.userId === payload.userId)
   if (!conversation) {
@@ -214,6 +223,7 @@ function updateConversation(payload) {
   }
 }
 
+/** 追加一条消息到聊天列表并滚动到底部 */
 function appendMessage(role, payload) {
   messages.value.push({
     id: payload.id ?? `${role}-${payload.sentAt ?? Date.now()}`,
@@ -224,10 +234,12 @@ function appendMessage(role, payload) {
   nextTick(scrollToBottom)
 }
 
+/** 将聊天区域滚动到底部以显示最新消息 */
 function scrollToBottom() {
   if (messageList.value) messageList.value.scrollTop = messageList.value.scrollHeight
 }
 
+/** 格式化时间戳为 时:分 字符串 */
 function formatTime(timestamp) {
   if (!timestamp) return ''
   return new Date(timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })

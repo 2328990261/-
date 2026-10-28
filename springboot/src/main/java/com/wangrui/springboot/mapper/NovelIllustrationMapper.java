@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
+/** 小说插画数据访问接口，负责插画的写入与按分卷查询 */
 @Mapper
 public interface NovelIllustrationMapper {
     int insertIllustration(NovelBookIllustration illustration);

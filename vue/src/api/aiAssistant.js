@@ -1,10 +1,12 @@
 import request from '@/utils/request'
 import { backendUrl } from '@/config/env'
 
+/** 获取当前用户的会话列表 */
 export function listSessions() {
   return request({ url: '/ai-assistant/sessions', method: 'get' })
 }
 
+/** 获取指定会话的消息列表 */
 export function listMessages(sessionId) {
   return request({ url: `/ai-assistant/sessions/${sessionId}/messages`, method: 'get' })
 }
@@ -24,6 +26,7 @@ export function deleteSession(sessionId) {
   return request({ url: `/ai-assistant/sessions/${sessionId}`, method: 'delete' })
 }
 
+/** 上传聊天图片（用于向 AI 发送图片内容） */
 export function uploadImage(file) {
   const formData = new FormData()
   formData.append('file', file)

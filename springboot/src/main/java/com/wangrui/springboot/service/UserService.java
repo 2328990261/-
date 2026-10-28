@@ -4,6 +4,7 @@ import com.wangrui.springboot.pojo.User;
 import java.util.List;
 import java.util.Map;
 
+/** 用户服务接口：登录注册、验证码、收藏管理与用户信息维护 */
 public interface UserService {
     Map<String, Object> login(String username, String password);
 

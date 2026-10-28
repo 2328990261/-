@@ -3,6 +3,7 @@ package com.wangrui.springboot.pojo.vo;
 import java.util.ArrayList;
 import java.util.List;
 
+/** AI聊天返回结果体：思考过程 + 回复文本 + 推荐书籍列表 */
 public class AiChatResult {
     private String thinking;
     private String text;

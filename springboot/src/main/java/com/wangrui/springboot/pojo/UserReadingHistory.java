@@ -2,6 +2,7 @@ package com.wangrui.springboot.pojo;
 
 import java.util.Date;
 
+/** 用户阅读历史实体类，映射数据库 user_reading_history 表 */
 public class UserReadingHistory {
     private Integer id;
     private Integer userId;

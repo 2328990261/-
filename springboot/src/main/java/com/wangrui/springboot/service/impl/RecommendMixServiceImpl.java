@@ -24,9 +24,9 @@ import com.wangrui.springboot.service.RecommendMixService;
 import com.wangrui.springboot.service.UserDislikeService;
 import com.wangrui.springboot.service.UserEffectiveTagWeightService;
 import com.wangrui.springboot.service.UserPreferenceService;
-import com.wangrui.springboot.service.RedisCacheService;
+import com.wangrui.springboot.cache.RedisCacheService;
 import com.wangrui.springboot.service.UserService;
-import com.wangrui.springboot.util.CacheEntry;
+import com.wangrui.springboot.cache.CacheEntry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -44,6 +44,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
+/**
+ * 混合推荐服务实现
+ * 综合标签命中、行为加分、Item-CF、阅读热度与 MMR 多样性重排，
+ * 计算个性化推荐书单，并支持多级缓存与运行期策略调试
+ */
 @Service
 public class RecommendMixServiceImpl implements RecommendMixService {
     private static final Logger log = LoggerFactory.getLogger(RecommendMixServiceImpl.class);
@@ -86,13 +91,16 @@ public class RecommendMixServiceImpl implements RecommendMixService {
     @Qualifier("recommendExecutor")
     private Executor recommendExecutor;
 
+    /** 混合推荐入口：优先读缓存，未命中则计算并写缓存 */
     @Override
     public RecommendBooksResponse recommend(Integer userId, String sortType) {
         long startedAt = System.currentTimeMillis();
+        // 1. 获取用户推荐版本号，用于构建结果缓存键
         long recommendationVersion = redisCacheService.getUserRecommendationVersion(userId);
         String resultKey = recommendationVersion > 0
                 ? "novel:rec:result:" + userId + ":" + sortType + ":" + recommendationVersion
                 : null;
+        // 2. 尝试命中缓存
         if (resultKey != null) {
             CacheEntry<RecommendBooksResponse> cached = redisCacheService.getEntry(
                     resultKey, new TypeReference<CacheEntry<RecommendBooksResponse>>() {});
@@ -107,11 +115,13 @@ public class RecommendMixServiceImpl implements RecommendMixService {
             }
         }
 
+        // 3. 缓存未命中则实际计算推荐结果
         RecommendBooksResponse response = computeRecommendation(userId, sortType);
         String cacheStatus = resultKey != null ? "MISS" : "DISABLED_OR_UNAVAILABLE";
         long elapsedMs = System.currentTimeMillis() - startedAt;
         response.getDebug().put("cacheStatus", cacheStatus);
         response.getDebug().put("elapsedMs", elapsedMs);
+        // 4. 写缓存并附加缓存时间
         if (resultKey != null) {
             Instant cachedAt = Instant.now();
             response.getDebug().put("cachedAt", cachedAt.toString());
@@ -124,6 +134,7 @@ public class RecommendMixServiceImpl implements RecommendMixService {
     }
 
     private RecommendBooksResponse computeRecommendation(Integer userId, String sortType) {
+        // 1. 初始化返回结构与调试信息
         RecommendBooksResponse out = new RecommendBooksResponse();
         Map<String, Object> debug = new LinkedHashMap<>();
         List<String> warnings = new ArrayList<>();
@@ -131,6 +142,7 @@ public class RecommendMixServiceImpl implements RecommendMixService {
         debug.put("userId", userId);
         debug.put("sortType", sortType);
 
+        // 2. 获取用户偏好标签（收藏排序用实时收藏，其余用偏好表）
         List<UserPreferenceTag> userTags = "collection".equals(sortType)
             ? userPreferenceService.getCollectionBasedTags(userId)
             : userPreferenceService.getUserPreferenceTagsByType(userId, sortType);
@@ -140,11 +152,13 @@ public class RecommendMixServiceImpl implements RecommendMixService {
             return out;
         }
 
+        // 3. 异步加载推荐所需各类数据
         RecommendationData data = loadRecommendationData(userId, warnings);
         RecommendMainConfig mainCfg = data.mainConfig;
         RecommendCommentConfig behCfg = data.behaviorConfig;
         UserRecommendProfile profile = data.profile;
 
+        // 4. 依据排序类型构建标签权重向量
         Map<String, Double> personalWeights = data.personalWeights;
         final boolean isCustomSort = "custom".equals(sortType);
         // 收藏排序：仍用偏好顺序前 5 个键参与 tagHit；自定义排序：仅标签（+书名）模糊匹配得分，无协同/热度/行为/MMR，未命中任意勾选标签的书不进候选
@@ -152,6 +166,7 @@ public class RecommendMixServiceImpl implements RecommendMixService {
             ? buildAllSelectedTagWeights(userTags, personalWeights)
             : buildTop5TagWeights(userTags, personalWeights);
 
+        // 5. 取出黑名单相关数据
         Set<Integer> blockedNovelIds = data.blockedNovelIds;
         Set<String> dislikedAuthorsLc = data.dislikedAuthorsLc;
         Set<String> dislikedTags = data.dislikedTags;

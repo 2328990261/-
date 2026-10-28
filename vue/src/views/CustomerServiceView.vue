@@ -83,6 +83,7 @@ const connectionText = computed(() => {
   return '连接已断开'
 })
 
+/** 构建 WebSocket 连接地址（携带 token，兼容 ws/wss） */
 function buildWebSocketUrl() {
   const token = localStorage.getItem('token') || ''
   const path = `/ws/customer-service?token=${encodeURIComponent(token)}`
@@ -93,6 +94,7 @@ function buildWebSocketUrl() {
   return `${protocol}://${window.location.host}${path}`
 }
 
+/** 建立（或复用）WebSocket 客服连接，绑定各事件的回调 */
 function connect() {
   if (!localStorage.getItem('token')) {
     addSystemMessage('请先登录后再联系客服。')
@@ -141,6 +143,7 @@ function connect() {
   }
 }
 
+/** 断线后按递增间隔重连，最多尝试 5 次 */
 function scheduleReconnect() {
   if (reconnectAttempts >= 5) {
     addSystemMessage('多次连接失败，请确认后端服务已启动，然后点击“重新连接”。')
@@ -152,6 +155,7 @@ function scheduleReconnect() {
   reconnectTimer = setTimeout(connect, delay)
 }
 
+/** 发送聊天消息：校验连接与内容后通过 WebSocket 发送并清空输入框 */
 function sendMessage() {
   if (!canSend.value) return
   const content = draft.value.trim()
@@ -159,6 +163,7 @@ function sendMessage() {
   draft.value = ''
 }
 
+/** 将一条角色消息追加到列表并滚动到底部 */
 function appendMessage(role, payload) {
   messages.value.push({
     id: payload.id ?? `${role}-${payload.sentAt ?? Date.now()}`,
@@ -169,16 +174,19 @@ function appendMessage(role, payload) {
   nextTick(scrollToBottom)
 }
 
+/** 追加一条系统提示消息 */
 function addSystemMessage(content) {
   appendMessage('system', { content, sentAt: Date.now() })
 }
 
+/** 将消息列表滚动到最底部 */
 function scrollToBottom() {
   if (messageList.value) {
     messageList.value.scrollTop = messageList.value.scrollHeight
   }
 }
 
+/** 格式化时间戳为时分展示 */
 function formatTime(timestamp) {
   return new Date(timestamp).toLocaleTimeString('zh-CN', {
     hour: '2-digit',
@@ -186,6 +194,7 @@ function formatTime(timestamp) {
   })
 }
 
+/** 加载历史聊天记录并展示 */
 async function loadHistory() {
   if (!localStorage.getItem('token')) {
     addSystemMessage('请先登录后再联系客服。')
@@ -211,6 +220,7 @@ async function loadHistory() {
   }
 }
 
+/** 主动关闭 WebSocket 连接并清理重连计时器（不再自动重连） */
 function closeSocket() {
   manuallyClosed = true
   clearTimeout(reconnectTimer)

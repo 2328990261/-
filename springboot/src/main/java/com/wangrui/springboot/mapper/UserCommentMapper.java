@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 import java.util.Map;
 
+/** 用户评论数据访问接口，负责评论的增删改查与全站评论统计 */
 public interface UserCommentMapper {
     // 获取用户评论列表
     List<UserComment> selectByUserId(@Param("userId") Integer userId);

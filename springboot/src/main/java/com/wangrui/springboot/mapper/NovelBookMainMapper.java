@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
+/** 小说主表数据访问接口，负责小说列表、标签、搜索、阅读量与上下架等数据操作 */
 @Mapper
 public interface NovelBookMainMapper {
     // 和XML里id="selectAllNovels"完全一致

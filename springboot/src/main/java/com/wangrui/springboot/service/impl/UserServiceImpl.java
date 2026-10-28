@@ -2,7 +2,7 @@ package com.wangrui.springboot.service.impl;
 
 import com.wangrui.springboot.mapper.UserMapper;
 import com.wangrui.springboot.pojo.User;
-import com.wangrui.springboot.service.RedisCacheService;
+import com.wangrui.springboot.cache.RedisCacheService;
 import com.wangrui.springboot.service.EmailService;
 import com.wangrui.springboot.service.UserService;
 import com.wangrui.springboot.util.JwtUtil;
@@ -18,15 +18,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 用户服务实现
+ * 负责用户登录注册、手机/邮箱验证码、收藏管理及用户信息维护
+ */
 @Service
 public class UserServiceImpl implements UserService {
 
+    // 密码加密器（BCrypt）
     private static final BCryptPasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
 
+    // 用户表数据访问对象
     @Autowired
     private UserMapper userMapper;
+    // Redis缓存服务（用于失效用户推荐版本号）
     @Autowired
     private RedisCacheService redisCacheService;
+    // 邮箱服务
     @Autowired
     private EmailService emailService;
 

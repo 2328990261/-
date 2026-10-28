@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
+/** 用户偏好标签数据访问接口，负责偏好标签的查询、批量写入与删除 */
 public interface UserPreferenceTagMapper {
     // 获取用户偏好标签列表
     List<UserPreferenceTag> selectByUserId(@Param("userId") Integer userId);

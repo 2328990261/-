@@ -2,6 +2,7 @@ package com.wangrui.springboot.pojo;
 
 import java.util.Date;
 
+/** 用户评论实体类，映射数据库 user_comment 表 */
 public class UserComment {
     private Integer id;
     private Integer userId;

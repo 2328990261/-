@@ -3,6 +3,7 @@ package com.wangrui.springboot.pojo;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 
+/** 用户实体类，映射数据库 user 表 */
 public class User {
     private Integer id;
     private String username;

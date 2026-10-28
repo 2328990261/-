@@ -3,6 +3,7 @@ package com.wangrui.springboot.pojo;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+/** 首页轮播图实体类，映射数据库 banner_carousel 表 */
 @Data
 public class BannerCarousel {
     private Integer id;

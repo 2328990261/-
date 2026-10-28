@@ -92,6 +92,7 @@ const defaultRecProfile = () => ({
 
 const recProfile = ref(defaultRecProfile())
 
+/** 从本地存储解析当前用户 ID */
 const getUserId = () => {
   try {
     const userInfoStr = localStorage.getItem('userInfo')
@@ -105,8 +106,10 @@ const getUserId = () => {
   return null
 }
 
+/** 返回个人中心 */
 const goBack = () => router.push('/user/center')
 
+/** 合并后端返回的推荐策略，缺失字段用默认值兜底 */
 const mergeRecProfile = (d) => {
   const base = defaultRecProfile()
   if (!d || typeof d !== 'object') return base
@@ -128,6 +131,7 @@ const mergeRecProfile = (d) => {
   }
 }
 
+/** 加载标签占比与推荐策略配置并填充到界面 */
 const load = async () => {
   const userId = getUserId()
   if (!userId) return
@@ -160,6 +164,7 @@ const load = async () => {
   }
 }
 
+/** 保存推荐策略配置，成功后回读最新值 */
 const saveRecProfile = async () => {
   const userId = getUserId()
   if (!userId) return

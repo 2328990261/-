@@ -138,10 +138,12 @@ const coverPreviewUrl = computed(() => {
   return c ? `${backendUrl('/novel/cover')}/${encodeURIComponent(c)}` : ''
 })
 
+/** 触发隐藏的封面选择框 */
 function triggerCoverPick() {
   coverInputRef.value?.click()
 }
 
+/** 触发隐藏的 EPUB 分卷文件选择框 */
 function triggerEpubPick() {
   fileInput.value?.click()
 }
@@ -150,6 +152,7 @@ function triggerEpubPick() {
 const tagRows = ref([])
 const selectedLabelTags = ref([])
 
+/** 将标签列表按行大小分组，构建多行标签栏数据 */
 function buildTagRows(tagList) {
   const names = (tagList || []).map(t => (t.name != null ? String(t.name).trim() : '')).filter(Boolean)
   const rowSizes = [5, 8, 7, 7]
@@ -180,6 +183,7 @@ async function loadTags() {
   }
 }
 
+/** 页面重新获得焦点时刷新标签，保证后台增删标签后实时可见 */
 function onWindowFocus() {
   loadTags()
 }
@@ -217,11 +221,13 @@ function toggleLabelTag(tag) {
   }
 }
 
+/** 移除已选的某个标签 */
 function removeLabelTag(tag) {
   const i = selectedLabelTags.value.indexOf(tag)
   if (i > -1) selectedLabelTags.value.splice(i, 1)
 }
 
+/** 选择封面：上传到服务器并回填主书封面字段 */
 const onCoverChange = async (e) => {
   const file = e.target.files?.[0]
   if (!file) return
@@ -244,11 +250,13 @@ const onCoverChange = async (e) => {
   e.target.value = ''
 }
 
+/** 收集选择的 EPUB 分卷文件加入待上传列表 */
 const handleFileChange = (event) => {
   const files = Array.from(event.target.files)
   selectedFiles.value = [...selectedFiles.value, ...files]
 }
 
+/** 从待上传列表中移除指定索引的文件 */
 const removeFile = (index) => {
   selectedFiles.value.splice(index, 1)
 }
@@ -303,6 +311,7 @@ const publishBook = async () => {
   }
 }
 
+/** 重置发布表单与已选封面、分卷文件 */
 const resetForm = () => {
   mainBookData.value = {
     bookName: '',

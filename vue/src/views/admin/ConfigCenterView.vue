@@ -1,7 +1,7 @@
 <template>
   <div class="config-center">
     <h2 class="page-title">配置管理中心</h2>
-    
+
     <div class="config-cards">
       <div class="config-card" @click="goToBannerManage">
         <div class="card-icon">
@@ -106,21 +106,26 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
+// 配置中心导航页组件
 
 const router = useRouter()
 
+// 跳转到轮播图管理页
 const goToBannerManage = () => {
   router.push({ name: 'AdminBannerManage' })
 }
 
+// 跳转到邮箱配置页
 const goEmailConfig = () => {
   router.push({ name: 'AdminEmailConfig' })
 }
 
+// 跳转到评论行为计分配置页
 const goRecommendBehavior = () => {
   router.push({ name: 'RecommendBehaviorConfig' })
 }
 
+// 跳转到主推荐策略配置页
 const goRecommendMain = () => {
   router.push({ name: 'RecommendMainConfig' })
 }

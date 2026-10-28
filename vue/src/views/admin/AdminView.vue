@@ -138,8 +138,10 @@ const toggleSidebar = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value
 }
 
+/** 返回前台首页 */
 const goHome = () => router.push('/')
 
+/** 打开（或复用）一个后台标签页并跳转 */
 const openTab = (name, title, path) => {
   const existingTab = tabs.value.find((t) => t.name === name)
   if (!existingTab) {
@@ -149,11 +151,13 @@ const openTab = (name, title, path) => {
   router.push(path)
 }
 
+/** 切换到指定后台标签页 */
 const switchTab = (tab) => {
   activeTab.value = tab.name
   router.push(tab.path)
 }
 
+/** 关闭标签页：关闭后自动切换到相邻页或回到仪表盘 */
 const closeTab = (name) => {
   const index = tabs.value.findIndex((t) => t.name === name)
   if (index === -1) return

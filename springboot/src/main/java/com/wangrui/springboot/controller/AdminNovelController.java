@@ -4,7 +4,7 @@ import com.wangrui.springboot.mapper.NovelBookMainMapper;
 import com.wangrui.springboot.mapper.NovelVolumeMapper;
 import com.wangrui.springboot.pojo.NovelBook;
 import com.wangrui.springboot.pojo.NovelBookVolume;
-import com.wangrui.springboot.service.CacheInvalidationService;
+import com.wangrui.springboot.cache.CacheInvalidationService;
 import com.wangrui.springboot.util.EpubImageStorage;
 import com.wangrui.springboot.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +15,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 后台小说管理控制器
+ * 处理小说列表、详情、上下架与分卷管理等接口请求，路径前缀：/api/admin
+ */
 @RestController
 @RequestMapping("/api/admin")
 @CrossOrigin

@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
+/** 小说分卷/章节数据访问接口，负责分卷列表与章节正文的查询 */
 @Mapper
 public interface NovelVolumeMapper {
     // 根据小说主表id查分卷

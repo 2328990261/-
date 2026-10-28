@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
+/** 用户阅读历史数据访问接口，负责阅读记录的增删改查与全站热度统计 */
 public interface UserReadingHistoryMapper {
     // 获取用户阅读历史列表
     List<UserReadingHistory> selectByUserId(@Param("userId") Integer userId);

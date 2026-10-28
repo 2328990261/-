@@ -148,6 +148,7 @@ function validatePassword(s) {
   return ''
 }
 
+/** 提交账号密码登录：先做格式校验再调用登录接口 */
 function submitAccount() {
   error.value = ''
   const uErr = validateUsername(accountForm.username)
@@ -163,6 +164,7 @@ function submitAccount() {
   doAccountLogin()
 }
 
+/** 账号密码登录：成功后保存 token 与用户信息并跳转首页 */
 async function doAccountLogin() {
   loading.value = true
   error.value = ''
@@ -170,10 +172,12 @@ async function doAccountLogin() {
     const res = await login(accountForm.username.trim(), accountForm.password)
     if (res.code === 200) {
       const { token, user } = res.data
+      // 清除旧版未隔离缓存，防止串号
       clearLegacyGlobalReadingCaches()
       localStorage.setItem('token', token)
       localStorage.setItem('userInfo', JSON.stringify(user))
       if (user && user.id != null) localStorage.setItem('userId', String(user.id))
+      // 记住账号：勾选则保存用户名，否则移除
       if (rememberPwd.value) {
         localStorage.setItem('rememberUsername', accountForm.username.trim())
       } else {
@@ -191,6 +195,7 @@ async function doAccountLogin() {
   }
 }
 
+/** 提交邮箱登录：先校验邮箱格式与验证码再调用登录接口 */
 function submitEmail() {
   error.value = ''
   if (!isEmailValid.value) {
@@ -204,6 +209,7 @@ function submitEmail() {
   doEmailLogin()
 }
 
+/** 邮箱验证码登录：成功后保存 token 与用户信息并跳转首页 */
 async function doEmailLogin() {
   loading.value = true
   error.value = ''
@@ -211,6 +217,7 @@ async function doEmailLogin() {
     const res = await loginByEmail(emailForm.email.trim(), emailForm.code.trim())
     if (res.code === 200) {
       const { token, user } = res.data
+      // 清除旧版未隔离缓存，防止串号
       clearLegacyGlobalReadingCaches()
       localStorage.setItem('token', token)
       localStorage.setItem('userInfo', JSON.stringify(user))
@@ -227,6 +234,7 @@ async function doEmailLogin() {
   }
 }
 
+/** 发送邮箱验证码：校验邮箱后请求接口，并启动发送倒计时 */
 async function sendCode() {
   if (!isEmailValid.value) {
     error.value = "<font color='red'>请输入正确的邮箱</font>"

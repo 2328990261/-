@@ -2,7 +2,7 @@ package com.wangrui.springboot.controller;
 
 import com.wangrui.springboot.mapper.BannerCarouselMapper;
 import com.wangrui.springboot.pojo.BannerCarousel;
-import com.wangrui.springboot.service.CacheInvalidationService;
+import com.wangrui.springboot.cache.CacheInvalidationService;
 import com.wangrui.springboot.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

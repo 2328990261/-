@@ -4,6 +4,7 @@ import com.wangrui.springboot.pojo.UserReadingHistory;
 
 import java.util.List;
 
+/** 用户阅读历史服务接口 */
 public interface UserReadingService {
     // 获取用户阅读历史列表
     List<UserReadingHistory> getUserReadingHistory(Integer userId);

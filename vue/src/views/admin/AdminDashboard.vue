@@ -55,7 +55,9 @@ const stats = ref({ totalBooks: 0, totalUsers: 0, totalViews: 0, totalCollection
 
 onMounted(async () => {
   try {
+    // 请求后台概览统计数据
     const res = await adminHttp.get('/admin/stats/overview')
+    // 成功时回填统计卡片数据
     if (res.data?.code === 200 && res.data?.data) {
       stats.value = res.data.data
     }
@@ -163,7 +165,3 @@ onMounted(async () => {
 }
 
 </style>
-
-
-
-

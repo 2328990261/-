@@ -50,6 +50,7 @@ const showModal = ref(false)
 const editId = ref(null)
 const form = ref({ name: '', recommendWeight: 0.1, sortOrder: 0 })
 
+/** 加载标签列表 */
 const loadTags = async () => {
   try {
     const res = await adminHttp.get('/admin/tags')
@@ -61,18 +62,21 @@ const loadTags = async () => {
   }
 }
 
+/** 打开新增标签弹窗并清空表单 */
 const openAdd = () => {
   editId.value = null
   form.value = { name: '', recommendWeight: 0.1, sortOrder: 0 }
   showModal.value = true
 }
 
+/** 打开编辑弹窗：回填标签数据 */
 const openEdit = (tag) => {
   editId.value = tag.id
   form.value = { name: tag.name, recommendWeight: Number(tag.recommendWeight) || 0.1, sortOrder: tag.sortOrder ?? 0 }
   showModal.value = true
 }
 
+/** 提交表单：新增或更新标签 */
 const submit = async () => {
   if (!form.value.name?.trim()) {
     alert('请输入标签名')
@@ -91,6 +95,7 @@ const submit = async () => {
   }
 }
 
+/** 删除标签：确认后调用删除接口并刷新列表 */
 const doDelete = async (tag) => {
   if (!confirm(`确定删除标签「${tag.name}」？`)) return
   try {

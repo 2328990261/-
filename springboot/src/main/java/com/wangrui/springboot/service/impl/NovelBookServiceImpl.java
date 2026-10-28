@@ -1,7 +1,7 @@
 // service/impl/NovelBookServiceImpl.java
 package com.wangrui.springboot.service.impl;
 
-import com.wangrui.springboot.service.RedisCacheService;
+import com.wangrui.springboot.cache.RedisCacheService;
 import com.wangrui.springboot.mapper.NovelBookMainMapper;
 import com.wangrui.springboot.mapper.NovelIllustrationMapper;
 import com.wangrui.springboot.mapper.NovelVolumeMapper;
@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service; // 关键：必须加这个注解
 import java.util.List;
 
 @Service // 核心！Spring靠这个注解创建Bean
+/** 小说详情服务实现：查询小说详情（含分卷）与章节内容，并支持缓存 */
 public class NovelBookServiceImpl implements NovelBookService {
 
     @Autowired

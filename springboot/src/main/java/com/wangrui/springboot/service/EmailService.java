@@ -2,6 +2,7 @@ package com.wangrui.springboot.service;
 
 import java.util.Map;
 
+/** 邮件服务接口：发送邮箱验证码 */
 public interface EmailService {
 
     /** 发送邮箱验证码；返回 {code,msg,devCode}。未配置 SMTP 时走开发模式并返回 devCode。 */

@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
+/** AI助手会话数据访问接口，负责会话的增删改查 */
 @Mapper
 public interface AiChatSessionMapper {
     int insert(AiChatSession session);

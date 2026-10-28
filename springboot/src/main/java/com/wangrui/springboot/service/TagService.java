@@ -5,6 +5,7 @@ import com.wangrui.springboot.pojo.Tag;
 import java.util.List;
 import java.util.Map;
 
+/** 标签服务接口：标签增删改查与推荐权重管理 */
 public interface TagService {
     List<Tag> listAll();
     Tag getById(Integer id);

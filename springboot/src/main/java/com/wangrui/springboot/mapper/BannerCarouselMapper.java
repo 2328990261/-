@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import java.util.List;
 import java.util.Map;
 
+/** 轮播图数据访问接口，负责轮播图的增删改查与启用状态管理 */
 @Mapper
 public interface BannerCarouselMapper {
     

@@ -66,6 +66,7 @@ const goHome = () => {
   router.push('/')
 }
 
+/** 发送邮箱注册验证码：校验邮箱后请求接口，并启动发送倒计时 */
 const sendRegisterCode = async () => {
   error.value = ''
   if (!isEmailValid.value) {
@@ -92,6 +93,7 @@ const sendRegisterCode = async () => {
   }
 }
 
+/** 提交注册：逐项校验账号/邮箱/验证码/密码后调用注册接口，成功后保存登录态并跳转首页 */
 const userRegister = async () => {
     error.value = ''
 

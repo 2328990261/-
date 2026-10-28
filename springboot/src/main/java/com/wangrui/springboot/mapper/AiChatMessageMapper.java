@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
+/** AI助手聊天消息数据访问接口，负责消息的写入与按会话查询 */
 @Mapper
 public interface AiChatMessageMapper {
     int insert(AiChatMessage message);

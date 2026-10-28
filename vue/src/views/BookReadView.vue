@@ -165,7 +165,7 @@ let readDurationTimerId = null
 /** 阅读时长上报定时器 ID（每 60 秒上报一次） */
 let readReportIntervalId = null
 
-/** 从本地存储获取当前用户 ID */
+/** 从本地存储解析当前用户 ID */
 const getUserId = () => {
   try {
     const userInfoStr = localStorage.getItem('userInfo')
@@ -186,11 +186,13 @@ const readCommentContent = ref('')
 const readCommentLoading = ref(false)
 const readCommentSubmitting = ref(false)
 const commentUserId = ref(null)
+/** 解析评论用户 ID 并缓存到本地状态 */
 const getCommentUserId = () => {
   const uid = getUserId()
   commentUserId.value = uid
   return uid
 }
+/** 格式化评论时间为相对时间 */
 const formatReadCommentTime = (dateStr) => {
   if (!dateStr) return ''
   const d = new Date(dateStr)
@@ -201,6 +203,7 @@ const formatReadCommentTime = (dateStr) => {
   if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`
   return d.toLocaleDateString()
 }
+/** 加载本章小说的评论列表 */
 const loadReadComments = async () => {
   const novelId = props.id
   if (!novelId) return
@@ -214,6 +217,7 @@ const loadReadComments = async () => {
     readCommentLoading.value = false
   }
 }
+/** 发表阅读页评论并刷新列表 */
 const submitReadComment = async () => {
   const content = readCommentContent.value?.trim()
   if (!content) return
@@ -302,15 +306,15 @@ const handlePageChange = async (page) => {
     // 检查localStorage，避免重复增加阅读量
     const readCountKey = `readCount_${props.id}_${currentChapterId.value}`
     const hasIncreased = localStorage.getItem(readCountKey)
-    
+
     if (!hasIncreased) {
       try {
         const response = await fetch(backendUrl(`/novel/increaseReadCount/${props.id}`), {
           method: 'POST'
         })
-        
+
         const result = await response.json()
-        
+
         if (result.code === 200) {
           // 标记已增加阅读量
           localStorage.setItem(readCountKey, 'true')
@@ -328,20 +332,20 @@ const handlePageChange = async (page) => {
 const loadNovelData = async () => {
   // 转换小说ID为数字类型
   const novelId = Number(props.id)
-  
+
   // 验证小说ID格式
   if (isNaN(novelId)) {
     errorMsg.value = '小说ID格式错误'
     return
   }
-  
+
   // 设置加载状态
   loading.value = true
-  
+
   try {
     // 调用API获取小说详情
     const res = await getNovelDetailById(novelId)
-    
+
     // 检查API响应
     if (res.code === 200 && res.data) {
       // 保存小说详情
@@ -373,22 +377,22 @@ const loadChapter = async (chapterId) => {
     await reportReadingDuration(readDurationSeconds.value)
     readDurationSeconds.value = 0
   }
-  
+
   // 设置加载状态
   loading.value = true
-  
+
   // 保存当前章节ID
   currentChapterId.value = chapterId
-  
+
   try {
     // 调用API获取章节内容
     const res = await getChapterContentById(chapterId)
-    
+
     // 检查API响应
     if (res.code === 200 && res.data) {
       // 保存章节内容
       currentChapter.value = res.data
-      
+
       // 处理页码参数，跳转到指定页
       const pageParam = route.query.page
       if (pageParam && bookReaderRef.value) {
@@ -444,18 +448,18 @@ const reportReadingDuration = async (seconds) => {
 onMounted(async () => {
   // 加载小说数据
   await loadNovelData()
-  
+
   // 确保章节列表存在且有数据
   if (novelDetail.value?.volumeList && novelDetail.value.volumeList.length > 0) {
     // 获取章节ID，优先使用路由参数中的章节ID，否则使用第一个章节的ID
     const chapterId = route.query.chapterId || novelDetail.value.volumeList[0].id
-    
+
     // 加载章节内容
     if (chapterId) {
       loadChapter(chapterId)
     }
   }
-  
+
   // 检查收藏状态
   await checkFavoriteStatus()
 
@@ -490,12 +494,12 @@ onBeforeUnmount(() => {
 watch([() => route.query.chapterId, () => props.id], async () => {
   // 加载小说数据
   await loadNovelData()
-  
+
   // 确保章节列表存在且有数据
   if (novelDetail.value?.volumeList && novelDetail.value.volumeList.length > 0) {
     // 获取章节ID，优先使用路由参数中的章节ID，否则使用第一个章节的ID
     const chapterId = route.query.chapterId || novelDetail.value.volumeList[0].id
-    
+
     // 加载章节内容
     if (chapterId) {
       loadChapter(chapterId)
@@ -510,10 +514,10 @@ watch([() => route.query.chapterId, () => props.id], async () => {
 const handlePrevPage = async () => {
   // 检查组件引用是否存在
   if (!bookReaderRef.value) return
-  
+
   // 调用组件方法切换到上一页
   bookReaderRef.value.prevPage()
-  
+
   // 保存阅读进度
   await saveReadingProgress()
 }
@@ -524,10 +528,10 @@ const handlePrevPage = async () => {
 const handleNextPage = async () => {
   // 检查组件引用是否存在
   if (!bookReaderRef.value) return
-  
+
   // 调用组件方法切换到下一页
   bookReaderRef.value.nextPage()
-  
+
   // 保存阅读进度
   await saveReadingProgress()
 }
@@ -538,12 +542,12 @@ const handleNextPage = async () => {
 const handlePrevChapter = async () => {
   // 获取章节列表
   const chapterList = novelDetail.value?.volumeList || []
-  
+
   // 检查章节列表是否为空
   if (chapterList.length === 0) {
     return
   }
-  
+
   // 检查当前章节ID是否存在
   if (!currentChapterId.value) {
     // 尝试从currentChapter对象获取ID
@@ -553,19 +557,19 @@ const handlePrevChapter = async () => {
       return
     }
   }
-  
+
   // 查找当前章节索引
   let currentIndex = -1
   for (let i = 0; i < chapterList.length; i++) {
     const chapter = chapterList[i]
-    
+
     // 比较章节ID
     if (String(chapter.id) === String(currentChapterId.value)) {
       currentIndex = i
       break
     }
   }
-  
+
   // 如果找不到当前章节，尝试使用currentChapter对象的ID重新查找
   if (currentIndex === -1) {
     if (currentChapter.value?.id) {
@@ -577,19 +581,19 @@ const handlePrevChapter = async () => {
         }
       }
     }
-    
+
     // 如果还是找不到，默认使用第一个章节
     if (currentIndex === -1) {
       currentIndex = 0
     }
   }
-  
+
   // 加载上一章
   if (currentIndex > 0) {
     const prevChapter = chapterList[currentIndex - 1]
     loadChapter(prevChapter.id)
   }
-  
+
   // 保存阅读进度
   await saveReadingProgress()
 }
@@ -600,12 +604,12 @@ const handlePrevChapter = async () => {
 const handleNextChapter = async () => {
   // 获取章节列表
   const chapterList = novelDetail.value?.volumeList || []
-  
+
   // 检查章节列表是否为空
   if (chapterList.length === 0) {
     return
   }
-  
+
   // 检查当前章节ID是否存在
   if (!currentChapterId.value) {
     // 尝试从currentChapter对象获取ID
@@ -615,19 +619,19 @@ const handleNextChapter = async () => {
       return
     }
   }
-  
+
   // 查找当前章节索引
   let currentIndex = -1
   for (let i = 0; i < chapterList.length; i++) {
     const chapter = chapterList[i]
-    
+
     // 比较章节ID
     if (String(chapter.id) === String(currentChapterId.value)) {
       currentIndex = i
       break
     }
   }
-  
+
   // 如果找不到当前章节，尝试使用currentChapter对象的ID重新查找
   if (currentIndex === -1) {
     if (currentChapter.value?.id) {
@@ -639,19 +643,19 @@ const handleNextChapter = async () => {
         }
       }
     }
-    
+
     // 如果还是找不到，默认使用第一个章节
     if (currentIndex === -1) {
       currentIndex = 0
     }
   }
-  
+
   // 加载下一章
   if (currentIndex < chapterList.length - 1) {
     const nextChapter = chapterList[currentIndex + 1]
     loadChapter(nextChapter.id)
   }
-  
+
   // 保存阅读进度
   await saveReadingProgress()
 }
@@ -798,20 +802,20 @@ const saveReadingProgress = async () => {
 const checkIfFinished = async () => {
   // 获取小说ID
   const novelId = props.id
-  
+
   // 验证必要参数
   if (!novelId || !novelDetail.value?.volumeList || !bookReaderRef.value) return
-  
+
   // 获取章节列表和最后一章
   const chapterList = novelDetail.value.volumeList
   const lastChapter = chapterList[chapterList.length - 1]
-  
+
   // 检查是否在最后一章
   if (String(currentChapterId.value) !== String(lastChapter.id)) return
-  
+
   // 检查是否在最后一页
   if (bookReaderRef.value.currentPage < bookReaderRef.value.totalPages) return
-  
+
   // 标记为已完成
   await markAsFinished(novelId)
 }
@@ -823,7 +827,7 @@ const checkIfFinished = async () => {
 const markAsFinished = async (novelId) => {
   // 检查小说是否已收藏
   const isCollected = await checkIfCollected(novelId)
-  
+
   // 仅对已收藏的小说进行标记
   if (!isCollected) {
     return

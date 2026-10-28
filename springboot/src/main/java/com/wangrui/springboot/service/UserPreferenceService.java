@@ -4,6 +4,7 @@ import com.wangrui.springboot.pojo.UserPreferenceTag;
 
 import java.util.List;
 
+/** 用户偏好标签服务接口 */
 public interface UserPreferenceService {
     // 获取用户偏好标签列表
     List<UserPreferenceTag> getUserPreferenceTags(Integer userId);

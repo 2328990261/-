@@ -9,6 +9,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 认证与用户账户控制器
+ * 处理登录、注册、验证码、用户信息与收藏等接口请求，路径前缀：/auth
+ */
 @RestController
 @RequestMapping("/auth")
 public class AuthController {

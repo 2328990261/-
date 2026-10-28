@@ -11,6 +11,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 后台用户管理控制器
+ * 处理用户列表、详情、更新与级联删除等接口请求，路径前缀：/api/admin
+ */
 @RestController
 @RequestMapping("/api/admin")
 @CrossOrigin

@@ -2,6 +2,7 @@ package com.wangrui.springboot.pojo;
 
 import java.util.Date;
 
+/** 客服消息实体类，映射数据库 customer_service_message 表 */
 public class CustomerServiceMessage {
     private Long id;
     private Integer userId;

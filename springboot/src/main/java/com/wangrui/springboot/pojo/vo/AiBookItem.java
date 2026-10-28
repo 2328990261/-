@@ -1,5 +1,6 @@
 package com.wangrui.springboot.pojo.vo;
 
+/** AI推荐书籍条目：展示小说信息与推荐理由 */
 public class AiBookItem {
     private Integer novelId;
     private String title;

@@ -5,6 +5,7 @@ import com.wangrui.springboot.pojo.NovelBookVolume;
 import java.util.List;
 import java.util.Map;
 
+/** 小说主表服务接口：小说列表查询、标签筛选与搜索 */
 public interface NovelBookMainService {
     // 对应Mapper的selectAllNovels() → 返回加工后的数据
     List<Map<String, Object>> getAllNovels();

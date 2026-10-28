@@ -2,6 +2,7 @@ package com.wangrui.springboot.pojo;
 
 import java.util.Date;
 
+/** AI助手聊天消息实体类，映射数据库 ai_chat_message 表 */
 public class AiChatMessage {
     private Long id;
     private Long sessionId;
